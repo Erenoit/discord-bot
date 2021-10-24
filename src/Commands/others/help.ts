@@ -4,6 +4,16 @@ export const command: Command = {
   name: "help",
   aliases: ["h"],
   run: async (client, message, args) => {
-    message.channel.send("Help is not ready yet :(");
+    message.channel.send(`
+**The Bot**
+**Creator**: Eren Önen
+**Commands**:
+  **(help, h):** Prints this message
+  **(play, p) <link or song name>:** Plays the song. If it is already playing adds the song to queue.
+  **stop:** Stops the music
+  **(skip, s):** Skips the current song
+  **pause:** Pauses the music
+  **(resume, r):** resumes the music
+  **(queue, q):** Shows the queue`);
   }
 };

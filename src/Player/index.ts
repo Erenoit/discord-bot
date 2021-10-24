@@ -13,10 +13,10 @@ class MyPlayer {
     this.player = new DisTube(this.client, {
       searchSongs: 1,
       searchCooldown: 30,
-      leaveOnEmpty: true,
+      leaveOnEmpty: false,
       emptyCooldown: 0,
-      leaveOnFinish: true,
-      leaveOnStop: true,
+      leaveOnFinish: false,
+      leaveOnStop: false,
       plugins: [new SoundCloud(), new Spotify()],
     });
   }
