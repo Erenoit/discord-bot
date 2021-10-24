@@ -8,11 +8,18 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch & nodemon ./compiled/init.js"
+    "dev": "tsc --watch & nodemon ./compiled/init.js",
+    "start": "tsc && node ./compiled/init.js"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.6.0",
     "@discordjs/rest": "^0.1.0-canary.0",
+    "@discordjs/voice": "^0.6.0",
+    "@distube/soundcloud": "^1.0.0",
+    "@distube/spotify": "^1.0.0",
     "discord-api-types": "^0.24.0",
-    "discord.js": "^13.2.0"
+    "discord.js": "^13.2.0",
+    "distube": "^3.0.0-beta.40",
+    "sodium": "^3.0.2"
   }
 }

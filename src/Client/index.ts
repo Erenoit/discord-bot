@@ -1,19 +1,33 @@
 import { Client, Collection } from "discord.js";
-import path from "path";
 import { readdirSync } from "fs";
+import path from "path";
+
 import { Command, Event, Config } from "../Interfaces";
+import Player from "../Player";
 import configjson from "../config.json";
+
 
 
 class MyClient extends Client {
   public commands: Collection<string, Command> = new Collection();
   public events:   Collection<string, Event>   = new Collection();
   public aliases:  Collection<string, Command> = new Collection();
-  public config:   Config = configjson;
+  public player:   Player                      = new Player(this);
+  public config:   Config                      = configjson;
 
   public async init() {
 
     // Commands
+    this.init_commands();
+
+    // Events
+    this.init_events();
+
+    // Login
+    this.login(this.config.token);
+  }
+
+  private init_commands() {
     console.log("----- Generating Commands -----");
     const command_path = path.join(__dirname, "..", "Commands");
     readdirSync(command_path).forEach((dir) => {
@@ -32,8 +46,9 @@ class MyClient extends Client {
         }
       });
     });
+  }
 
-    // Events
+  private init_events() {
     console.log("----- Generating Events -----");
     const event_path = path.join(__dirname, "..", "Events");
     readdirSync(event_path).forEach(async (file) => {
@@ -44,11 +59,6 @@ class MyClient extends Client {
 
       this.on(event.name, event.run.bind(null, this));
     });
-
-
-
-    // Login
-    this.login(this.config.token);
   }
 }
 
