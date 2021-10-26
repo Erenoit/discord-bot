@@ -1,23 +1,40 @@
-import DisTube from "distube";
+import DisTube, { Queue, Song } from "distube";
 import Spotify from "@distube/spotify";
 import SoundCloud from "@distube/soundcloud";
-import { Client, Message } from "discord.js";
+import { Client, Collection, Message } from "discord.js";
+import { PlayerEvent } from "../Interfaces";
+import { readdirSync } from "fs";
+import path from "path";
 
 
 class MyPlayer {
   private client: Client;
-  private  player: DisTube;
+  private player: DisTube;
+  public  events: Collection<string, PlayerEvent> = new Collection()
 
   constructor(client: Client) {
     this.client = client;
     this.player = new DisTube(this.client, {
       searchSongs: 1,
       searchCooldown: 30,
-      leaveOnEmpty: false,
+      leaveOnEmpty: true,
       emptyCooldown: 0,
       leaveOnFinish: false,
       leaveOnStop: false,
       plugins: [new SoundCloud(), new Spotify()],
+    });
+  }
+
+  public init_events() {
+    console.log("----- Generating Player Events -----");
+    const event_path = path.join(__dirname, "..", "PlayerEvents");
+    readdirSync(event_path).forEach(async (file) => {
+      const { event } = await import(`${event_path}/${file}`);
+      this.events.set(event.name, event);
+
+      console.log(event);
+
+      this.player.on(event.name, event.run.bind(null));
     });
   }
 
@@ -58,6 +75,16 @@ class MyPlayer {
 					.join('\n')}`,
 			);
 		}
+  }
+
+  private init_try() {
+    this.player.on("addSong", (queue: Queue, song:Song) => {
+      const channel = queue.textChannel;
+      if (channel) {
+        channel.send(
+          `Added ${song.name} - \`${song.formattedDuration}\` to the queue by ${song.user}.`);
+      }
+    });
   }
 }
 
