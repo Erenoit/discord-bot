@@ -22,6 +22,7 @@ class MyPlayer {
       leaveOnFinish: false,
       leaveOnStop: false,
       plugins: [new SoundCloud(), new Spotify()],
+      nsfw: true,
     });
   }
 
