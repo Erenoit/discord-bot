@@ -1,4 +1,4 @@
-import DisTube, { Queue, Song } from "distube";
+import DisTube from "distube";
 import Spotify from "@distube/spotify";
 import SoundCloud from "@distube/soundcloud";
 import { Client, Collection, Message } from "discord.js";
@@ -76,16 +76,6 @@ class MyPlayer {
 					.join('\n')}`,
 			);
 		}
-  }
-
-  private init_try() {
-    this.player.on("addSong", (queue: Queue, song:Song) => {
-      const channel = queue.textChannel;
-      if (channel) {
-        channel.send(
-          `Added ${song.name} - \`${song.formattedDuration}\` to the queue by ${song.user}.`);
-      }
-    });
   }
 }
 
