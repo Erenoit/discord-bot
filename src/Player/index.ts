@@ -75,9 +75,20 @@ class Player {
   }
 
   public async stop(message?: Message) {
+    this.connection.destroy();
+
+    this.now_playing = undefined as unknown as Song;
+    this.songQueue = [];
+
+    if (message) {
+      message.reply("Goodbye. :sob: ");
+    }
   }
 
   public async skip(message: Message) {
+    message.reply(`\`${this.now_playing.name}\` is skipped`);
+
+    this.start();
   }
 
   public async shuffle(message: Message) {
