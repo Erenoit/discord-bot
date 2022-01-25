@@ -62,8 +62,44 @@ class Player {
   }
 
   public async queue(message: Message) {
-		if (!queue) { message.channel.send('Nothing playing right now!'); } 
+    let reply_message = `Currently playing \`${this.now_playing.name}\` [${this.now_playing.length}], requested by **${this.now_playing.user_name}**\n`;
+    const queue_length = this.songQueue.length;
+
+    if (queue_length <= 10) {
+      for (let i = 0; i < queue_length; i++) {
+        reply_message += `**${i}** \`${this.songQueue[i].name}\` [${this.songQueue[i].length}]\n`;
+      }
+    }
     else {
+      for (let i = 0; i <= 10; i++) {
+        reply_message += `**${i}** \`${this.songQueue[i].name}\` [${this.songQueue[i].length}]\n`;
+      }
+      reply_message += `And ${queue_length - 10} more...`;
+    }
+
+    message.reply(reply_message);
+  }
+
+  private changeStream(value: Readable) {
+    this.stream = value;
+    this.resource = Voice.createAudioResource(this.stream);
+    this.player.play(this.resource);
+    this.connection.subscribe(this.player);
+  }
+
+  private start() {
+    this.now_playing = this.songQueue.shift() as Song;
+
+    this.changeStream(yt_open(this.now_playing.url, this.yt_options));
+
+    this.player.on(Voice.AudioPlayerStatus.Idle, () => {
+      if (this.songQueue.length > 0) {
+        this.start();
+      }
+      else {
+        this.stop();
+      }
+    });
   }
 }
 
