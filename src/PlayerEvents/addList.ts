@@ -1,9 +1,8 @@
 import { PlayerEvent } from "../Interfaces";
-import { Playlist, Queue } from "distube";
 
 export const event: PlayerEvent = {
   name: "addList",
-  run: (queue: Queue, playlist: Playlist) => {
+  run: (queue: any/*Queue*/, playlist: any/*Playlist*/) => {
     const channel = queue.textChannel;
     if (channel) {
       channel.send(
