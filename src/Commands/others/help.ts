@@ -12,8 +12,6 @@ export const command: Command = {
   **(play, p) <link or song name>:** Plays the song. If it is already playing adds the song to queue.
   **stop:** Stops the music
   **(skip, s):** Skips the current song
-  **pause:** Pauses the music
-  **(resume, r):** resumes the music
   **(queue, q):** Shows the queue`);
   }
 };
