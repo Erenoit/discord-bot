@@ -16,12 +16,13 @@
 3. `cd` into repository and run the following commands commands:
     ```shell
     $ yarn install
-    $ yarn start
+    $ tsc
+    $ node ./compiled/index.js
     ```
 
 ## Dependencies
 - [Node.js](https://nodejs.org/)
 - [FFmpeg](https://www.ffmpeg.org/download.html)
-- [sodium](https://www.npmjs.com/package/sodium) or [libsodium-wrappers](https://www.npmjs.com/package/libsodium-wrappers)
-- [Python](https://www.python.org/) *optional*
+- [libsodium-wrappers](https://www.npmjs.com/package/libsodium-wrappers)
 - [Yarn](https://yarnpkg.com/) *optional*
+- [Visual Studio Build Tools 2022 with "Desktop development with C++"](https://visualstudio.microsoft.com/downloads/) *only for Windows*
