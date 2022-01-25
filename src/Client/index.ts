@@ -12,7 +12,7 @@ class MyClient extends Client {
   public commands: Collection<string, Command> = new Collection();
   public events:   Collection<string, Event>   = new Collection();
   public aliases:  Collection<string, Command> = new Collection();
-  public player:   Player                      = new Player(this);
+  public player:   Player                      = new Player();
   public config:   Config                      = configjson;
 
   public async init() {
@@ -66,4 +66,3 @@ class MyClient extends Client {
 }
 
 export default MyClient;
-

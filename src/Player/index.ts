@@ -80,6 +80,36 @@ class Player {
     const user_name = message.member?.nickname;
 
     if (argument.search("http") === -1) {
+      console.log("SEARCH");
+      const raw_resoults = await yt_search(argument, this.search_options);
+      const resoults: Array<Song> = [];
+
+      raw_resoults.items.map((raw_song) => {
+        if (raw_song.type === "video") {
+          const song: Song = {
+            name: raw_song.title,
+            url: raw_song.url,
+            length: raw_song.duration,
+            user_name: user_name
+          }
+          resoults.push(song);
+        }
+      });
+
+      let reply_message = `Please select a song from following list with \`1-${resoults.length}\` \n`
+      resoults.map((song, index) => {
+        reply_message += `**${index + 1}:** ${song.name} \`${song.length}\`\n`;
+      });
+      reply_message += "**PLESAE WRITE 'none' FOR CANCEL**";
+
+      message.reply(reply_message);
+
+      //
+      //
+      //
+      //
+      //
+      //
     }
     else if (argument.search("list=") === -1) {
       console.log("URL");
