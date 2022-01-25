@@ -72,6 +72,38 @@ class Player {
   }
 
   public async play(message: Message, args: string[]) {
+    if(!this.connection) {
+      this.joinVC(message);
+    }
+
+    const argument  = args.join(" ");
+    const user_name = message.member?.nickname;
+
+    if (argument.search("http") === -1) {
+    }
+    else if (argument.search("list=") === -1) {
+    }
+    else {
+      console.log("PLAYLIST");
+      const raw_resoults = await yt_playlist(argument, this.playlist_options);
+
+      raw_resoults.items.map((raw_song) =>{
+        const song: Song = {
+          name: raw_song.title,
+          url: raw_song.url,
+          length: raw_song.duration,
+          user_name: user_name
+        }
+
+        this.songQueue.push(song);
+      });
+
+      message.reply(`**${raw_resoults.items.length}** songs added to queue.`);
+    }
+
+    if (!this.now_playing) {
+      this.start();
+    }
   }
 
   public async stop(message?: Message) {
