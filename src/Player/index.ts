@@ -1,29 +1,24 @@
-import DisTube from "distube";
-import Spotify from "@distube/spotify";
-import SoundCloud from "@distube/soundcloud";
-import { Client, Collection, Message } from "discord.js";
-import { PlayerEvent } from "../Interfaces";
+// Discord API
+import { Collection, Message } from "discord.js";
+import Voice, { AudioPlayer, AudioResource, DiscordGatewayAdapterCreator, VoiceConnection } from "@discordjs/voice";
+
+// Node.js
 import { readdirSync } from "fs";
-import path from "path";
+import path            from "path";
+import { Readable }    from "stream";
 
+// YouTube API
+import yt_open     from "ytdl-core";
+import yt_search   from "ytsr";
+import yt_playlist from "ytpl";
 
-class MyPlayer {
-  private client: Client;
-  private player: DisTube;
-  public  events: Collection<string, PlayerEvent> = new Collection()
+// Interaces
+import { PlayerEvent, Song } from "../Interfaces";
 
-  constructor(client: Client) {
-    this.client = client;
-    this.player = new DisTube(this.client, {
-      searchSongs: 1,
-      searchCooldown: 30,
-      leaveOnEmpty: true,
-      emptyCooldown: 0,
-      leaveOnFinish: false,
-      leaveOnStop: false,
-      plugins: [new SoundCloud(), new Spotify()],
-      nsfw: true,
-    });
+class Player {
+  public  events:      Collection<string, PlayerEvent> = new Collection()
+  private songQueue:   Array<Song> = [];
+  private now_playing: Song;
   }
 
   public init_events() {
@@ -35,48 +30,41 @@ class MyPlayer {
 
       console.log(event);
 
-      this.player.on(event.name, event.run.bind(null));
+//      this.player.on(event.name, event.run.bind(null));
     });
   }
 
+  public joinVC(message: Message, args?: string[]) {
+    const channelID = message.member?.voice?.channel?.id;
+    const guildID   = message.guild?.id;
+    const adapter   = message.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
+
+    if(channelID && guildID && adapter) {
+      this.connection = Voice.joinVoiceChannel({
+        channelId: channelID,
+        guildId: guildID,
+        adapterCreator: adapter,
+        selfDeaf: true
+      });
+    }
+    else {
+      message.reply("Failed to join to voice channel. (Posibly you are not in a joice channel.)");
+    }
+  }
+
   public async play(message: Message, args: string[]) {
-    this.player.play(message, args.join(" "));
   }
 
-  public async stop(message: Message) {
-    this.player.stop(message);
-    message.channel.send('Stopped the music!');
-  }
-
-  public async pause(message: Message) {
-    this.player.pause(message);
-  }
-
-  public async resume(message: Message) {
-    this.player.resume(message);
+  public async stop(message?: Message) {
   }
 
   public async skip(message: Message) {
-    this.player.skip(message);
   }
 
   public async queue(message: Message) {
-    const queue = this.player.getQueue(message);
 		if (!queue) { message.channel.send('Nothing playing right now!'); } 
     else {
-			message.channel.send(
-				`Current queue:\n${queue.songs
-					.map(
-						(song, id) =>
-							`**${id ? id : 'Playing'}**. ${song.name} - \`${
-								song.formattedDuration
-							}\``,
-					)
-					.slice(0, 10)
-					.join('\n')}`,
-			);
-		}
   }
 }
 
-export default MyPlayer;
+export default Player;
