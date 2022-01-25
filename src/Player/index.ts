@@ -61,6 +61,18 @@ class Player {
   public async skip(message: Message) {
   }
 
+  public async shuffle(message: Message) {
+    // The modern version of the Fisher–Yates shuffle algorithm
+    for(let i = this.songQueue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = this.songQueue[i];
+      this.songQueue[i] = this.songQueue[j];
+      this.songQueue[j] = tmp;
+    }
+
+    message.reply("Queue is shuffled. (You cannot undo shuffleing.)");
+  }
+
   public async queue(message: Message) {
     let reply_message = `Currently playing \`${this.now_playing.name}\` [${this.now_playing.length}], requested by **${this.now_playing.user_name}**\n`;
     const queue_length = this.songQueue.length;
