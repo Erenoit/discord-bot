@@ -19,6 +19,25 @@ class Player {
   public  events:      Collection<string, PlayerEvent> = new Collection()
   private songQueue:   Array<Song> = [];
   private now_playing: Song;
+
+  private player:      AudioPlayer = Voice.createAudioPlayer();
+  private resource:    AudioResource;
+  private connection:  VoiceConnection;
+  private stream:      Readable;
+
+  private yt_options: yt_open.downloadOptions  = {
+    filter: "audioonly",
+    quality: "highestaudio"
+  };
+  private search_options: yt_search.Options = {
+    gl: "US",
+    hl: "en",
+    limit: 10
+  };
+  private playlist_options: yt_playlist.Options = {
+    gl: "US",
+    hl: "en",
+    limit: 100
   }
 
   public init_events() {
