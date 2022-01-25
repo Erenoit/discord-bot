@@ -82,6 +82,20 @@ class Player {
     if (argument.search("http") === -1) {
     }
     else if (argument.search("list=") === -1) {
+      console.log("URL");
+      const raw_resoults = await yt_open.getInfo(argument);
+      const raw_length = Number(raw_resoults.videoDetails.lengthSeconds)
+
+      const song: Song = {
+        name: raw_resoults.videoDetails.title,
+        url: argument,
+        length: `${raw_length >= 3600 ? String(Math.floor(raw_length / 3600)) + ":" : ""}${Math.floor((raw_length % 3600) / 60)}:${raw_length % 60}`,
+        user_name: user_name
+      }
+
+      this.songQueue.push(song);
+
+      message.reply(`${song.name} has been added to the queue.`);
     }
     else {
       console.log("PLAYLIST");
