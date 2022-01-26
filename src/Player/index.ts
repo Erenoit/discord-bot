@@ -40,27 +40,30 @@ class Player {
   }
 
   public joinVC(message: Message, args?: string[]) {
-    const channelID = message.member?.voice?.channel?.id;
-    const guildID   = message.guild?.id;
-    const adapter   = message.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
+    if (!this.connection) {
+      const channelID = message.member?.voice?.channel?.id;
+      const guildID   = message.guild?.id;
+      const adapter   = message.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
 
-    if(channelID && guildID && adapter) {
-      this.connection = Voice.joinVoiceChannel({
-        channelId: channelID,
-        guildId: guildID,
-        adapterCreator: adapter,
-        selfDeaf: true
-      });
+      if(channelID && guildID && adapter) {
+        this.connection = Voice.joinVoiceChannel({
+          channelId: channelID,
+          guildId: guildID,
+          adapterCreator: adapter,
+          selfDeaf: true
+        });
+      }
+      else {
+        message.reply("Failed to join to voice channel. (Posibly you are not in a joice channel.)");
+      }
     }
     else {
-      message.reply("Failed to join to voice channel. (Posibly you are not in a joice channel.)");
+      this.connection.rejoin();
     }
   }
 
   public async play(message: Message, args: string[]) {
-    if(!this.connection) {
-      this.joinVC(message);
-    }
+    this.joinVC(message);
 
     const argument  = args.join(" ");
     const user_name = message.member?.nickname;
@@ -155,7 +158,7 @@ class Player {
   }
 
   public async stop(message?: Message) {
-    this.connection.destroy();
+    this.connection.disconnect();
 
     this.now_playing = undefined as unknown as Song;
     this.songQueue = [];
