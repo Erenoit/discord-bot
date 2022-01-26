@@ -1,44 +1,30 @@
 // Discord API
 import { Collection, Message } from "discord.js";
-import Voice, { AudioPlayer, AudioResource, DiscordGatewayAdapterCreator, VoiceConnection } from "@discordjs/voice";
+import Voice, { AudioPlayer, AudioResource, DiscordGatewayAdapterCreator, NoSubscriberBehavior, VoiceConnection } from "@discordjs/voice";
 
 // Node.js
 import { readdirSync } from "fs";
 import path            from "path";
-import { Readable }    from "stream";
 
 // YouTube API
-import yt_open     from "ytdl-core";
-import yt_search   from "ytsr";
-import yt_playlist from "ytpl";
+import playdl, { YouTubeStream } from "play-dl";
 
 // Interaces
-import { PlayerEvent, Song } from "../Interfaces";
+import { PlayerEvent, Song, StreamOptions } from "../Interfaces";
 
 class Player {
   public  events:      Collection<string, PlayerEvent> = new Collection()
   private songQueue:   Array<Song> = [];
   private now_playing: Song;
 
-  private player:      AudioPlayer = Voice.createAudioPlayer();
+  private player:      AudioPlayer = Voice.createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play }});
   private resource:    AudioResource;
   private connection:  VoiceConnection;
-  private stream:      Readable;
+  private stream:      YouTubeStream;
 
-  private yt_options: yt_open.downloadOptions  = {
-    filter: "audioonly",
-    quality: "highestaudio"
+  private stream_options: StreamOptions = {
+    discordPlayerCompatibility: true
   };
-  private search_options: yt_search.Options = {
-    gl: "US",
-    hl: "en",
-    limit: 10
-  };
-  private playlist_options: yt_playlist.Options = {
-    gl: "US",
-    hl: "en",
-    limit: 100
-  }
 
   public init_events() {
     console.log("----- Generating Player Events -----");
@@ -81,7 +67,10 @@ class Player {
 
     if (argument.search("http") === -1) {
       console.log("SEARCH");
-      const raw_resoults = await yt_search(argument, this.search_options);
+      const raw_resoults = await playdl.search(argument, { limit: 1 });
+
+      // TODO
+      /*
       const resoults: Array<Song> = [];
 
       raw_resoults.items.map((raw_song) => {
@@ -110,16 +99,27 @@ class Player {
       //
       //
       //
+      */
+
+      const song: Song = {
+        name: raw_resoults[0].title as string,
+        url: raw_resoults[0].url,
+        length: raw_resoults[0].durationRaw,
+        user_name: user_name
+      }
+
+      this.songQueue.push(song);
+
+      message.reply(`${song.name} has been added to the queue.`);
     }
     else if (argument.search("list=") === -1) {
       console.log("URL");
-      const raw_resoults = await yt_open.getInfo(argument);
-      const raw_length = Number(raw_resoults.videoDetails.lengthSeconds)
+      const raw_resoults = await playdl.video_info(argument);
 
       const song: Song = {
-        name: raw_resoults.videoDetails.title,
+        name: raw_resoults.video_details.title as string,
         url: argument,
-        length: `${raw_length >= 3600 ? String(Math.floor(raw_length / 3600)) + ":" : ""}${Math.floor((raw_length % 3600) / 60)}:${raw_length % 60}`,
+        length: raw_resoults.video_details.durationRaw,
         user_name: user_name
       }
 
@@ -129,20 +129,24 @@ class Player {
     }
     else {
       console.log("PLAYLIST");
-      const raw_resoults = await yt_playlist(argument, this.playlist_options);
+      const raw_resoults = (await playdl.playlist_info(argument, { incomplete: true })).toJSON();
 
-      raw_resoults.items.map((raw_song) =>{
-        const song: Song = {
-          name: raw_song.title,
-          url: raw_song.url,
-          length: raw_song.duration,
-          user_name: user_name
-        }
+      if (raw_resoults.videos) {
+        raw_resoults.videos.map((raw_song) =>{
+          const song: Song = {
+            name: raw_song.title as string,
+            url: raw_song.url,
+            length: raw_song.durationRaw,
+            user_name: user_name
+          }
+          this.songQueue.push(song);
+        });
 
-        this.songQueue.push(song);
-      });
-
-      message.reply(`**${raw_resoults.items.length}** songs added to queue.`);
+        message.reply(`**${raw_resoults.videos.length}** songs added to queue.`);
+      }
+      else {
+        message.reply("Error happened while looking to playlist.");
+      }
     }
 
     if (!this.now_playing) {
@@ -198,9 +202,9 @@ class Player {
     message.reply(reply_message);
   }
 
-  private changeStream(value: Readable) {
-    this.stream = value;
-    this.resource = Voice.createAudioResource(this.stream);
+  private async changeStream(url: string) {
+    this.stream = await playdl.stream(url, this.stream_options);
+    this.resource = Voice.createAudioResource(this.stream.stream, { inputType: this.stream.type });
     this.player.play(this.resource);
     this.connection.subscribe(this.player);
   }
@@ -208,7 +212,7 @@ class Player {
   private start() {
     this.now_playing = this.songQueue.shift() as Song;
 
-    this.changeStream(yt_open(this.now_playing.url, this.yt_options));
+    this.changeStream(this.now_playing.url);
 
     this.player.on(Voice.AudioPlayerStatus.Idle, () => {
       if (this.songQueue.length > 0) {
