@@ -95,6 +95,38 @@ class Player {
         message.reply("Requested song could not be found. Try to search with different key words.");
       }
     }
+    else if(argument.search("spotify") > -1) {
+      message.reply("We currently do not support spotify.");
+
+      if (playdl.is_expired()) {
+        await playdl.refreshToken();
+      }
+
+      const raw_resoults = await playdl.spotify(argument);
+      console.log(raw_resoults);
+
+      if(raw_resoults.type === "track") {
+        const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
+
+        if (yt_resoult && yt_resoult.length > 0) {
+          const song: Song = {
+            name: yt_resoult[0].title as string,
+            url: yt_resoult[0].url,
+            length: yt_resoult[0].durationRaw,
+            user_name: user_name
+          }
+        
+          this.songQueue.push(song);
+
+          message.channel.send(`${song.name} has been added to the queue.`);
+        }
+        else {
+          message.reply("Requested song could not be found.");
+        }
+      }
+      else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
+      }
+    }
     else if (argument.search("list=") === -1) {
       console.log("URL");
       const raw_resoults = await playdl.video_info(argument).catch( err => console.log(err) );
