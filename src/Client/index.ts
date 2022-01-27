@@ -23,6 +23,10 @@ class MyClient extends Client {
     // Events
     this.init_events();
 
+    if (this.config.yt_cookie) {
+      this.player.setYTCookie(this.config.yt_cookie);
+    }
+
     // Login
     this.login(this.config.token);
   }

@@ -29,6 +29,14 @@ class Player {
     });
   }
 
+  public setYTCookie(cookie: string) {
+    playdl.setToken({
+      youtube : {
+          cookie : cookie
+      }
+    })
+  }
+
   public joinVC(message: Message, args?: string[]) {
     if (!this.connection) {
       const channelID = message.member?.voice?.channel?.id;

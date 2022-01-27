@@ -10,7 +10,8 @@
     ```json
     {
       "token":  YOUR_BOT_TOKEN,
-      "prefix": PREFERED_PREFİX
+      "prefix": PREFERED_PREFİX,
+      "yt_cookie"?: YOUR_YOUTUBE_COOKİE
     }
     ```
 3. `cd` into repository and run the following commands commands:
