@@ -26,16 +26,6 @@ class Player {
     discordPlayerCompatibility: true
   };
 
-  public init_events() {
-    console.log("----- Generating Player Events -----");
-    const event_path = path.join(__dirname, "..", "PlayerEvents");
-    readdirSync(event_path).forEach(async (file) => {
-      const { event } = await import(`${event_path}/${file}`);
-      this.events.set(event.name, event);
-
-      console.log(event);
-
-//      this.player.on(event.name, event.run.bind(null));
     });
   }
 

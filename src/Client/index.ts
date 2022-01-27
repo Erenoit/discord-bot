@@ -23,9 +23,6 @@ class MyClient extends Client {
     // Events
     this.init_events();
 
-    // Player Events
-    this.player.init_events();
-
     // Login
     this.login(this.config.token);
   }
