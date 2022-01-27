@@ -92,7 +92,7 @@ class Player {
       });
       reply_message += "**PLESAE WRITE 'none' FOR CANCEL**";
 
-      message.reply(reply_message);
+      message.channel.send(reply_message);
 
       //
       //
@@ -111,7 +111,7 @@ class Player {
 
       this.songQueue.push(song);
 
-      message.reply(`${song.name} has been added to the queue.`);
+      message.channel.send(`${song.name} has been added to the queue.`);
     }
     else if (argument.search("list=") === -1) {
       console.log("URL");
@@ -126,7 +126,7 @@ class Player {
 
       this.songQueue.push(song);
 
-      message.reply(`${song.name} has been added to the queue.`);
+      message.channel.send(`${song.name} has been added to the queue.`);
     }
     else {
       console.log("PLAYLIST");
@@ -143,7 +143,7 @@ class Player {
           this.songQueue.push(song);
         });
 
-        message.reply(`**${raw_resoults.videos.length}** songs added to queue.`);
+        message.channel.send(`**${raw_resoults.videos.length}** songs added to queue.`);
       }
       else {
         message.reply("Error happened while looking to playlist.");
@@ -167,7 +167,7 @@ class Player {
   }
 
   public async skip(message: Message) {
-    message.reply(`\`${this.now_playing.name}\` is skipped`);
+    message.channel.send(`\`${this.now_playing.name}\` is skipped`);
 
     this.start();
   }
@@ -181,7 +181,7 @@ class Player {
       this.songQueue[j] = tmp;
     }
 
-    message.reply("Queue is shuffled. (You cannot undo shuffleing.)");
+    message.channel.send("Queue is shuffled. (You cannot undo shuffleing.)");
   }
 
   public async queue(message: Message) {
@@ -200,7 +200,7 @@ class Player {
       reply_message += `And ${queue_length - 10} more...`;
     }
 
-    message.reply(reply_message);
+    message.channel.send(reply_message);
   }
 
   private async changeStream(url: string) {
