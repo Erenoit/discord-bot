@@ -23,9 +23,15 @@ class Player {
   private stream:      YouTubeStream;
 
   private stream_options: StreamOptions = {
+    language: "en-US",
+    quality: 2,
     discordPlayerCompatibility: true
   };
 
+  constructor() {
+    this.player.on("error", (err) => {
+      console.log(err);
+      this.start();
     });
   }
 
@@ -39,6 +45,7 @@ class Player {
 
   public joinVC(message: Message, args?: string[]) {
     if (!this.connection) {
+      console.log("FIRST TIME JOIN");
       const channelID = message.member?.voice?.channel?.id;
       const guildID   = message.guild?.id;
       const adapter   = message.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
@@ -56,7 +63,9 @@ class Player {
       }
     }
     else {
-      this.connection.rejoin();
+      console.log("RECONNECTING");
+      const sonnection = this.connection.rejoin();
+      console.log(sonnection);
     }
   }
 
@@ -68,85 +77,70 @@ class Player {
 
     if (argument.search("http") === -1) {
       console.log("SEARCH");
-      const raw_resoults = await playdl.search(argument, { limit: 1 });
+      const raw_resoults = await playdl.search(argument, { limit: 1 }).catch( err => console.log(err) );
 
-      // TODO
-      /*
-      const resoults: Array<Song> = [];
-
-      raw_resoults.items.map((raw_song) => {
-        if (raw_song.type === "video") {
-          const song: Song = {
-            name: raw_song.title,
-            url: raw_song.url,
-            length: raw_song.duration,
-            user_name: user_name
-          }
-          resoults.push(song);
+      if (raw_resoults && raw_resoults.length > 0) {
+        const song: Song = {
+          name: raw_resoults[0].title as string,
+          url: raw_resoults[0].url,
+          length: raw_resoults[0].durationRaw,
+          user_name: user_name
         }
-      });
-
-      let reply_message = `Please select a song from following list with \`1-${resoults.length}\` \n`
-      resoults.map((song, index) => {
-        reply_message += `**${index + 1}:** ${song.name} \`${song.length}\`\n`;
-      });
-      reply_message += "**PLESAE WRITE 'none' FOR CANCEL**";
-
-      message.channel.send(reply_message);
-
-      //
-      //
-      //
-      //
-      //
-      //
-      */
-
-      const song: Song = {
-        name: raw_resoults[0].title as string,
-        url: raw_resoults[0].url,
-        length: raw_resoults[0].durationRaw,
-        user_name: user_name
+  
+        this.songQueue.push(song);
+  
+        message.channel.send(`${song.name} has been added to the queue.`);
       }
-
-      this.songQueue.push(song);
-
-      message.channel.send(`${song.name} has been added to the queue.`);
+      else {
+        message.reply("Requested song could not be found. Try to search with different key words.");
+      }
     }
     else if (argument.search("list=") === -1) {
       console.log("URL");
-      const raw_resoults = await playdl.video_info(argument);
+      const raw_resoults = await playdl.video_info(argument).catch( err => console.log(err) );
 
-      const song: Song = {
-        name: raw_resoults.video_details.title as string,
-        url: argument,
-        length: raw_resoults.video_details.durationRaw,
-        user_name: user_name
+      if (raw_resoults) {
+        const song: Song = {
+          name: raw_resoults.video_details.title as string,
+          url: argument,
+          length: raw_resoults.video_details.durationRaw,
+          user_name: user_name
+        }
+        
+        this.songQueue.push(song);
+        
+        message.channel.send(`${song.name} has been added to the queue.`);
       }
-
-      this.songQueue.push(song);
-
-      message.channel.send(`${song.name} has been added to the queue.`);
+      else {
+        message.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
+      }
     }
     else {
       console.log("PLAYLIST");
-      const raw_resoults = (await playdl.playlist_info(argument, { incomplete: true })).toJSON();
+      const raw_resoults = await playdl.playlist_info(argument, { incomplete: true }).catch( err => console.log(err) );
 
-      if (raw_resoults.videos) {
-        raw_resoults.videos.map((raw_song) =>{
-          const song: Song = {
-            name: raw_song.title as string,
-            url: raw_song.url,
-            length: raw_song.durationRaw,
-            user_name: user_name
-          }
-          this.songQueue.push(song);
-        });
-
-        message.channel.send(`**${raw_resoults.videos.length}** songs added to queue.`);
+      if (raw_resoults) {
+        const raw_resoults2 = raw_resoults.toJSON();
+        
+        if (raw_resoults2.videos) {
+          raw_resoults2.videos.map((raw_song) =>{
+            const song: Song = {
+              name: raw_song.title as string,
+              url: raw_song.url,
+              length: raw_song.durationRaw,
+              user_name: user_name
+            }
+            this.songQueue.push(song);
+          });
+  
+          message.channel.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
+        }
+        else {
+          message.reply("Error happened while looking to playlist.");
+        }
       }
       else {
-        message.reply("Error happened while looking to playlist.");
+        message.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
 
