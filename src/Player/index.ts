@@ -59,7 +59,7 @@ class Player {
         });
       }
       else {
-        message.reply("Failed to join to voice channel. (Posibly you are not in a joice channel.)");
+        message.reply("Failed to join to voice channel. (Posibly you are not in a voice channel.)");
       }
     }
     else {
@@ -198,6 +198,7 @@ class Player {
   }
 
   private async changeStream(url: string) {
+    console.log("Now playing: ", url);
     this.stream = await playdl.stream(url, this.stream_options);
     this.resource = Voice.createAudioResource(this.stream.stream, { inputType: this.stream.type });
     this.player.play(this.resource);

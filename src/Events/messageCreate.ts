@@ -20,7 +20,6 @@ export const event: Event = {
 
     const command = client.commands.get(cmd.toLowerCase()) || client.aliases.get(cmd.toLowerCase());
     if (command) { (command as Command).run(client, message, args); }
+    else { message.reply("We do not have that command! :angry:") }
   }
 };
-
-
