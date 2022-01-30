@@ -7,7 +7,7 @@ import { readdirSync } from "fs";
 import path            from "path";
 
 // YouTube API
-import playdl, { YouTubeStream } from "play-dl";
+import playdl, { SpotifyAlbum, SpotifyPlaylist, YouTubeStream } from "play-dl";
 
 // Interaces
 import { PlayerEvent, Song, StreamOptions } from "../Interfaces";
@@ -96,35 +96,68 @@ class Player {
       }
     }
     else if(argument.search("spotify") > -1) {
-      message.reply("We currently do not support spotify.");
-
       if (playdl.is_expired()) {
         await playdl.refreshToken();
       }
 
-      const raw_resoults = await playdl.spotify(argument);
+      const raw_resoults = await playdl.spotify(argument).catch( err => console.log(err) );
       console.log(raw_resoults);
 
-      if(raw_resoults.type === "track") {
-        const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
-
-        if (yt_resoult && yt_resoult.length > 0) {
-          const song: Song = {
-            name: yt_resoult[0].title as string,
-            url: yt_resoult[0].url,
-            length: yt_resoult[0].durationRaw,
-            user_name: user_name
+      if (raw_resoults) {
+        if(raw_resoults.type === "track") {
+          const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
+  
+          if (yt_resoult && yt_resoult.length > 0) {
+            const song: Song = {
+              name: yt_resoult[0].title as string,
+              url: yt_resoult[0].url,
+              length: yt_resoult[0].durationRaw,
+              user_name: user_name
+            }
+          
+            this.songQueue.push(song);
+  
+            message.channel.send(`${song.name} has been added to the queue.`);
           }
-        
-          this.songQueue.push(song);
-
-          message.channel.send(`${song.name} has been added to the queue.`);
+          else {
+            message.reply("Requested song could not be found.");
+          }
         }
-        else {
-          message.reply("Requested song could not be found.");
+        else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
+          let missed_songs = 0;
+          let raw_resoults2;
+
+          if ( raw_resoults.type === "playlist" ) {
+            raw_resoults2 = raw_resoults as SpotifyPlaylist
+          }
+          else {
+            raw_resoults2 = raw_resoults as SpotifyAlbum
+          }
+
+          (await raw_resoults2.all_tracks()).map(async (raw_song) => {
+            const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
+  
+            if (yt_resoult && yt_resoult.length > 0) {
+              const song: Song = {
+                name: yt_resoult[0].title as string,
+                url: yt_resoult[0].url,
+                length: yt_resoult[0].durationRaw,
+                user_name: user_name
+              }
+    
+              this.songQueue.push(song);
+            }
+            else {
+              message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name: ""}\` could not be found`);
+              missed_songs++;
+            }
+          });
+  
+          message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
         }
       }
-      else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
+      else {
+        message.reply("We cannot found anything with this link. Thw link may be broken.");
       }
     }
     else if (argument.search("list=") === -1) {
