@@ -24,6 +24,7 @@ class MyClient extends Client {
     this.init_events();
 
     if (this.config.yt_cookie) {
+      console.log("---------------- Youtube Cookies Found ----------------\n", this.config.yt_cookie);
       this.player.setYTCookie(this.config.yt_cookie);
     }
 

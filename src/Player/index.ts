@@ -2,10 +2,6 @@
 import { Collection, Message } from "discord.js";
 import Voice, { AudioPlayer, AudioResource, DiscordGatewayAdapterCreator, NoSubscriberBehavior, VoiceConnection } from "@discordjs/voice";
 
-// Node.js
-import { readdirSync } from "fs";
-import path            from "path";
-
 // YouTube API
 import playdl, { SpotifyAlbum, SpotifyPlaylist, YouTubeStream } from "play-dl";
 
