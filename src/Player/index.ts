@@ -211,7 +211,7 @@ class Player {
   }
 
   public async stop(message?: Message) {
-    this.connection.disconnect();
+    // this.connection.disconnect();
 
     this.now_playing = undefined as unknown as Song;
     this.songQueue = [];
