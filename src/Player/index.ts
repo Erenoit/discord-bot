@@ -29,6 +29,10 @@ class Player {
       console.log(err);
       this.start();
     });
+
+    this.player.on(Voice.AudioPlayerStatus.Idle, () => {
+        this.start();
+    });
   }
 
   public setYTCookie(cookie: string) {
@@ -222,7 +226,12 @@ class Player {
   }
 
   public async skip(message: Message) {
-    message.channel.send(`\`${this.now_playing.name}\` is skipped`);
+    if (this.now_playing) {
+      message.channel.send(`\`${this.now_playing.name}\` is skipped`);
+    }
+    else {
+      message.reply("We cannot skip. Nothings playing.");
+    }
 
     this.start();
   }
@@ -267,18 +276,14 @@ class Player {
   }
 
   private start() {
-    this.now_playing = this.songQueue.shift() as Song;
+    if (this.songQueue.length > 0) {
+      this.now_playing = this.songQueue.shift() as Song;
 
-    this.changeStream(this.now_playing.url);
-
-    this.player.on(Voice.AudioPlayerStatus.Idle, () => {
-      if (this.songQueue.length > 0) {
-        this.start();
-      }
-      else {
-        this.stop();
-      }
-    });
+      this.changeStream(this.now_playing.url);
+    }
+    else {
+      this.stop();
+    }
   }
 }
 
