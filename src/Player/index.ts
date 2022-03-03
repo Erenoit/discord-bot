@@ -220,6 +220,8 @@ class Player {
     this.now_playing = undefined as unknown as Song;
     this.songQueue = [];
 
+    this.player.stop();
+
     if (message) {
       message.reply("Goodbye. :sob: ");
     }
