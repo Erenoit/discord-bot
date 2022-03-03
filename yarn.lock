@@ -203,10 +203,10 @@ discord-api-types@^0.26.0, discord-api-types@^0.26.1:
   resolved "https://registry.yarnpkg.com/discord-api-types/-/discord-api-types-0.26.1.tgz#726f766ddc37d60da95740991d22cb6ef2ed787b"
   integrity sha512-T5PdMQ+Y1MEECYMV5wmyi9VEYPagEDEi4S0amgsszpWY0VB9JJ/hEvM6BgLhbdnKky4gfmZEXtEEtojN8ZKJQQ==
 
-discord-api-types@^0.27.0:
-  version "0.27.0"
-  resolved "https://registry.yarnpkg.com/discord-api-types/-/discord-api-types-0.27.0.tgz#4378e2f778fc974a315f1ae703fca149e4d0e615"
-  integrity sha512-l7AnQKffohJTembJRN4Bz54R/esSn+WmulWE7bDIHVcuCLdsUhlvt+4tns8ox+wsEPVlT+gEEko2BF5AL8/zjw==
+discord-api-types@^0.27.3:
+  version "0.27.3"
+  resolved "https://registry.yarnpkg.com/discord-api-types/-/discord-api-types-0.27.3.tgz#518e99a548b62a7912a09e94ad90d0612e2053c6"
+  integrity sha512-HOG64DTpZ7CB5EU9eKbjHD50H5qG1pxKG8pmFfHUMKjKvEWeLBHfw0c9xF1cruiYLnBb3+n7m3jBWxZ3H1hcgQ==
 
 discord.js@^13.2.0:
   version "13.6.0"
@@ -437,10 +437,10 @@ play-audio@^0.5.2:
   resolved "https://registry.yarnpkg.com/play-audio/-/play-audio-0.5.2.tgz#191dd45b95ff64ae20bbd718671da4e987d4edd1"
   integrity sha512-ZAqHUKkQLix2Iga7pPbsf1LpUoBjcpwU93F1l3qBIfxYddQLhxS6GKmS0d3jV8kSVaUbr6NnOEcEMFvuX93SWQ==
 
-play-dl@^1.8.1:
-  version "1.8.7"
-  resolved "https://registry.yarnpkg.com/play-dl/-/play-dl-1.8.7.tgz#2458fbfa73bbdf8b19ca67741dcb99f24760a0c3"
-  integrity sha512-hGjK3LR85fCWmpLqTKhNh0uBqHA17E71G0ln0kvijQcHQffpeDmYH6lCaoCiHH8t72TohAPuJu4apUYmv5r2fw==
+play-dl@^1.8.9:
+  version "1.8.9"
+  resolved "https://registry.yarnpkg.com/play-dl/-/play-dl-1.8.9.tgz#c65ff6fc37f2eab264f7c0b445ac373a0c558171"
+  integrity sha512-mIdge+xH7x9ji2+gVFPZl34K+iSvb0sx+N7yYCIGX/OEsGoH84uHj8tCR5Jvy+VETPjY165cjAZnfzHmFPN9DQ==
   dependencies:
     play-audio "^0.5.2"
 
