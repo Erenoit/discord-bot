@@ -37,10 +37,21 @@ class Player {
 
   public setYTCookie(cookie: string) {
     playdl.setToken({
-      youtube : {
-          cookie : cookie
+      youtube: {
+          cookie: cookie
       }
-    })
+    });
+  }
+
+  public async setSPToken(id: string, secret: string, token: string) {
+    await playdl.setToken({
+      spotify: {
+        client_id: id,
+        client_secret: secret,
+        refresh_token: token,
+        market: 'US'
+      }
+    });
   }
 
   public joinVC(message: Message, args?: string[]) {
@@ -95,7 +106,7 @@ class Player {
         message.reply("Requested song could not be found. Try to search with different key words.");
       }
     }
-    else if(argument.search("spotify") > -1) {
+    else if(argument.search("spotify") !== -1) {
       if (playdl.is_expired()) {
         await playdl.refreshToken();
       }

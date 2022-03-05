@@ -28,6 +28,13 @@ class MyClient extends Client {
       this.player.setYTCookie(this.config.yt_cookie);
     }
 
+    if (this.config.spotify) {
+      console.log("---------------- Spotify Configs Found ----------------");
+      this.player.setSPToken(this.config.spotify.client_id,
+                             this.config.spotify.client_secret,
+                             this.config.spotify.refresh_token);
+    }
+
     // Login
     this.login(this.config.token);
   }
