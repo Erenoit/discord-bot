@@ -84,140 +84,27 @@ class Player {
     this.joinVC(message);
 
     const argument  = args.join(" ");
-    const user_name = message.member?.nickname;
+    const user_name = message.member?.nickname as string;
 
     if (argument.search("http") === -1) {
-      console.log("SEARCH");
-      const raw_resoults = await playdl.search(argument, { limit: 1 }).catch( err => console.log(err) );
-
-      if (raw_resoults && raw_resoults.length > 0) {
-        const song: Song = {
-          name: raw_resoults[0].title as string,
-          url: raw_resoults[0].url,
-          length: raw_resoults[0].durationRaw,
-          user_name: user_name
-        }
-  
-        this.songQueue.push(song);
-  
-        message.channel.send(`${song.name} has been added to the queue.`);
-      }
-      else {
-        message.reply("Requested song could not be found. Try to search with different key words.");
-      }
+      // Search by word
+      this.handle_search(message, argument, user_name);
     }
     else if(argument.search("spotify") !== -1) {
-      if (playdl.is_expired()) {
-        await playdl.refreshToken();
-      }
-
-      const raw_resoults = await playdl.spotify(argument).catch( err => console.log(err) );
-
-      if (raw_resoults) {
-        if(raw_resoults.type === "track") {
-          const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
-  
-          if (yt_resoult && yt_resoult.length > 0) {
-            const song: Song = {
-              name: yt_resoult[0].title as string,
-              url: yt_resoult[0].url,
-              length: yt_resoult[0].durationRaw,
-              user_name: user_name
-            }
-          
-            this.songQueue.push(song);
-  
-            message.channel.send(`${song.name} has been added to the queue.`);
-          }
-          else {
-            message.reply("Requested song could not be found.");
-          }
-        }
-        else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
-          let missed_songs = 0;
-          let raw_resoults2;
-
-          if ( raw_resoults.type === "playlist" ) {
-            raw_resoults2 = raw_resoults as SpotifyPlaylist
-          }
-          else {
-            raw_resoults2 = raw_resoults as SpotifyAlbum
-          }
-
-          await Promise.all((await raw_resoults2.all_tracks()).map(async (raw_song) => {
-            const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
-  
-            if (yt_resoult && yt_resoult.length > 0) {
-              const song: Song = {
-                name: yt_resoult[0].title as string,
-                url: yt_resoult[0].url,
-                length: yt_resoult[0].durationRaw,
-                user_name: user_name
-              }
-    
-              this.songQueue.push(song);
-              console.log(song.name, " pushed to the queue");
-            }
-            else {
-              message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name : ""}\` could not be found`);
-              missed_songs++;
-            }
-          }));
-  
-          message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
-        }
-      }
-      else {
-        message.reply("We cannot found anything with this link. Thw link may be broken.");
-      }
+      // Spotify link
+      this.handle_spotify(message, argument, user_name);
     }
     else if (argument.search("list=") === -1) {
-      console.log("URL");
-      const raw_resoults = await playdl.video_info(argument).catch( err => console.log(err) );
-
-      if (raw_resoults) {
-        const song: Song = {
-          name: raw_resoults.video_details.title as string,
-          url: argument,
-          length: raw_resoults.video_details.durationRaw,
-          user_name: user_name
-        }
-        
-        this.songQueue.push(song);
-        
-        message.channel.send(`${song.name} has been added to the queue.`);
-      }
-      else {
-        message.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
-      }
+      // Youtube video link
+      this.handle_yt_url(message, argument, user_name);
+    }
+    else if (argument.search("list=") !== -1) {
+      // Youtube playlist link
+      this.handle_yt_pl(message, argument, user_name);
     }
     else {
-      console.log("PLAYLIST");
-      const raw_resoults = await playdl.playlist_info(argument, { incomplete: true }).catch( err => console.log(err) );
-
-      if (raw_resoults) {
-        const raw_resoults2 = raw_resoults.toJSON();
-        
-        if (raw_resoults2.videos) {
-          raw_resoults2.videos.map((raw_song) =>{
-            const song: Song = {
-              name: raw_song.title as string,
-              url: raw_song.url,
-              length: raw_song.durationRaw,
-              user_name: user_name
-            }
-            this.songQueue.push(song);
-          });
-  
-          message.channel.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
-        }
-        else {
-          message.reply("Error happened while looking to playlist.");
-        }
-      }
-      else {
-        message.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
-      }
+      message.reply("Invalid arguments.");
+      return;
     }
 
     if (!this.now_playing) {
@@ -301,6 +188,140 @@ class Player {
     }
     else {
       this.stop();
+    }
+  }
+
+  private async handle_search(message: Message, argument: string, user_name: string) {
+    const raw_resoults = await playdl.search(argument, { limit: 1 }).catch( err => console.log(err) );
+
+    if (raw_resoults && raw_resoults.length > 0) {
+      const song: Song = {
+        name: raw_resoults[0].title as string,
+        url: raw_resoults[0].url,
+        length: raw_resoults[0].durationRaw,
+        user_name: user_name
+      }
+
+      this.songQueue.push(song);
+
+      message.channel.send(`${song.name} has been added to the queue.`);
+    }
+    else {
+      message.reply("Requested song could not be found. Try to search with different key words.");
+    }
+  }
+
+  private async handle_yt_url(message: Message, argument: string, user_name: string) {
+    const raw_resoults = await playdl.video_info(argument).catch( err => console.log(err) );
+
+    if (raw_resoults) {
+      const song: Song = {
+        name: raw_resoults.video_details.title as string,
+        url: argument,
+        length: raw_resoults.video_details.durationRaw,
+        user_name: user_name
+      }
+      
+      this.songQueue.push(song);
+      
+      message.channel.send(`${song.name} has been added to the queue.`);
+    }
+    else {
+      message.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
+    }
+  }
+
+  private async handle_yt_pl(message: Message, argument: string, user_name: string) {
+    const raw_resoults = await playdl.playlist_info(argument, { incomplete: true }).catch( err => console.log(err) );
+
+    if (raw_resoults) {
+      const raw_resoults2 = raw_resoults.toJSON();
+      
+      if (raw_resoults2.videos) {
+        raw_resoults2.videos.map((raw_song) =>{
+          const song: Song = {
+            name: raw_song.title as string,
+            url: raw_song.url,
+            length: raw_song.durationRaw,
+            user_name: user_name
+          }
+          this.songQueue.push(song);
+        });
+
+        message.channel.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
+      }
+      else {
+        message.reply("Error happened while looking to playlist.");
+      }
+    }
+    else {
+      message.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
+    }
+  }
+
+  private async handle_spotify(message: Message, argument: string, user_name: string) {
+    if (playdl.is_expired()) {
+      await playdl.refreshToken();
+    }
+
+    const raw_resoults = await playdl.spotify(argument).catch( err => console.log(err) );
+
+    if (raw_resoults) {
+      if(raw_resoults.type === "track") {
+        const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
+
+        if (yt_resoult && yt_resoult.length > 0) {
+          const song: Song = {
+            name: yt_resoult[0].title as string,
+            url: yt_resoult[0].url,
+            length: yt_resoult[0].durationRaw,
+            user_name: user_name
+          }
+        
+          this.songQueue.push(song);
+
+          message.channel.send(`${song.name} has been added to the queue.`);
+        }
+        else {
+          message.reply("Requested song could not be found.");
+        }
+      }
+      else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
+        let missed_songs = 0;
+        let raw_resoults2;
+
+        if ( raw_resoults.type === "playlist" ) {
+          raw_resoults2 = raw_resoults as SpotifyPlaylist
+        }
+        else {
+          raw_resoults2 = raw_resoults as SpotifyAlbum
+        }
+
+        await Promise.all((await raw_resoults2.all_tracks()).map(async (raw_song) => {
+          const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
+
+          if (yt_resoult && yt_resoult.length > 0) {
+            const song: Song = {
+              name: yt_resoult[0].title as string,
+              url: yt_resoult[0].url,
+              length: yt_resoult[0].durationRaw,
+              user_name: user_name
+            }
+  
+            this.songQueue.push(song);
+            console.log(song.name, " pushed to the queue");
+          }
+          else {
+            message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name : ""}\` could not be found`);
+            missed_songs++;
+          }
+        }));
+
+        message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
+      }
+    }
+    else {
+      message.reply("We cannot found anything with this link. Thw link may be broken.");
     }
   }
 }
