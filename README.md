@@ -6,12 +6,17 @@
     ```shell
     $ git clone https://gitlab.com/Erenoit/discord-bot.git
     ```
-2. Create a file `config.json` in `src/` folder with,
+2. Create a file `config.json` in `src/` folder with (you can ignore the ones with `?`),
     ```json
     {
-      "token":  YOUR_BOT_TOKEN,
+      "token": YOUR_BOT_TOKEN,
       "prefix": PREFERED_PREFİX,
       "yt_cookie"?: YOUR_YOUTUBE_COOKİE
+      "spotify"?: {
+        "client_id": YOUR_SPOTIFY_CLIENT_ID
+        "client_secret": YOUR_SPOTIFY_CLIENT_SECRET
+        "refresh_token": YOUR_SPOTİDY_REFRESH_TOKEN
+      }
     }
     ```
 3. `cd` into repository and run the following commands commands:
