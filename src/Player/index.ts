@@ -262,6 +262,11 @@ class Player {
   }
 
   public async queue(message: Message) {
+    if (!this.now_playing) {
+      message.reply("Nothings playing. :unamused: ");
+      return;
+    }
+
     let reply_message = `Currently playing \`${this.now_playing.name}\` [${this.now_playing.length}], requested by **${this.now_playing.user_name}**\n`;
     const queue_length = this.songQueue.length;
 
