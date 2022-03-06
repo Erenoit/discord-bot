@@ -88,19 +88,19 @@ class Player {
 
     if (argument.search("http") === -1) {
       // Search by word
-      this.handle_search(message, argument, user_name);
+      await this.handle_search(message, argument, user_name);
     }
     else if(argument.search("spotify") !== -1) {
       // Spotify link
-      this.handle_spotify(message, argument, user_name);
+      await this.handle_spotify(message, argument, user_name);
     }
     else if (argument.search("list=") === -1) {
       // Youtube video link
-      this.handle_yt_url(message, argument, user_name);
+      await this.handle_yt_url(message, argument, user_name);
     }
     else if (argument.search("list=") !== -1) {
       // Youtube playlist link
-      this.handle_yt_pl(message, argument, user_name);
+      await this.handle_yt_pl(message, argument, user_name);
     }
     else {
       message.reply("Invalid arguments.");
