@@ -297,7 +297,11 @@ class Player {
           raw_resoults2 = raw_resoults as SpotifyAlbum
         }
 
-        await Promise.all((await raw_resoults2.all_tracks()).map(async (raw_song) => {
+        const track_list = await raw_resoults2.all_tracks();
+
+        // Couldn't use arr.map() because I'm using await in iteration
+        for (let i = 0; i < track_list.length; i++) {
+          const raw_song = track_list[i];
           const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
 
           if (yt_resoult && yt_resoult.length > 0) {
@@ -315,7 +319,7 @@ class Player {
             message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name : ""}\` could not be found`);
             missed_songs++;
           }
-        }));
+        };
 
         message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
       }
