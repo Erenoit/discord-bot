@@ -12,6 +12,7 @@ class Player {
   public  events:      Collection<string, PlayerEvent> = new Collection()
   private songQueue:   Array<Song> = [];
   private now_playing: Song;
+  private can_use_sp:  Boolean = false;
 
   private player:      AudioPlayer = Voice.createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play }});
   private resource:    AudioResource;
@@ -52,6 +53,7 @@ class Player {
         market: 'US'
       }
     });
+    this.can_use_sp = true;
   }
 
   public joinVC(message: Message, args?: string[]) {
@@ -260,6 +262,10 @@ class Player {
   }
 
   private async handle_spotify(message: Message, argument: string, user_name: string) {
+    if (!this.can_use_sp) {
+      message.reply("Bot is not logined to spotify. Please request from bot's administrator.");
+      return;
+    }
     if (playdl.is_expired()) {
       await playdl.refreshToken();
     }
@@ -313,7 +319,6 @@ class Player {
             }
   
             this.songQueue.push(song);
-            console.log(song.name, " pushed to the queue");
           }
           else {
             message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name : ""}\` could not be found`);
