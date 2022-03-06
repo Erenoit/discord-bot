@@ -112,7 +112,6 @@ class Player {
       }
 
       const raw_resoults = await playdl.spotify(argument).catch( err => console.log(err) );
-      console.log(raw_resoults);
 
       if (raw_resoults) {
         if(raw_resoults.type === "track") {
@@ -145,7 +144,7 @@ class Player {
             raw_resoults2 = raw_resoults as SpotifyAlbum
           }
 
-          (await raw_resoults2.all_tracks()).map(async (raw_song) => {
+          await Promise.all((await raw_resoults2.all_tracks()).map(async (raw_song) => {
             const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 }).catch( err => console.log(err) );
   
             if (yt_resoult && yt_resoult.length > 0) {
@@ -157,12 +156,13 @@ class Player {
               }
     
               this.songQueue.push(song);
+              console.log(song.name, " pushed to the queue");
             }
             else {
-              message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name: ""}\` could not be found`);
+              message.reply(`\`${raw_resoults.type === "playlist" ? raw_resoults.name : ""}\` could not be found`);
               missed_songs++;
             }
-          });
+          }));
   
           message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
         }
