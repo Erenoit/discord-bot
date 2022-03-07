@@ -4,6 +4,7 @@ export const command: Command = {
   name: "help",
   aliases: ["h"],
   run: async (client, message, args) => {
+    // TODO: make help message automaticly created
     message.channel.send(`
 **The Bot**
 **Creator**: Eren Önen

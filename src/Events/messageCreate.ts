@@ -1,4 +1,4 @@
-import { Event, Command } from "../Interfaces";
+import { Event } from "../Interfaces";
 import { Message } from "discord.js";
 
 export const event: Event = {
@@ -19,7 +19,7 @@ export const event: Event = {
     console.log(`Command: ${cmd}`);
 
     const command = client.commands.get(cmd.toLowerCase()) || client.aliases.get(cmd.toLowerCase());
-    if (command) { (command as Command).run(client, message, args); }
+    if (command) { command.run(client, message, args); }
     else { message.reply("We do not have that command! :angry:") }
   }
 };
