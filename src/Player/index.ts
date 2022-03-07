@@ -90,7 +90,7 @@ class Player {
 
     if (argument.search("http://")  === -1 &&
         argument.search("https://") === -1 &&
-        argument.search("www")      === -1)  {
+        argument.search("www.")      === -1)  {
       // Search by word
       await this.handle_search(message, argument);
     } else if(argument.search("open.spotify.com") !== -1) {
@@ -276,6 +276,12 @@ class Player {
           } else {
             message.reply(`\`${raw_resoults.name}\` could not be found`);
             missed_songs++;
+          }
+
+          // If the bot is not playing start playing 
+          // without waiting to finish adding all the elements
+          if (i === 0 && !this.now_playing) {
+            this.start();
           }
         };
 
