@@ -5,17 +5,22 @@ class Messager {
   private use_embed: boolean = false;
   private colors = {
     sucsess: 0x00ff00,
+    normal:  0x0000ff,
     error:   0xff0000,
   };
-
-  public send_err(variables: Variables, content: string, log_text?: string) {
-    const title = "Error";
-    this.send_message(variables, title, content, this.colors.error, log_text);
-  }
 
   public send_sucsess(variables: Variables, content: string, log_text?: string) {
     const title = "Sucsess";
     this.send_message(variables, title, content, this.colors.sucsess, log_text);
+  }
+
+  public send_normal(variables: Variables, title: string, content: string, log_text?: string) {
+    this.send_message(variables, title, content, this.colors.normal, log_text);
+  }
+
+  public send_err(variables: Variables, content: string, log_text?: string) {
+    const title = "Error";
+    this.send_message(variables, title, content, this.colors.error, log_text);
   }
 
   public send_message(variables: Variables, title: string,
