@@ -1,5 +1,5 @@
 // Discord API
-import { Collection, Message } from "discord.js";
+import { Collection, GuildMember } from "discord.js";
 import { AudioPlayer, AudioPlayerStatus, AudioResource,
          createAudioPlayer, createAudioResource, DiscordGatewayAdapterCreator,
          joinVoiceChannel, NoSubscriberBehavior, VoiceConnection } from "@discordjs/voice";
@@ -8,7 +8,7 @@ import { AudioPlayer, AudioPlayerStatus, AudioResource,
 import playdl, { SpotifyAlbum, SpotifyPlaylist, YouTubeStream, YouTubeVideo } from "play-dl";
 
 // Interaces
-import { PlayerEvent, Song, StreamOptions } from "../Interfaces";
+import { Main, PlayerEvent, Song, StreamOptions, Variables } from "../Interfaces";
 
 class Player {
   public  events:      Collection<string, PlayerEvent> = new Collection()
@@ -59,12 +59,14 @@ class Player {
     this.can_use_sp = true;
   }
 
-  public joinVC(message: Message, args?: string[]) {
+  public joinVC(variables: Variables) {
     if (!this.connection) {
       console.log("FIRST TIME JOIN");
-      const channelID = message.member?.voice?.channel?.id;
-      const guildID   = message.guild?.id;
-      const adapter   = message.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
+
+      const main = variables.type === "Old" ? variables.message : variables.interaction;;
+      const channelID = (main.member as GuildMember).voice?.channel?.id
+      const guildID   = main.guild?.id;
+      const adapter   = main.guild?.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator;
 
       if(channelID && guildID && adapter) {
         this.connection = joinVoiceChannel({
@@ -74,7 +76,7 @@ class Player {
           selfDeaf: true
         });
       } else {
-        message.reply("Failed to join to voice channel. (Posibly you are not in a voice channel.)");
+        main.reply("Failed to join to voice channel. (Posibly you are not in a voice channel.)");
       }
     } else {
       console.log("RECONNECTING");
@@ -83,24 +85,28 @@ class Player {
     }
   }
 
-  public async play(message: Message, args: string[]) {
-    this.joinVC(message);
+  public async play(variables: Variables, url?: string) {
+    this.joinVC(variables);
 
-    const argument  = args.join(" ");
+    const main = variables.type === "Old" ? variables.message : variables.interaction;
+    const argument  = url ? url 
+                    : variables.type === "Old" ? variables.args.join(" ")
+                    : variables.interaction.options.getString("song")!;
+    const user = (main.member as GuildMember).displayName;
 
     if (argument.search("http://")  === -1 &&
         argument.search("https://") === -1 &&
         argument.search("www.")      === -1)  {
       // Search by word
-      await this.handle_search(message, argument);
+      await this.handle_search(main, argument, user);
     } else if(argument.search("open.spotify.com") !== -1) {
       // Spotify link
-      await this.handle_spotify(message, argument);
+      await this.handle_spotify(main, argument, user);
     } else if (argument.search("youtube.com") !== -1) {
       // Youtube link
-      await this.handle_youtube(message, argument);
+      await this.handle_youtube(main, argument, user);
     } else {
-      message.reply("Invalid arguments.");
+      main.reply("Invalid arguments.");
       return;
     }
 
@@ -109,7 +115,7 @@ class Player {
     }
   }
 
-  public async stop(message?: Message) {
+  public async stop(variables?: Variables) {
     // this.connection.disconnect();
 
     this.now_playing = undefined as unknown as Song;
@@ -117,22 +123,30 @@ class Player {
 
     this.player.stop();
 
-    if (message) {
-      message.reply("Goodbye. :sob: ");
+    if (variables) {
+      const main = variables.type === "Old" ? variables.message
+                 : variables.interaction;
+      main.reply("Goodbye. :sob: ");
     }
   }
 
-  public async skip(message: Message) {
+  public async skip(variables: Variables) {
+    const main = variables.type === "Old" ? variables.message
+               : variables.interaction;
+
     if (this.now_playing) {
-      message.channel.send(`\`${this.now_playing.name}\` is skipped`);
+      main.reply(`\`${this.now_playing.name}\` is skipped`);
     } else {
-      message.reply("We cannot skip. Nothings playing.");
+      main.reply("We cannot skip. Nothings playing.");
     }
 
     this.start();
   }
 
-  public async shuffle(message: Message) {
+  public async shuffle(variables: Variables) {
+    const main = variables.type === "Old" ? variables.message
+               : variables.interaction;
+
     // The modern version of the Fisher–Yates shuffle algorithm
     for(let i = this.songQueue.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -141,12 +155,16 @@ class Player {
       this.songQueue[j] = tmp;
     }
 
-    message.channel.send("Queue is shuffled. (You cannot undo shuffleing.)");
+    // TODO: add 'Are you sure?' with buttons
+    main.reply("Queue is shuffled. (You cannot undo shuffleing.)");
   }
 
-  public async queue(message: Message) {
+  public async queue(variables: Variables) {
+    const main = variables.type === "Old" ? variables.message
+               : variables.interaction;
+    
     if (!this.now_playing) {
-      message.reply("Nothings playing. :unamused: ");
+      main.reply("Nothings playing. :unamused: ");
       return;
     }
 
@@ -164,7 +182,7 @@ class Player {
       reply_message += `And ${queue_length - 10} more...`;
     }
 
-    message.channel.send(reply_message);
+    main.reply(reply_message);
   }
 
   private async changeStream(url: string) {
@@ -185,28 +203,28 @@ class Player {
     }
   }
 
-  private async handle_search(message: Message, argument: string) {
+  private async handle_search(main: Main, argument: string, user: string) {
     const raw_resoults = await playdl.search(argument, { limit: 1 })
         .catch( err => console.error(err) );
 
     if (raw_resoults && raw_resoults.length > 0) {
-      this.push_to_queue(raw_resoults[0], message.member?.nickname as string);
-      message.channel.send(`${raw_resoults[0].title} has been added to the queue.`);
+      this.push_to_queue(raw_resoults[0], user);
+      main.channel?.send(`${raw_resoults[0].title} has been added to the queue.`);
     } else {
-      message.reply("Requested song could not be found. Try to search with different key words.");
+      main.reply("Requested song could not be found. Try to search with different key words.");
     }
   }
 
-  private async handle_youtube(message: Message, argument: string) {
+  private async handle_youtube(main: Main, argument: string, user: string) {
     if (argument.search("list=") === -1) {
       const raw_resoults = await playdl.video_info(argument)
           .catch( err => console.error(err) );
 
       if (raw_resoults) {
-        this.push_to_queue(raw_resoults.video_details, message.member?.nickname as string);
-        message.channel.send(`${raw_resoults.video_details.title} has been added to the queue.`);
+        this.push_to_queue(raw_resoults.video_details, user);
+        main.channel?.send(`${raw_resoults.video_details.title} has been added to the queue.`);
       } else {
-        message.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
+        main.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
       }
     } else {
       const raw_resoults = await playdl.playlist_info(argument, { incomplete: true })
@@ -217,22 +235,22 @@ class Player {
         
         if (raw_resoults2.videos) {
           raw_resoults2.videos.map((raw_song) =>{
-            this.push_to_queue(raw_song, message.member?.nickname as string);
+            this.push_to_queue(raw_song, user);
           });
 
-          message.channel.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
+          main.channel?.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
         } else {
-          message.reply("Error happened while looking to playlist.");
+          main.reply("Error happened while looking to playlist.");
         }
       } else {
-        message.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
+        main.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
   }
 
-  private async handle_spotify(message: Message, argument: string) {
+  private async handle_spotify(main: Main, argument: string, user: string) {
     if (!this.can_use_sp) {
-      message.reply("Bot is not logined to spotify. Please request from bot's administrator.");
+      main.reply("Bot is not logined to spotify. Please request from bot's administrator.");
       return;
     }
     if (playdl.is_expired()) {
@@ -248,10 +266,10 @@ class Player {
             .catch( err => console.error(err) );
 
         if (yt_resoult && yt_resoult.length > 0) {
-          this.push_to_queue(yt_resoult[0], message.member?.nickname as string);
-          message.channel.send(`${yt_resoult[0].title} has been added to the queue.`);
+          this.push_to_queue(yt_resoult[0], user);
+          main.channel?.send(`${yt_resoult[0].title} has been added to the queue.`);
         } else {
-          message.reply("Requested song could not be found.");
+          main.reply("Requested song could not be found.");
         }
       } else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
         let missed_songs = 0;
@@ -272,9 +290,9 @@ class Player {
               .catch( err => console.error(err) );
 
           if (yt_resoult && yt_resoult.length > 0) {
-            this.push_to_queue(yt_resoult[0], message.member?.nickname as string);
+            this.push_to_queue(yt_resoult[0], user);
           } else {
-            message.reply(`\`${raw_resoults.name}\` could not be found`);
+            main.reply(`\`${raw_resoults.name}\` could not be found`);
             missed_songs++;
           }
 
@@ -285,10 +303,10 @@ class Player {
           }
         };
 
-        message.channel.send(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
+        main.reply(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
       }
     } else {
-      message.reply("We cannot found anything with this link. Thw link may be broken.");
+      main.reply("We cannot found anything with this link. Thw link may be broken.");
     }
   }
 

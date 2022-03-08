@@ -2,10 +2,14 @@ import { Command } from "../../Interfaces";
 
 export const command: Command = {
   name: "help",
+  description: "Displays the help message.",
   aliases: ["h"],
-  run: async (client, message, args) => {
+  run: async (variables) => {
+    const main = variables.type === "Old" ? variables.message
+               : variables.interaction;
+
     // TODO: make help message automaticly created
-    message.channel.send(`
+    main.reply(`
 **The Bot**
 **Creator**: Eren Önen
 **Commands**:
