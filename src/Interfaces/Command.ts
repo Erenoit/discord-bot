@@ -1,9 +1,28 @@
 import Client from "../Client/";
-import { ApplicationCommandOptionData, Message } from "discord.js";
+import { ApplicationCommandOptionData,
+         CommandInteraction, Message } from "discord.js";
 
 interface Run {
-  (client: Client, message: Message, args: string[]): void;
+  (variables: Old | New): void;
 }
+
+interface CommonVars {
+  client: Client,
+}
+
+interface Old extends CommonVars {
+  type: "Old",
+  message: Message,
+  args: string[],
+}
+interface New extends CommonVars {
+  type: "New",
+  interaction: CommandInteraction,
+}
+
+export type Variables = New | Old;
+
+export type Main = Message | CommandInteraction;
 
 export interface Command {
   name: string;

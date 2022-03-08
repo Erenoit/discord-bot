@@ -4,7 +4,7 @@ export const command: Command = {
   name: "queue",
   description: "Shows the queue",
   aliases: ["q"],
-  run: (client, message, args) => {
-    client.player.queue(message);
+  run: (variables) => {
+    variables.client.player.queue(variables);
   }
 }

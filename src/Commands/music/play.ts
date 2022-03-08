@@ -11,7 +11,7 @@ export const command: Command = {
     required: true
   }],
   aliases: ["p"],
-  run: (client, message, args) => {
-    client.player.play(message, args);
+  run: (variables) => {
+    variables.client.player.play(variables);
   }
 }

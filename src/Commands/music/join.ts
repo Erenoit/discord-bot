@@ -11,7 +11,7 @@ export const command: Command = {
     required: false
   }],
   aliases: ["j"],
-  run: (client, message, args) => {
-    client.player.joinVC(message, args);
+  run: (variables) => {
+    variables.client.player.joinVC(variables);
   }
 }
