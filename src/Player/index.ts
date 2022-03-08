@@ -8,7 +8,7 @@ import { AudioPlayer, AudioPlayerStatus, AudioResource,
 import playdl, { SpotifyAlbum, SpotifyPlaylist, YouTubeStream, YouTubeVideo } from "play-dl";
 
 // Interaces
-import { Main, PlayerEvent, Song, StreamOptions, Variables } from "../Interfaces";
+import { PlayerEvent, Song, StreamOptions, Variables } from "../Interfaces";
 
 class Player {
   public  events:      Collection<string, PlayerEvent> = new Collection()
@@ -76,7 +76,9 @@ class Player {
           selfDeaf: true
         });
       } else {
-        main.reply("Failed to join to voice channel. (Posibly you are not in a voice channel.)");
+        variables.client.messager.send_err(variables,
+          "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
+          "Failed to join to voice channel");
       }
     } else {
       console.log("RECONNECTING");
@@ -98,15 +100,17 @@ class Player {
         argument.search("https://") === -1 &&
         argument.search("www.")      === -1)  {
       // Search by word
-      await this.handle_search(main, argument, user);
+      await this.handle_search(variables, argument, user);
     } else if(argument.search("open.spotify.com") !== -1) {
       // Spotify link
-      await this.handle_spotify(main, argument, user);
+      await this.handle_spotify(variables, argument, user);
     } else if (argument.search("youtube.com") !== -1) {
       // Youtube link
-      await this.handle_youtube(main, argument, user);
+      await this.handle_youtube(variables, argument, user);
     } else {
-      main.reply("Invalid arguments.");
+      variables.client.messager.send_err(variables,
+                                         "Invalid URL.",
+                                         "Took invalid URL: "+url);
       return;
     }
 
@@ -124,29 +128,20 @@ class Player {
     this.player.stop();
 
     if (variables) {
-      const main = variables.type === "Old" ? variables.message
-                 : variables.interaction;
-      main.reply("Goodbye. :sob: ");
+      variables.client.messager.send_normal(variables, "Goodbye", ":sob:");
     }
   }
 
   public async skip(variables: Variables) {
-    const main = variables.type === "Old" ? variables.message
-               : variables.interaction;
-
     if (this.now_playing) {
-      main.reply(`\`${this.now_playing.name}\` is skipped`);
+      variables.client.messager.send_sucsess(variables, `\`${this.now_playing.name}\` is skipped`);
+      this.start();
     } else {
-      main.reply("We cannot skip. Nothings playing.");
+      variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
     }
-
-    this.start();
   }
 
   public async shuffle(variables: Variables) {
-    const main = variables.type === "Old" ? variables.message
-               : variables.interaction;
-
     // The modern version of the Fisher–Yates shuffle algorithm
     for(let i = this.songQueue.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -156,15 +151,14 @@ class Player {
     }
 
     // TODO: add 'Are you sure?' with buttons
-    main.reply("Queue is shuffled. (You cannot undo shuffleing.)");
+    variables.client.messager.send_sucsess(variables,
+                                           "Queue is shuffled. (You cannot undo shuffleing.)",
+                                           "Queue shuffled");
   }
 
   public async queue(variables: Variables) {
-    const main = variables.type === "Old" ? variables.message
-               : variables.interaction;
-    
     if (!this.now_playing) {
-      main.reply("Nothings playing. :unamused: ");
+      variables.client.messager.send_err(variables, "Nothings playing. :unamused: ");
       return;
     }
 
@@ -182,7 +176,7 @@ class Player {
       reply_message += `And ${queue_length - 10} more...`;
     }
 
-    main.reply(reply_message);
+    variables.client.messager.send_normal(variables, "Queue", reply_message);
   }
 
   private async changeStream(url: string) {
@@ -203,28 +197,32 @@ class Player {
     }
   }
 
-  private async handle_search(main: Main, argument: string, user: string) {
+  private async handle_search(variables: Variables, argument: string, user: string) {
     const raw_resoults = await playdl.search(argument, { limit: 1 })
         .catch( err => console.error(err) );
 
     if (raw_resoults && raw_resoults.length > 0) {
       this.push_to_queue(raw_resoults[0], user);
-      main.channel?.send(`${raw_resoults[0].title} has been added to the queue.`);
+      variables.client.messager.send_sucsess(variables,
+                `${raw_resoults[0].title} has been added to the queue.`);
     } else {
-      main.reply("Requested song could not be found. Try to search with different key words.");
+      variables.client.messager.send_err(variables,
+                "Requested song could not be found. Try to search with different key words.");
     }
   }
 
-  private async handle_youtube(main: Main, argument: string, user: string) {
+  private async handle_youtube(variables: Variables, argument: string, user: string) {
     if (argument.search("list=") === -1) {
       const raw_resoults = await playdl.video_info(argument)
           .catch( err => console.error(err) );
 
       if (raw_resoults) {
         this.push_to_queue(raw_resoults.video_details, user);
-        main.channel?.send(`${raw_resoults.video_details.title} has been added to the queue.`);
+        variables.client.messager.send_sucsess(variables,
+                  `${raw_resoults.video_details.title} has been added to the queue.`);
       } else {
-        main.reply("Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
+        variables.client.messager.send_err(variables,
+                  "Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
       }
     } else {
       const raw_resoults = await playdl.playlist_info(argument, { incomplete: true })
@@ -234,23 +232,30 @@ class Player {
         const raw_resoults2 = raw_resoults.toJSON();
         
         if (raw_resoults2.videos) {
+          variables.client.messager.send_normal(variables,
+                    "Started", "Started to add songs to queue");
+
           raw_resoults2.videos.map((raw_song) =>{
             this.push_to_queue(raw_song, user);
           });
 
-          main.channel?.send(`**${raw_resoults2.videos.length}** songs added to queue.`);
+          variables.client.messager.send_sucsess(variables,
+                    `**${raw_resoults2.videos.length}** songs added to queue.`);
         } else {
-          main.reply("Error happened while looking to playlist.");
+          variables.client.messager.send_err(variables, "Error happened while looking to playlist.");
         }
       } else {
-        main.reply("Requested playlist could not be found. It may be hidden or from unsported source.");
+        variables.client.messager.send_err(variables,
+                  "Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
   }
 
-  private async handle_spotify(main: Main, argument: string, user: string) {
+  private async handle_spotify(variables: Variables, argument: string, user: string) {
     if (!this.can_use_sp) {
-      main.reply("Bot is not logined to spotify. Please request from bot's administrator.");
+      variables.client.messager.send_err(variables,
+                "Bot is not logined to spotify. Please request from bot's administrator.",
+                "Spotify support wanted");
       return;
     }
     if (playdl.is_expired()) {
@@ -267,9 +272,11 @@ class Player {
 
         if (yt_resoult && yt_resoult.length > 0) {
           this.push_to_queue(yt_resoult[0], user);
-          main.channel?.send(`${yt_resoult[0].title} has been added to the queue.`);
+          variables.client.messager.send_sucsess(variables,
+                    `${yt_resoult[0].title} has been added to the queue.`);
         } else {
-          main.reply("Requested song could not be found.");
+          variables.client.messager.send_err(variables,
+                    "Requested song could not be found.");
         }
       } else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
         let missed_songs = 0;
@@ -283,6 +290,9 @@ class Player {
 
         const track_list = await raw_resoults2.all_tracks();
 
+        variables.client.messager.send_normal(variables,
+                  "Started", "Started to add songs to queue");
+
         // Couldn't use arr.map() because I'm using await in iteration
         for (let i = 0; i < track_list.length; i++) {
           const raw_song = track_list[i];
@@ -292,7 +302,8 @@ class Player {
           if (yt_resoult && yt_resoult.length > 0) {
             this.push_to_queue(yt_resoult[0], user);
           } else {
-            main.reply(`\`${raw_resoults.name}\` could not be found`);
+            variables.client.messager.send_err(variables,
+                      `\`${raw_resoults.name}\` could not be found`);
             missed_songs++;
           }
 
@@ -303,10 +314,12 @@ class Player {
           }
         };
 
-        main.reply(`\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
+        variables.client.messager.send_sucsess(variables,
+                  `\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
       }
     } else {
-      main.reply("We cannot found anything with this link. Thw link may be broken.");
+      variables.client.messager.send_err(variables,
+                "We cannot found anything with this link. Thw link may be broken.");
     }
   }
 

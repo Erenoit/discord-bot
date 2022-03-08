@@ -5,6 +5,7 @@ import path from "path";
 
 import { Command, Event, Config } from "../Interfaces";
 import Player from "../Player";
+import Messager from "../Messager";
 import configjson from "../config.json";
 
 
@@ -14,6 +15,7 @@ class MyClient extends Client {
   public events:   Collection<string, Event>   = new Collection();
   public aliases:  Collection<string, Command> = new Collection();
   public player:   Player                      = new Player();
+  public messager: Messager                    = new Messager();  
   public config:   Config                      = configjson;
 
   public async init() {
