@@ -1,4 +1,5 @@
-import { Client, Collection } from "discord.js";
+import { ApplicationCommandManager, Client,
+         Collection, GuildApplicationCommandManager } from "discord.js";
 import { readdirSync } from "fs";
 import path from "path";
 
@@ -70,6 +71,24 @@ class MyClient extends Client {
       console.log(event);
 
       this.on(event.name, event.run.bind(null, this));
+    });
+  }
+
+  public register_commands(isTesting: Boolean = false) {
+    let command_manager: GuildApplicationCommandManager | ApplicationCommandManager;
+
+    if (isTesting) {
+      command_manager = this.guilds.cache.get("697571152280682615")!.commands;
+    } else {
+      command_manager = this.application!.commands;
+    }
+
+    this.commands.map((command) => {
+      command_manager.create({
+        name: command.name,
+        description: command.description,
+        options: command.options
+      });
     });
   }
 }
