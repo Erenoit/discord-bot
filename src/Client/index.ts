@@ -83,8 +83,8 @@ class MyClient extends Client {
       command_manager = this.application!.commands;
     }
 
-    this.commands.map((command) => {
-      command_manager.create({
+    this.commands.map(async (command) => {
+      await command_manager.create({
         name: command.name,
         description: command.description,
         options: command.options
