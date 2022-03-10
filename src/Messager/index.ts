@@ -1,4 +1,7 @@
-import { MessageEmbedOptions } from "discord.js"
+import { ButtonInteraction, CollectorFilter, Message,
+         MessageActionRow, MessageButton, MessageButtonOptions,
+         MessageButtonStyle, MessageComponentInteraction,
+         MessageEmbedOptions, MessageOptions } from "discord.js"
 import { Variables } from "../Interfaces";
 
 class Messager {
@@ -53,6 +56,19 @@ class Messager {
       description,
     } 
     return embed;
+  }
+
+  private create_button(customId: string, label: string,
+                        style: Exclude<MessageButtonStyle, "LINK">,
+                        emoji?: string): MessageButton {
+    const button_options: MessageButtonOptions = {
+      style,
+      customId,
+      label,
+      emoji
+    }
+
+    return new MessageButton(button_options);
   }
 }
 
