@@ -1,5 +1,4 @@
-import { ButtonInteraction, CollectorFilter, Message,
-         MessageActionRow, MessageButton, MessageButtonOptions,
+import { Message, MessageActionRow, MessageButton, MessageButtonOptions,
          MessageButtonStyle, MessageComponentInteraction,
          MessageEmbedOptions, MessageOptions } from "discord.js"
 import { Variables } from "../Interfaces";
@@ -12,34 +11,35 @@ class Messager {
     error:   0xff0000,
   };
 
-  public send_sucsess(variables: Variables, content: string, log_text?: string) {
+  public async send_sucsess(variables: Variables, content: string, log_text?: string) {
     const title = "Sucsess";
-    this.send_message(variables, title, content, this.colors.sucsess, log_text);
+    await this.send_message(variables, title, content, this.colors.sucsess, log_text);
   }
 
-  public send_normal(variables: Variables, title: string, content: string, log_text?: string) {
-    this.send_message(variables, title, content, this.colors.normal, log_text);
+  public async send_normal(variables: Variables, title: string, content: string, log_text?: string) {
+    await this.send_message(variables, title, content, this.colors.normal, log_text);
   }
 
-  public send_err(variables: Variables, content: string, log_text?: string) {
+  public async send_err(variables: Variables, content: string, log_text?: string) {
     const title = "Error";
-    this.send_message(variables, title, content, this.colors.error, log_text);
+    await this.send_message(variables, title, content, this.colors.error, log_text);
   }
 
-  public send_message(variables: Variables, title: string,
+  public async send_message(variables: Variables, title: string,
                       content: string, color: number,
                       log_text?: string) {
     const msg: MessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
                                                 : { content };
 
-    this.send(variables, msg);
+    await this.send(variables, msg);
 
     if (log_text) {
       console.log(log_text);
     }
   }
 
-  public send_confirm(variables: Variables,
+  // TODO: find a way to not use (or better way to use) function pointers
+  public async send_confirm(variables: Variables,
                       call_func: Function, func_this: any, func_params: any[],
                       additional_text?: string, end_text?: string) {
     const channel = variables.type === "Old" ? variables.message.channel
@@ -59,7 +59,7 @@ class Messager {
       components: [row]
     };
 
-    this.send(variables, msg);
+    await this.send(variables, msg);
 
     const filter = (interaction: MessageComponentInteraction) => {
       const user_id = variables.type === "Old" ? variables.message.member?.user.id
@@ -73,6 +73,7 @@ class Messager {
       time: 10 * 1000 // 10sec time limit
     });
 
+    // TODO: use reason variable to respond specific to reasons
     collector.on("end", (collection, reason) => {
       const btn_inter = collection.first();
       if (!btn_inter) { return; }

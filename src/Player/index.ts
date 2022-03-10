@@ -60,7 +60,7 @@ class Player {
     this.can_use_sp = true;
   }
 
-  public joinVC(variables: Variables) {
+  public async joinVC(variables: Variables) {
     if (!this.connection) {
       console.log("FIRST TIME JOIN");
 
@@ -77,9 +77,9 @@ class Player {
           selfDeaf: true
         });
       } else {
-        variables.client.messager.send_err(variables,
-          "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
-          "Failed to join to voice channel");
+        await variables.client.messager.send_err(variables,
+               "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
+               "Failed to join to voice channel");
       }
     } else {
       console.log("RECONNECTING");
@@ -89,7 +89,7 @@ class Player {
   }
 
   public async play(variables: Variables, url?: string) {
-    this.joinVC(variables);
+    await this.joinVC(variables);
 
     const main = variables.type === "Old" ? variables.message : variables.interaction;
     const argument  = url ? url 
@@ -109,9 +109,8 @@ class Player {
       // Youtube link
       await this.handle_youtube(variables, argument, user);
     } else {
-      variables.client.messager.send_err(variables,
-                                         "Invalid URL.",
-                                         "Took invalid URL: "+url);
+      await variables.client.messager.send_err(variables,
+             "Invalid URL.", "Took invalid URL: "+url);
       return;
     }
 
@@ -129,16 +128,17 @@ class Player {
     this.player.stop();
 
     if (variables) {
-      variables.client.messager.send_normal(variables, "Goodbye", ":sob:");
+      await variables.client.messager.send_normal(variables, "Goodbye", ":sob:");
     }
   }
 
   public async skip(variables: Variables) {
     if (this.now_playing) {
-      variables.client.messager.send_sucsess(variables, `\`${this.now_playing.name}\` is skipped`);
+      await variables.client.messager.send_sucsess(variables,
+             `\`${this.now_playing.name}\` is skipped`);
       this.start();
     } else {
-      variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
+      await variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
     }
   }
 
@@ -151,15 +151,13 @@ class Player {
       this.songQueue[j] = tmp;
     }
 
-    // TODO: add 'Are you sure?' with buttons
-    variables.client.messager.send_sucsess(variables,
-                                           "Queue is shuffled. (You cannot undo shuffleing.)",
-                                           "Queue shuffled");
+    await variables.client.messager.send_sucsess(variables,
+           "Queue is shuffled.", "Queue shuffled");
   }
 
   public async queue(variables: Variables) {
     if (!this.now_playing) {
-      variables.client.messager.send_err(variables, "Nothings playing. :unamused: ");
+      await variables.client.messager.send_err(variables, "Nothings playing. :unamused: ");
       return;
     }
 
@@ -177,7 +175,7 @@ class Player {
       reply_message += `And ${queue_length - 10} more...`;
     }
 
-    variables.client.messager.send_normal(variables, "Queue", reply_message);
+    await variables.client.messager.send_normal(variables, "Queue", reply_message);
   }
 
   private async changeStream(url: string) {
@@ -204,10 +202,10 @@ class Player {
 
     if (raw_resoults && raw_resoults.length > 0) {
       this.push_to_queue(raw_resoults[0], user);
-      variables.client.messager.send_sucsess(variables,
+      await variables.client.messager.send_sucsess(variables,
                 `${raw_resoults[0].title} has been added to the queue.`);
     } else {
-      variables.client.messager.send_err(variables,
+      await variables.client.messager.send_err(variables,
                 "Requested song could not be found. Try to search with different key words.");
     }
   }
@@ -219,10 +217,10 @@ class Player {
 
       if (raw_resoults) {
         this.push_to_queue(raw_resoults.video_details, user);
-        variables.client.messager.send_sucsess(variables,
+        await variables.client.messager.send_sucsess(variables,
                   `${raw_resoults.video_details.title} has been added to the queue.`);
       } else {
-        variables.client.messager.send_err(variables,
+        await variables.client.messager.send_err(variables,
                   "Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
       }
     } else {
@@ -233,20 +231,21 @@ class Player {
         const raw_resoults2 = raw_resoults.toJSON();
         
         if (raw_resoults2.videos) {
-          variables.client.messager.send_normal(variables,
-                    "Started", "Started to add songs to queue");
+           await variables.client.messager.send_normal(variables,
+                           "Started", "Started to add songs to queue");
 
           raw_resoults2.videos.map((raw_song) =>{
             this.push_to_queue(raw_song, user);
           });
 
-          variables.client.messager.send_sucsess(variables,
+          await variables.client.messager.send_sucsess(variables,
                     `**${raw_resoults2.videos.length}** songs added to queue.`);
         } else {
-          variables.client.messager.send_err(variables, "Error happened while looking to playlist.");
+          await variables.client.messager.send_err(variables,
+                    "Error happened while looking to playlist.");
         }
       } else {
-        variables.client.messager.send_err(variables,
+        await variables.client.messager.send_err(variables,
                   "Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
@@ -254,7 +253,7 @@ class Player {
 
   private async handle_spotify(variables: Variables, argument: string, user: string) {
     if (!this.can_use_sp) {
-      variables.client.messager.send_err(variables,
+      await variables.client.messager.send_err(variables,
                 "Bot is not logined to spotify. Please request from bot's administrator.",
                 "Spotify support wanted");
       return;
@@ -276,10 +275,10 @@ class Player {
 
         if (yt_resoult && yt_resoult.length > 0) {
           this.push_to_queue(yt_resoult[0], user);
-          variables.client.messager.send_sucsess(variables,
+          await variables.client.messager.send_sucsess(variables,
                     `${yt_resoult[0].title} has been added to the queue.`);
         } else {
-          variables.client.messager.send_err(variables,
+          await variables.client.messager.send_err(variables,
                     "Requested song could not be found.");
         }
       } else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
@@ -294,7 +293,7 @@ class Player {
 
         const track_list = await raw_resoults2.all_tracks();
 
-        variables.client.messager.send_normal(variables,
+        await variables.client.messager.send_normal(variables,
                   "Started", "Started to add songs to queue");
 
         // Couldn't use arr.map() because I'm using await in iteration
@@ -307,7 +306,7 @@ class Player {
           if (yt_resoult && yt_resoult.length > 0) {
             this.push_to_queue(yt_resoult[0], user);
           } else {
-            variables.client.messager.send_err(variables,
+            await variables.client.messager.send_err(variables,
                       `\`${raw_resoults.name}\` could not be found`);
             missed_songs++;
           }
@@ -319,11 +318,11 @@ class Player {
           }
         };
 
-        variables.client.messager.send_sucsess(variables,
+        await variables.client.messager.send_sucsess(variables,
                   `\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
       }
     } else {
-      variables.client.messager.send_err(variables,
+      await variables.client.messager.send_err(variables,
                 "We cannot found anything with this link. Thw link may be broken.");
     }
   }
