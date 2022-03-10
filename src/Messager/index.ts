@@ -30,7 +30,11 @@ class Messager {
     const msg  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
                                 : { content };
 
-    main.reply(msg);
+    if (variables.type === "New" && variables.interaction.replied) {
+      variables.interaction.followUp(msg);
+    } else {
+      main.reply(msg);
+    }
 
     if (log_text) {
       console.log(log_text);
