@@ -5,7 +5,8 @@ import { AudioPlayer, AudioPlayerStatus, AudioResource,
          joinVoiceChannel, NoSubscriberBehavior, VoiceConnection } from "@discordjs/voice";
 
 // YouTube API
-import playdl, { SpotifyAlbum, SpotifyPlaylist, YouTubeStream, YouTubeVideo } from "play-dl";
+import playdl, { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack,
+                 YouTubeStream, YouTubeVideo } from "play-dl";
 
 // Interaces
 import { PlayerEvent, Song, StreamOptions, Variables } from "../Interfaces";
@@ -267,7 +268,10 @@ class Player {
 
     if (raw_resoults) {
       if (raw_resoults.type === "track") {
-        const yt_resoult = await playdl.search(raw_resoults.name + " lyrics", { limit: 1 })
+        const raw_resoults2 = raw_resoults as SpotifyTrack;
+
+        const search_string = raw_resoults2.artists[0].name + " - " + raw_resoults2.name + " lyrics";
+        const yt_resoult = await playdl.search(search_string, { limit: 1 })
             .catch( err => console.error(err) );
 
         if (yt_resoult && yt_resoult.length > 0) {
@@ -296,7 +300,8 @@ class Player {
         // Couldn't use arr.map() because I'm using await in iteration
         for (let i = 0; i < track_list.length; i++) {
           const raw_song = track_list[i];
-          const yt_resoult = await playdl.search(raw_song.name + " lyrics", { limit: 1 })
+          const search_string = raw_song.artists[0].name + " - " + raw_song.name + " lyrics";
+          const yt_resoult = await playdl.search(search_string, { limit: 1 })
               .catch( err => console.error(err) );
 
           if (yt_resoult && yt_resoult.length > 0) {
