@@ -3,6 +3,7 @@ compiled/
 node_modules/
 */config.json
 
+yarn-error.log
 
 auth.js
 .data/
