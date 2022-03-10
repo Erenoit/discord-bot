@@ -26,18 +26,23 @@ class Messager {
   public send_message(variables: Variables, title: string,
                       content: string, color: number,
                       log_text?: string) {
-    const main = variables.type === "Old" ? variables.message : variables.interaction;
-    const msg  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
-                                : { content };
+    const msg: MessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
+                                                : { content };
 
-    if (variables.type === "New" && variables.interaction.replied) {
-      variables.interaction.followUp(msg);
-    } else {
-      main.reply(msg);
-    }
+    this.send(variables, msg);
 
     if (log_text) {
       console.log(log_text);
+    }
+  }
+
+  private async send(variables: Variables, msg: MessageOptions) {
+    const main = variables.type === "Old" ? variables.message : variables.interaction;
+
+    if (variables.type === "New" && variables.interaction.replied) {
+      await variables.interaction.followUp(msg);
+    } else {
+      await main.reply(msg);
     }
   }
 
