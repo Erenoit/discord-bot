@@ -5,6 +5,9 @@ export const command: Command = {
   description: "Adds song to queue",
   aliases: [],
   run: (variables) => {
-    variables.client.player.shuffle(variables);
+    variables.client.messager.send_confirm(variables,
+              variables.client.player.shuffle, variables.client.player, [variables],
+              "You cannot undo shuffleing.");
+    ;
   }
 }

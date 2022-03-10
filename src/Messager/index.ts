@@ -39,6 +39,57 @@ class Messager {
     }
   }
 
+  public send_confirm(variables: Variables,
+                      call_func: Function, func_this: any, func_params: any[],
+                      additional_text?: string, end_text?: string) {
+    const channel = variables.type === "Old" ? variables.message.channel
+                                             : variables.interaction.channel;
+    if (!channel) {
+      this.send_err(variables, "An error accured.");
+      return;
+    }
+
+    const default_message = "Are you sure?";
+    const row = new MessageActionRow()
+                .addComponents(this.create_button("confirm_yes", "Yes", "SUCCESS"),
+                               this.create_button("confirm_no", "No", "DANGER"));
+    const msg: MessageOptions = {
+      content: additional_text ? additional_text + " " + default_message
+                               : default_message,
+      components: [row]
+    };
+
+    this.send(variables, msg);
+
+    const filter = (interaction: MessageComponentInteraction) => {
+      const user_id = variables.type === "Old" ? variables.message.member?.user.id
+                                               : variables.interaction.user.id;
+      return interaction.user.id === user_id;
+    };
+
+    const collector = channel.createMessageComponentCollector({
+      filter,
+      max: 1, // take input only once
+      time: 10 * 1000 // 10sec time limit
+    });
+
+    collector.on("end", (collection, reason) => {
+      const btn_inter = collection.first();
+      if (!btn_inter) { return; }
+      const answer = btn_inter.customId;
+      const btn_msg = btn_inter.message as Message;
+
+      btn_msg.edit({
+        content: end_text || "An action has already been taken",
+        components: []
+      });
+
+      if (answer === "confirm_yes") {
+        call_func.apply(func_this, func_params);
+      }
+    });
+  }
+
   private async send(variables: Variables, msg: MessageOptions) {
     const main = variables.type === "Old" ? variables.message : variables.interaction;
 
