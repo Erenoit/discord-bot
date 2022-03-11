@@ -99,7 +99,7 @@ class Player {
 
     if (argument.search("http://")  === -1 &&
         argument.search("https://") === -1 &&
-        argument.search("www.")      === -1)  {
+        argument.search("www.")     === -1)  {
       // Search by word
       await this.handle_search(variables, argument, user);
     } else if(argument.search("open.spotify.com") !== -1) {
@@ -296,27 +296,26 @@ class Player {
         await variables.client.messager.send_normal(variables,
                   "Started", "Started to add songs to queue");
 
-        // Couldn't use arr.map() because I'm using await in iteration
-        for (let i = 0; i < track_list.length; i++) {
-          const raw_song = track_list[i];
+        const wait = track_list.map((raw_song) => {
           const search_string = raw_song.artists[0].name + " - " + raw_song.name + " lyrics";
-          const yt_resoult = await playdl.search(search_string, { limit: 1 })
-              .catch( err => console.error(err) );
+          return playdl.search(search_string, {source: { youtube: "video" }, limit: 1 });
+        });
 
-          if (yt_resoult && yt_resoult.length > 0) {
+        await Promise.all(wait).then((awaited_resoults) => awaited_resoults.forEach((yt_resoult) => {
+          if (yt_resoult.length > 0) {
             this.push_to_queue(yt_resoult[0], user);
           } else {
-            await variables.client.messager.send_err(variables,
-                      `\`${raw_resoults.name}\` could not be found`);
+            variables.client.messager.send_err(variables,
+                `\`${raw_resoults.name}\` could not be found`);
             missed_songs++;
           }
-
-          // If the bot is not playing start playing 
-          // without waiting to finish adding all the elements
-          if (i === 0 && !this.now_playing) {
-            this.start();
-          }
-        };
+        })).catch((err) => {
+          variables.client.messager.send_err(variables,
+              "An error accured while opening "
+              + raw_resoults.type === "playlist" ? "playlist"
+                                                 : "album");
+          console.log(err);
+        });
 
         await variables.client.messager.send_sucsess(variables,
                   `\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
