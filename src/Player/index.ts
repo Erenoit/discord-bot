@@ -234,7 +234,7 @@ class Player {
            await variables.client.messager.send_normal(variables,
                            "Started", "Started to add songs to queue");
 
-          raw_resoults2.videos.map((raw_song) =>{
+          raw_resoults2.videos.forEach((raw_song) =>{
             this.push_to_queue(raw_song, user);
           });
 

@@ -48,7 +48,7 @@ class MyClient extends Client {
     readdirSync(command_path).forEach((dir) => {
       const commands = readdirSync(`${command_path}/${dir}`);
 
-      commands.map((file) => {
+      commands.forEach((file) => {
         const { command } = require(`${command_path}/${dir}/${file}`);
         this.commands.set(command.name, command);
 
@@ -85,7 +85,7 @@ class MyClient extends Client {
       command_manager = this.application!.commands;
     }
 
-    this.commands.map(async (command) => {
+    this.commands.forEach(async (command) => {
       await command_manager.create({
         name: command.name,
         description: command.description,
