@@ -12,8 +12,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch & nodemon ./compiled/init.js",
-    "start": "node ./compiled/init.js"
+    "dev": "tsc --watch & nodemon ./compiled/index.js",
+    "start": "node ./compiled/index.js"
   },
   "dependencies": {
     "@discordjs/opus": "^0.7.0",
