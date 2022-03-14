@@ -6,6 +6,10 @@
   "repository": "https://gitlab.com/Erenoit/discord-bot.git",
   "author": "Eren Önen <erenoit@protonmail.com>",
   "license": "MIT",
+  "engines": {
+    "node": "17.7.1",
+    "yarn": "1.22.17"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch & nodemon ./compiled/init.js",
