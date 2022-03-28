@@ -7,11 +7,11 @@ export const event: Event = {
     if (
       message.author.bot ||
       !message.guild     ||
-      !message.content.startsWith(client.config.prefix)
+      !message.content.startsWith(client.prefix)
     ) { return; }
 
     const [cmd, ...args] = message.content
-      .slice(client.config.prefix.length)
+      .slice(client.prefix.length)
       .trim()
       .split(/ +/g);
 

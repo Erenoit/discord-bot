@@ -2,11 +2,11 @@ import { ApplicationCommandManager, Client,
          Collection, GuildApplicationCommandManager } from "discord.js";
 import { readdirSync } from "fs";
 import path from "path";
+import dotenv from "dotenv";
 
-import { Command, Event, Config } from "../Interfaces";
+import { Command, Event } from "../Interfaces";
 import Player from "../Player";
 import Messager from "../Messager";
-import configjson from "../config.json";
 
 
 
@@ -16,9 +16,27 @@ class MyClient extends Client {
   public aliases:  Collection<string, Command> = new Collection();
   public player:   Player                      = new Player();
   public messager: Messager                    = new Messager();  
-  public config:   Config                      = configjson;
+  public prefix:   string;
 
   public async init() {
+
+    // Generate environmental variables
+    dotenv.config();
+
+    // Check for required variables
+    const token  = process.env.TOKEN;
+    const prefix = process.env.PREFIX;
+    if (!token) {
+      console.log("You must have TOKEN environment variable as your bots token.");
+      return;
+    }
+    if (!prefix) {
+      console.log("You must have PREFIX environment variable as your bots prefix.");
+      return;
+    }
+    
+    // Set prefix
+    this.prefix = prefix;
 
     // Commands
     this.init_commands();
@@ -26,20 +44,24 @@ class MyClient extends Client {
     // Events
     this.init_events();
 
-    if (this.config.yt_cookie) {
+    // YouTube
+    const yt_cookie = process.env.YT_COOKIE;
+    if (yt_cookie) {
       console.log("---------------- Youtube Cookies Found ----------------");
-      this.player.setYTCookie(this.config.yt_cookie);
+      this.player.setYTCookie(yt_cookie);
     }
 
-    if (this.config.spotify) {
+    // Spotify
+    const sp_client_id     = process.env.SP_CLIENT_ID;
+    const sp_client_secret = process.env.SP_CLIENT_SECRET;
+    const sp_refresh_token = process.env.SP_REFRESH_TOKEN;
+    if (sp_client_id && sp_client_secret && sp_refresh_token) {
       console.log("---------------- Spotify Configs Found ----------------");
-      this.player.setSPToken(this.config.spotify.client_id,
-                             this.config.spotify.client_secret,
-                             this.config.spotify.refresh_token);
+      this.player.setSPToken(sp_client_id, sp_client_secret, sp_refresh_token);
     }
 
     // Login
-    this.login(this.config.token);
+    this.login(token);
   }
 
   private init_commands() {

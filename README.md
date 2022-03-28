@@ -6,20 +6,16 @@
     ```shell
     $ git clone https://gitlab.com/Erenoit/discord-bot.git
     ```
-2. Create a file `config.json` in `src/` folder with (you can ignore the ones with `?`),
-    ```json
-    {
-      "token": YOUR_BOT_TOKEN,
-      "prefix": PREFERED_PREFİX,
-      "yt_cookie"?: YOUR_YOUTUBE_COOKİE
-      "spotify"?: {
-        "client_id": YOUR_SPOTIFY_CLIENT_ID
-        "client_secret": YOUR_SPOTIFY_CLIENT_SECRET
-        "refresh_token": YOUR_SPOTİDY_REFRESH_TOKEN
-      }
-    }
+2. Add evironmental variables (or use a .env file in project root) with (you can ignore the ones with `?`),
+    ```.env
+    TOKEN=YOUR_BOT_TOKEN,
+    PREFIX=PREFERED_PREFIX,
+    YT_COOKIE?=YOUR_YOUTUBE_COOKIE
+    SP_CLIENT_ID?=YOUR_SPOTIFY_CLIENT_ID
+    SP_CLIENT_SECRET?=YOUR_SPOTIFY_CLIENT_SECRET
+    SP_REFRESH_TOKEN?=YOUR_SPOTIFY_REFRESH_TOKEN
     ```
-3. `cd` into repository and run the following commands commands:
+3. `cd` into repository and run the following commands:
     ```shell
     $ yarn install
     $ tsc

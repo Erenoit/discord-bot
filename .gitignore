@@ -2,6 +2,7 @@
 compiled/
 node_modules/
 */config.json
+.env
 
 yarn-error.log
 
