@@ -9,18 +9,20 @@ import playdl, { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack,
                  YouTubeStream, YouTubeVideo } from "play-dl";
 
 // Interaces
-import { PlayerEvent, Song, StreamOptions, Variables } from "../Interfaces";
+import { PlayerEvent, RepeatOptions, Song, StreamOptions, Variables } from "../Interfaces";
 
 class Player {
-  public  events:      Collection<string, PlayerEvent> = new Collection()
-  private songQueue:   Array<Song> = [];
-  private now_playing: Song;
-  private can_use_sp:  Boolean = false;
+  public  events:        Collection<string, PlayerEvent> = new Collection()
+  private songQueue:     Array<Song> = [];
+  private now_playing:   Song;
+  private repeat_option: RepeatOptions = "None";
+  private repeat_queue:  Array<Song> = [];
+  private can_use_sp:    Boolean = false;
 
-  private player:      AudioPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play }});
-  private resource:    AudioResource;
-  private connection:  VoiceConnection;
-  private stream:      YouTubeStream;
+  private player:        AudioPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play }});
+  private resource:      AudioResource;
+  private connection:    VoiceConnection;
+  private stream:        YouTubeStream;
 
   private stream_options: StreamOptions = {
     language: "en-US",
@@ -124,6 +126,7 @@ class Player {
 
     this.now_playing = undefined as unknown as Song;
     this.songQueue = [];
+    this.repeat_queue = [];
 
     this.player.stop();
 
@@ -139,6 +142,31 @@ class Player {
       this.start();
     } else {
       await variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
+    }
+  }
+
+  public async repeat(variables: Variables) {
+    const argument  = (variables.type === "Old" ? variables.args.join(" ")
+                    : variables.interaction.options.getString("option")!)
+                    .toLowerCase();
+    if (argument) {
+      switch (argument) {
+        case "none":
+          this.repeat_option = "None";
+          break;
+        case "one":
+          this.repeat_option = "One";
+          break;
+        case "all":
+          this.repeat_option = "All";
+          break;
+        default:
+          variables.client.messager.send_err(variables, "Invalid option.");
+          return;
+      }
+      variables.client.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
+    } else {
+      //variables.client.messager.send_options();
     }
   }
 
@@ -187,12 +215,43 @@ class Player {
   }
 
   private start() {
-    if (this.songQueue.length > 0) {
-      this.now_playing = this.songQueue.shift() as Song;
+    switch (this.repeat_option) {
+      case "One":
+        if (this.now_playing == undefined &&
+            this.songQueue.length > 0) {
+          this.now_playing = this.songQueue.shift() as Song;
+        }
 
-      this.changeStream(this.now_playing.url);
-    } else {
-      this.stop();
+        this.changeStream(this.now_playing.url);
+        break;
+      case "All":
+        if (this.songQueue.length === 0 &&
+            this.repeat_queue.length === 0 &&
+            this.now_playing == undefined as unknown as Song) {
+          this.stop();
+          break;
+        }
+        this.repeat_queue.push(this.now_playing);
+
+        if (this.songQueue.length === 0) {
+          this.songQueue = this.repeat_queue;
+          this.repeat_queue = [];
+        }
+
+        this.now_playing = this.songQueue.shift() as Song;
+        this.changeStream(this.now_playing.url);
+        break;
+      case "None":
+        if (this.songQueue.length > 0) {
+          this.now_playing = this.songQueue.shift() as Song;
+
+          this.changeStream(this.now_playing.url);
+        } else {
+          this.stop();
+        }
+        break;
+      default:
+        console.log("Impossible repeat block.");
     }
   }
 
