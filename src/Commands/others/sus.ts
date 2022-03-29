@@ -5,12 +5,6 @@ export const command: Command = {
   description: "Sends sus dog",
   aliases: [],
   run: async (variables) => {
-    const main = variables.type === "Old" ? variables.message
-               : variables.interaction;
-
-    main.reply({
-      content: "SUS!",
-      files: ["./images/imposter_dog.jpg"]
-    });
+    variables.client.messager.send_files(variables, "SUS!", ["./images/imposter_dog.jpg"]);
   }
 };

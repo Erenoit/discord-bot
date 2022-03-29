@@ -1,5 +1,5 @@
 // Discord API
-import { Collection, GuildMember } from "discord.js";
+import { GuildMember } from "discord.js";
 import { AudioPlayer, AudioPlayerStatus, AudioResource,
          createAudioPlayer, createAudioResource, DiscordGatewayAdapterCreator,
          joinVoiceChannel, NoSubscriberBehavior, VoiceConnection } from "@discordjs/voice";
@@ -8,16 +8,15 @@ import { AudioPlayer, AudioPlayerStatus, AudioResource,
 import playdl, { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack,
                  YouTubeStream, YouTubeVideo } from "play-dl";
 
-// Interaces
-import { PlayerEvent, RepeatOptions, Song, StreamOptions, Variables } from "../Interfaces";
+// Interfaces
+import { RepeatOptions, Song, SpotifyConfig, StreamOptions, Variables } from "../Interfaces";
 
 class Player {
-  public  events:        Collection<string, PlayerEvent> = new Collection()
-  private songQueue:     Array<Song> = [];
-  private now_playing:   Song;
+  private song_queue:    Array<Song>   = [];
+  private repeat_queue:  Array<Song>   = [];
+  private now_playing:   Song | null   = null;
+  private can_use_sp:    Boolean       = false;
   private repeat_option: RepeatOptions = "None";
-  private repeat_queue:  Array<Song> = [];
-  private can_use_sp:    Boolean = false;
 
   private player:        AudioPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play }});
   private resource:      AudioResource;
@@ -41,20 +40,18 @@ class Player {
     });
   }
 
-  public setYTCookie(cookie: string) {
+  public set_yt_cookie(cookie: string) {
     playdl.setToken({
       youtube: {
-          cookie: cookie
+        cookie: cookie
       }
     });
   }
 
-  public async setSPToken(id: string, secret: string, token: string) {
+  public async set_sp_tokens(cfg: SpotifyConfig) {
     await playdl.setToken({
       spotify: {
-        client_id: id,
-        client_secret: secret,
-        refresh_token: token,
+        ...cfg,
         market: 'US'
       }
     });
@@ -62,7 +59,7 @@ class Player {
     this.can_use_sp = true;
   }
 
-  public async joinVC(variables: Variables) {
+  public async joinVC(variables: Variables): Promise<boolean> {
     if (!this.connection) {
       console.log("FIRST TIME JOIN");
 
@@ -78,20 +75,25 @@ class Player {
           adapterCreator: adapter,
           selfDeaf: true
         });
+
+        if (this.connection) { return true; }
+        else { return false; }
       } else {
         await variables.client.messager.send_err(variables,
                "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
                "Failed to join to voice channel");
+
+        return false;
       }
     } else {
       console.log("RECONNECTING");
       const sonnection = this.connection.rejoin();
-      console.log(sonnection);
+      return sonnection;
     }
   }
 
   public async play(variables: Variables, url?: string) {
-    await this.joinVC(variables);
+    if (!await this.joinVC(variables)) { return; }
 
     const main = variables.type === "Old" ? variables.message : variables.interaction;
     const argument  = url ? url 
@@ -112,7 +114,7 @@ class Player {
       await this.handle_youtube(variables, argument, user);
     } else {
       await variables.client.messager.send_err(variables,
-             "Invalid URL.", "Took invalid URL: "+url);
+             "Invalid URL.", "Took invalid URL: " + url);
       return;
     }
 
@@ -122,10 +124,8 @@ class Player {
   }
 
   public async stop(variables?: Variables) {
-    // this.connection.disconnect();
-
-    this.now_playing = undefined as unknown as Song;
-    this.songQueue = [];
+    this.now_playing  = null;
+    this.song_queue    = [];
     this.repeat_queue = [];
 
     this.player.stop();
@@ -161,22 +161,33 @@ class Player {
           this.repeat_option = "All";
           break;
         default:
-          variables.client.messager.send_err(variables, "Invalid option.");
+          await variables.client.messager.send_err(variables, "Invalid option.");
           return;
       }
-      variables.client.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
+      await variables.client.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
     } else {
-      //variables.client.messager.send_options();
+      // TODO: write current repeat option and send option buttons to change
     }
   }
 
   public async shuffle(variables: Variables) {
+    if (this.song_queue.length === 0 &&
+        this.repeat_queue.length === 0) {
+      await variables.client.messager.send_err(variables, "Queue is empty");
+    }
+
+    // Add everything to main queue if it is repeating
+    if (this.repeat_option === "All") {
+      this.song_queue.push(...this.repeat_queue);
+      this.repeat_queue = [];
+    }
+
     // The modern version of the Fisher–Yates shuffle algorithm
-    for(let i = this.songQueue.length - 1; i > 0; i--) {
+    for(let i = this.song_queue.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      const tmp = this.songQueue[i];
-      this.songQueue[i] = this.songQueue[j];
-      this.songQueue[j] = tmp;
+      const tmp = this.song_queue[i];
+      this.song_queue[i] = this.song_queue[j];
+      this.song_queue[j] = tmp;
     }
 
     await variables.client.messager.send_sucsess(variables,
@@ -190,15 +201,15 @@ class Player {
     }
 
     let reply_message = `Currently playing \`${this.now_playing.name}\` [${this.now_playing.length}], requested by **${this.now_playing.user_name}**\n`;
-    const queue_length = this.songQueue.length;
+    const queue_length = this.song_queue.length;
 
     if (queue_length <= 10) {
       for (let i = 0; i < queue_length; i++) {
-        reply_message += `**${i}** \`${this.songQueue[i].name}\` [${this.songQueue[i].length}]\n`;
+        reply_message += `**${i + 1}** \`${this.song_queue[i].name}\` [${this.song_queue[i].length}]\n`;
       }
     } else {
       for (let i = 0; i <= 10; i++) {
-        reply_message += `**${i}** \`${this.songQueue[i].name}\` [${this.songQueue[i].length}]\n`;
+        reply_message += `**${i + 1}** \`${this.song_queue[i].name}\` [${this.song_queue[i].length}]\n`;
       }
       reply_message += `And ${queue_length - 10} more...`;
     }
@@ -206,9 +217,10 @@ class Player {
     await variables.client.messager.send_normal(variables, "Queue", reply_message);
   }
 
-  private async changeStream(url: string) {
-    console.log("Now playing: ", url);
-    this.stream = await playdl.stream(url, this.stream_options);
+  private async change_stream() {
+    if (!this.now_playing) { return; }
+    console.log("Now playing: ", this.now_playing.url);
+    this.stream = await playdl.stream(this.now_playing.url, this.stream_options);
     this.resource = createAudioResource(this.stream.stream, { inputType: this.stream.type });
     this.player.play(this.resource);
     this.connection.subscribe(this.player);
@@ -217,35 +229,41 @@ class Player {
   private start() {
     switch (this.repeat_option) {
       case "One":
-        if (this.now_playing == undefined &&
-            this.songQueue.length > 0) {
-          this.now_playing = this.songQueue.shift() as Song;
-        }
-
-        this.changeStream(this.now_playing.url);
-        break;
-      case "All":
-        if (this.songQueue.length === 0 &&
-            this.repeat_queue.length === 0 &&
-            this.now_playing == undefined as unknown as Song) {
+        if (!this.now_playing &&
+            this.song_queue.length > 0) {
+          this.now_playing = this.song_queue.shift()!;
+        } else if (!this.now_playing &&
+                   this.song_queue.length === 0) {
           this.stop();
           break;
         }
-        this.repeat_queue.push(this.now_playing);
 
-        if (this.songQueue.length === 0) {
-          this.songQueue = this.repeat_queue;
+        this.change_stream();
+        break;
+      case "All":
+        if (this.song_queue.length === 0 &&
+            this.repeat_queue.length === 0 &&
+            !this.now_playing) {
+          this.stop();
+          break;
+        }
+
+        if (this.now_playing) {
+          this.repeat_queue.push(this.now_playing);
+        }
+
+        if (this.song_queue.length === 0) {
+          this.song_queue = this.repeat_queue;
           this.repeat_queue = [];
         }
 
-        this.now_playing = this.songQueue.shift() as Song;
-        this.changeStream(this.now_playing.url);
+        this.now_playing = this.song_queue.shift()!;
+        this.change_stream();
         break;
       case "None":
-        if (this.songQueue.length > 0) {
-          this.now_playing = this.songQueue.shift() as Song;
-
-          this.changeStream(this.now_playing.url);
+        if (this.song_queue.length > 0) {
+          this.now_playing = this.song_queue.shift()!;
+          this.change_stream();
         } else {
           this.stop();
         }
@@ -255,8 +273,9 @@ class Player {
     }
   }
 
+  // TODO: send 5 options to choose from as buttons
   private async handle_search(variables: Variables, argument: string, user: string) {
-    const raw_resoults = await playdl.search(argument, { limit: 1 })
+    const raw_resoults = await playdl.search(argument, { source: { youtube: "video" }, limit: 1 })
         .catch( err => console.error(err) );
 
     if (raw_resoults && raw_resoults.length > 0) {
@@ -293,7 +312,7 @@ class Player {
            await variables.client.messager.send_normal(variables,
                            "Started", "Started to add songs to queue");
 
-          raw_resoults2.videos.forEach((raw_song) =>{
+          raw_resoults2.videos.forEach((raw_song) => {
             this.push_to_queue(raw_song, user);
           });
 
@@ -329,7 +348,7 @@ class Player {
         const raw_resoults2 = raw_resoults as SpotifyTrack;
 
         const search_string = raw_resoults2.artists[0].name + " - " + raw_resoults2.name + " lyrics";
-        const yt_resoult = await playdl.search(search_string, { limit: 1 })
+        const yt_resoult = await playdl.search(search_string, { source: { youtube: "video" }, limit: 1 })
             .catch( err => console.error(err) );
 
         if (yt_resoult && yt_resoult.length > 0) {
@@ -357,7 +376,7 @@ class Player {
 
         const wait = track_list.map((raw_song) => {
           const search_string = raw_song.artists[0].name + " - " + raw_song.name + " lyrics";
-          return playdl.search(search_string, {source: { youtube: "video" }, limit: 1 });
+          return playdl.search(search_string, { source: { youtube: "video" }, limit: 1 });
         });
 
         await Promise.all(wait).then((awaited_resoults) => awaited_resoults.forEach((yt_resoult) => {
@@ -370,7 +389,7 @@ class Player {
           }
         })).catch((err) => {
           variables.client.messager.send_err(variables,
-              "An error accured while opening "
+              "An error accured while opening the "
               + raw_resoults.type === "playlist" ? "playlist"
                                                  : "album");
           console.log(err);
@@ -393,7 +412,7 @@ class Player {
       user_name: user_name
     }
 
-    this.songQueue.push(song);
+    this.song_queue.push(song);
   }
 }
 

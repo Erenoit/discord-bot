@@ -91,6 +91,15 @@ class Messager {
     });
   }
 
+  public async send_files(variables: Variables, content: string, files: string[]) {
+    const msg: MessageOptions = {
+      content,
+      files
+    };
+
+    this.send(variables, msg);
+  }
+
   private async send(variables: Variables, msg: MessageOptions) {
     const main = variables.type === "Old" ? variables.message : variables.interaction;
 
@@ -107,6 +116,7 @@ class Messager {
       title,
       description,
     } 
+
     return embed;
   }
 

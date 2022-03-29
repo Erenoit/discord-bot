@@ -4,7 +4,6 @@ import { Event, Variables } from "../Interfaces";
 export const event: Event = {
   name: "interactionCreate",
   run: (client, interaction: Interaction) => {
-    //console.log(interaction);
     if (interaction.isCommand()) {
       if (interaction.user.bot) {
         interaction.reply("Bots cannot use commands!");
@@ -27,7 +26,6 @@ export const event: Event = {
       }
 
       cmd.run(given);
-
     }
   }
 };

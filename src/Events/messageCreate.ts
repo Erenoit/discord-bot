@@ -4,19 +4,20 @@ import { Message } from "discord.js";
 export const event: Event = {
   name: "messageCreate",
   run: async (client, message: Message) => {
+    const prefix = client.config.prefix;
+
     if (
       message.author.bot ||
       !message.guild     ||
-      !message.content.startsWith(client.prefix)
+      !message.content.startsWith(prefix)
     ) { return; }
 
     const [cmd, ...args] = message.content
-      .slice(client.prefix.length)
+      .slice(prefix.length)
       .trim()
       .split(/ +/g);
 
     if (!cmd) { return; }
-    console.log(`Command: ${cmd}`);
 
     const given: Variables = {
       type: "Old",
@@ -26,7 +27,7 @@ export const event: Event = {
     }
 
     const command = client.commands.get(cmd.toLowerCase()) || client.aliases.get(cmd.toLowerCase());
-    if (command) { command.run(given); }
+    if (command) { console.log(`Command: ${command.name}`); command.run(given); }
     else { message.reply("We do not have that command! :angry:") }
   }
 };

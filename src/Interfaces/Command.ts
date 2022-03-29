@@ -3,7 +3,7 @@ import { ApplicationCommandOptionData,
          CommandInteraction, Message } from "discord.js";
 
 interface Run {
-  (variables: Old | New): void;
+  (variables: Variables): void;
 }
 
 interface CommonVars {
@@ -21,8 +21,6 @@ interface New extends CommonVars {
 }
 
 export type Variables = New | Old;
-
-export type Main = Message | CommandInteraction;
 
 export interface Command {
   name: string;

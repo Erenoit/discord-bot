@@ -4,7 +4,7 @@ import { readdirSync } from "fs";
 import path from "path";
 import dotenv from "dotenv";
 
-import { Command, Event } from "../Interfaces";
+import { Command, Config, Event } from "../Interfaces";
 import Player from "../Player";
 import Messager from "../Messager";
 
@@ -16,11 +16,36 @@ class MyClient extends Client {
   public aliases:  Collection<string, Command> = new Collection();
   public player:   Player                      = new Player();
   public messager: Messager                    = new Messager();  
-  public prefix:   string;
+  public config:   Config;
 
   public async init() {
 
     // Generate environmental variables
+    this.generate_config();
+
+    // Commands
+    this.init_commands();
+
+    // Events
+    this.init_events();
+
+    // YouTube
+    if (this.config.yt_cookie) {
+      console.log("---------------- Youtube Cookies Found ----------------");
+      this.player.set_yt_cookie(this.config.yt_cookie);
+    }
+
+    // Spotify
+    if (this.config.spotify) {
+      console.log("---------------- Spotify Configs Found ----------------");
+      this.player.set_sp_tokens(this.config.spotify);
+    }
+
+    // Login
+    this.login(this.config.token);
+  }
+
+  private generate_config() {
     dotenv.config();
 
     // Check for required variables
@@ -34,34 +59,35 @@ class MyClient extends Client {
       console.log("You must have PREFIX environment variable as your bots prefix.");
       return;
     }
-    
-    // Set prefix
-    this.prefix = prefix;
 
-    // Commands
-    this.init_commands();
+    this.config = {
+      token,
+      prefix
+    }
 
-    // Events
-    this.init_events();
-
-    // YouTube
     const yt_cookie = process.env.YT_COOKIE;
+
     if (yt_cookie) {
-      console.log("---------------- Youtube Cookies Found ----------------");
-      this.player.setYTCookie(yt_cookie);
+      this.config = {
+        ...this.config,
+        yt_cookie
+      }
     }
 
-    // Spotify
-    const sp_client_id     = process.env.SP_CLIENT_ID;
-    const sp_client_secret = process.env.SP_CLIENT_SECRET;
-    const sp_refresh_token = process.env.SP_REFRESH_TOKEN;
-    if (sp_client_id && sp_client_secret && sp_refresh_token) {
-      console.log("---------------- Spotify Configs Found ----------------");
-      this.player.setSPToken(sp_client_id, sp_client_secret, sp_refresh_token);
-    }
+    const client_id     = process.env.SP_CLIENT_ID;
+    const client_secret = process.env.SP_CLIENT_SECRET;
+    const refresh_token = process.env.SP_REFRESH_TOKEN;
 
-    // Login
-    this.login(token);
+    if (client_id && client_secret && refresh_token) {
+      this.config = {
+        ...this.config,
+        spotify: {
+          client_id,
+          client_secret,
+          refresh_token
+        }
+      }
+    }
   }
 
   private init_commands() {
