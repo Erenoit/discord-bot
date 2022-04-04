@@ -29,6 +29,19 @@ class Player {
     discordPlayerCompatibility: true
   };
 
+  private user_agent_list = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36"
+  ];
+
   constructor() {
     this.player.on("error", (err) => {
       console.error(err);
@@ -38,10 +51,18 @@ class Player {
     this.player.on(AudioPlayerStatus.Idle, () => {
         this.start();
     });
+
+    this.set_user_agents(this.user_agent_list);
   }
 
-  public set_yt_cookie(cookie: string) {
-    playdl.setToken({
+  private async set_user_agents(agents: string[]) {
+    await playdl.setToken({
+      useragent: agents
+    });
+  }
+
+  public async set_yt_cookie(cookie: string) {
+    await playdl.setToken({
       youtube: {
         cookie: cookie
       }
@@ -125,7 +146,7 @@ class Player {
 
   public async stop(variables?: Variables) {
     this.now_playing  = null;
-    this.song_queue    = [];
+    this.song_queue   = [];
     this.repeat_queue = [];
 
     this.player.stop();
