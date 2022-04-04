@@ -15,6 +15,7 @@ class Player {
   private song_queue:    Array<Song>   = [];
   private repeat_queue:  Array<Song>   = [];
   private now_playing:   Song | null   = null;
+  private is_paused:     Boolean       = false;
   private can_use_sp:    Boolean       = false;
   private repeat_option: RepeatOptions = "None";
 
@@ -141,6 +142,36 @@ class Player {
 
     if (!this.now_playing) {
       this.start();
+    }
+  }
+
+  public async pause(variables: Variables) {
+    if (!this.now_playing) {
+      await variables.client.messager.send_err(variables, "Nothings playing.");
+      return;
+    }
+
+    if (!this.is_paused) {
+      this.stream.pause();
+      this.is_paused = true;
+      await variables.client.messager.send_sucsess(variables, "Player is paused.");
+    } else {
+      await variables.client.messager.send_err(variables, "Player is already paused! :angry:");
+    }
+  }
+
+  public async resume(variables: Variables) {
+    if (!this.now_playing) {
+      await variables.client.messager.send_err(variables, "Nothings playing.");
+      return;
+    }
+
+    if (this.is_paused) {
+      this.stream.pause();
+      this.is_paused = true;
+      await variables.client.messager.send_sucsess(variables, "Player is resumed.");
+    } else {
+      await variables.client.messager.send_err(variables, "Player is already playing! :angry:");
     }
   }
 
