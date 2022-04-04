@@ -442,10 +442,10 @@ play-audio@^0.5.2:
   resolved "https://registry.yarnpkg.com/play-audio/-/play-audio-0.5.2.tgz#191dd45b95ff64ae20bbd718671da4e987d4edd1"
   integrity sha512-ZAqHUKkQLix2Iga7pPbsf1LpUoBjcpwU93F1l3qBIfxYddQLhxS6GKmS0d3jV8kSVaUbr6NnOEcEMFvuX93SWQ==
 
-play-dl@^1.9.2:
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/play-dl/-/play-dl-1.9.2.tgz#ad0a97b4df3a98c7bfcce0eed994b469b7d882d8"
-  integrity sha512-rhTt3ap4Oajl6NULOOWe35nysT2PwNNuaIrpLF7EPQhZrjBqaJfwiqtr60hn8b46fPR9utNsEnDv6dkTRNYr6Q==
+play-dl@^1.9.3:
+  version "1.9.3"
+  resolved "https://registry.yarnpkg.com/play-dl/-/play-dl-1.9.3.tgz#0944eba1a189695db28876e420876cde9a155943"
+  integrity sha512-eDiqO0KZ2ngGrPmlIrOWClDAQ2KDyrGJHNjlrreyDZlm6GrB0+FXc1UN+R7JnZZ6T1eXbn0a1CxBlJGL6tAKhw==
   dependencies:
     play-audio "^0.5.2"
 
