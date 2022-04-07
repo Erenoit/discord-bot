@@ -1,5 +1,5 @@
-import { Message, MessageActionRow, MessageButton, MessageButtonOptions,
-         MessageButtonStyle, MessageComponentInteraction,
+import { EmbedFieldData, Message, MessageActionRow, MessageButton,
+         MessageButtonOptions, MessageButtonStyle, MessageComponentInteraction,
          MessageEmbedOptions, MessageOptions } from "discord.js"
 import { Variables } from "../Interfaces";
 
@@ -91,6 +91,84 @@ class Messager {
     });
   }
 
+  public async send_selection(variables: Variables,
+                              list: Array<{name: string, id: string}>,
+                              call_func: Function, func_this: any,
+                              title?: string, content?: string, end_text?: string) {
+    const channel = variables.type === "Old" ? variables.message.channel
+                                             : variables.interaction.channel;
+    if (!channel) {
+      this.send_err(variables, "An error accured.");
+      return;
+    }
+
+    const msg_content = content ? content : "Select one of them:";
+    const msg_title = title ? title : "Select";
+    const main_row = new MessageActionRow()
+                .addComponents(
+                  ...list.map(({name, id}, index) => {
+                    return this.create_button(id, (index + 1).toString(), "PRIMARY");
+                  }));
+    const secondary_row = new MessageActionRow()
+                .addComponents(
+                  this.create_button("all", "All", "SUCCESS"),
+                  this.create_button("none", "None", "DANGER"));
+    let msg: MessageOptions = {
+      components: [main_row, secondary_row]
+    };
+
+    if (this.use_embed) {
+      msg = {
+        ...msg,
+        embeds: [this.embed_list(msg_title, msg_content, list.map((e) => {return e.name;}), true)],
+      };
+    } else {
+      msg = {
+        ...msg,
+        content: this.normal_list(msg_content, list.map((e) => {return e.name;}), true),
+      };
+    }
+
+    await this.send(variables, msg);
+
+    const filter = (interaction: MessageComponentInteraction) => {
+      const user_id = variables.type === "Old" ? variables.message.member?.user.id
+                                               : variables.interaction.user.id;
+      return interaction.user.id === user_id;
+    };
+
+    const collector = channel.createMessageComponentCollector({
+      filter,
+      max: 1, // take input only once
+      time: 10 * 1000 // 10sec time limit
+    });
+
+    // TODO: use reason variable to respond specific to reasons
+    collector.on("end", (collection, reason) => {
+      const btn_inter = collection.first();
+      if (!btn_inter) { return; }
+      const answer = btn_inter.customId;
+      const btn_msg = btn_inter.message as Message;
+
+      btn_msg.edit({
+        content: end_text || "An action has already been taken",
+        components: []
+      });
+
+      console.log("Button Pressed: ", answer);
+
+      if (answer === "none") {
+        return;
+      } else if (answer === "all") {
+        list.forEach(({name, id}) => {
+          call_func.apply(func_this, [variables, id]);
+        });
+      } else {
+        call_func.apply(func_this, [variables, answer]);
+      }
+    });
+  }
+
   public async send_files(variables: Variables, content: string, files: string[]) {
     const msg: MessageOptions = {
       content,
@@ -118,6 +196,28 @@ class Messager {
     } 
 
     return embed;
+  }
+
+  private normal_list(content: string, list: string[], use_nums: boolean = false): string {
+    if (use_nums) {
+      list = list.map((element, index) => {return (index + 1) + ") " + element});
+    }
+
+    return content.concat("\n" + list.join("\n"));
+  }
+
+  private embed_list(title: string, content: string, list: string[], use_nums: boolean = false): MessageEmbedOptions {
+    const basic = this.basic_embed(title, content, this.colors.normal);
+
+    const fields: EmbedFieldData[] = list.map((element, index) => {
+      if (use_nums) {
+        return {name: (index + 1) + ") " + element, value: ""};
+      } else {
+        return {name: element, value: ""};
+      }
+    });
+
+    return {...basic, fields};
   }
 
   private create_button(customId: string, label: string,

@@ -325,15 +325,19 @@ class Player {
     }
   }
 
-  // TODO: send 5 options to choose from as buttons
-  private async handle_search(variables: Variables, argument: string, user: string) {
-    const raw_resoults = await playdl.search(argument, { source: { youtube: "video" }, limit: 1 })
+  private async handle_search(variables: Variables, argument: string) {
+    const raw_resoults = await playdl.search(argument, { source: { youtube: "video" }, limit: 5 })
         .catch( err => console.error(err) );
 
     if (raw_resoults && raw_resoults.length > 0) {
-      this.push_to_queue(raw_resoults[0], user);
-      await variables.client.messager.send_sucsess(variables,
-                `${raw_resoults[0].title} has been added to the queue.`);
+      const list = raw_resoults.map((element) => {
+        return {
+          name: element.title as string,
+          id: element.url
+        };
+      });
+
+      variables.client.messager.send_selection(variables, list, this.play, variables.client.player, "Search");
     } else {
       await variables.client.messager.send_err(variables,
                 "Requested song could not be found. Try to search with different key words.");
