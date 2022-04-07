@@ -128,6 +128,7 @@ class Player {
         argument.search("www.")     === -1)  {
       // Search by word
       await this.handle_search(variables, argument, user);
+      return;
     } else if(argument.search("open.spotify.com") !== -1) {
       // Spotify link
       await this.handle_spotify(variables, argument, user);
@@ -226,6 +227,7 @@ class Player {
     if (this.song_queue.length === 0 &&
         this.repeat_queue.length === 0) {
       await variables.client.messager.send_err(variables, "Queue is empty");
+      return;
     }
 
     // Add everything to main queue if it is repeating
