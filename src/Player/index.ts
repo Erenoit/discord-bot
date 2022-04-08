@@ -127,7 +127,7 @@ class Player {
         argument.search("https://") === -1 &&
         argument.search("www.")     === -1)  {
       // Search by word
-      await this.handle_search(variables, argument, user);
+      await this.handle_search(variables, argument);
       return;
     } else if(argument.search("open.spotify.com") !== -1) {
       // Spotify link
