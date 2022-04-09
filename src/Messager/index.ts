@@ -92,7 +92,7 @@ class Messager {
   }
 
   public async send_selection(variables: Variables,
-                              list: Array<{name: string, id: string}>,
+                              list: Array<{name: string, id: string, disabled: boolean}>,
                               call_func: Function, func_this: any,
                               title?: string, content?: string, end_text?: string) {
     const channel = variables.type === "Old" ? variables.message.channel
@@ -106,15 +106,88 @@ class Messager {
     const msg_title = title ? title : "Select";
     const main_row = new MessageActionRow()
                 .addComponents(
-                  ...list.map(({name, id}, index) => {
-                    return this.create_button(id, (index + 1).toString(), "PRIMARY");
+                  ...list.map(({name, id, disabled}) => {
+                    return this.create_button(id, name, "PRIMARY", disabled);
+                  }));
+    let msg: MessageOptions = {
+      components: [main_row]
+    };
+
+    if (this.use_embed) {
+      msg = {
+        ...msg,
+        embeds: [this.basic_embed(msg_title, msg_content, this.colors.normal)],
+      };
+    } else {
+      msg = {
+        ...msg,
+        content: msg_content,
+      };
+    }
+
+    await this.send(variables, msg);
+
+    const filter = (interaction: MessageComponentInteraction) => {
+      const user_id = variables.type === "Old" ? variables.message.member?.user.id
+                                               : variables.interaction.user.id;
+      return interaction.user.id === user_id;
+    };
+
+    const collector = channel.createMessageComponentCollector({
+      filter,
+      max: 1, // take input only once
+      time: 10 * 1000 // 10sec time limit
+    });
+
+    // TODO: use reason variable to respond specific to reasons
+    collector.on("end", (collection, reason) => {
+      const btn_inter = collection.first();
+      if (!btn_inter) { return; }
+      const answer = btn_inter.customId;
+      const btn_msg = btn_inter.message as Message;
+
+      btn_msg.edit({
+        content: end_text || "An action has already been taken",
+        components: []
+      });
+
+      if (answer === "none") {
+        return;
+      } else if (answer === "all") {
+        list.forEach(({name, id}) => {
+          call_func.apply(func_this, [variables, id]);
+        });
+      } else {
+        call_func.apply(func_this, [variables, answer]);
+      }
+    });
+  }
+
+  public async send_selection_from_list(variables: Variables,
+                                        list: Array<{name: string, id: string, disabled: boolean}>,
+                                        use_second_row: boolean,
+                                        call_func: Function, func_this: any,
+                                        title?: string, content?: string, end_text?: string) {
+    const channel = variables.type === "Old" ? variables.message.channel
+                                             : variables.interaction.channel;
+    if (!channel) {
+      this.send_err(variables, "An error accured.");
+      return;
+    }
+
+    const msg_content = content ? content : "Select one of them:";
+    const msg_title = title ? title : "Select";
+    const main_row = new MessageActionRow()
+                .addComponents(
+                  ...list.map(({name, id, disabled}, index) => {
+                    return this.create_button(id, (index + 1).toString(), "PRIMARY", disabled);
                   }));
     const secondary_row = new MessageActionRow()
                 .addComponents(
                   this.create_button("all", "All", "SUCCESS"),
                   this.create_button("none", "None", "DANGER"));
     let msg: MessageOptions = {
-      components: [main_row, secondary_row]
+      components: use_second_row ? [main_row, secondary_row] : [main_row]
     };
 
     if (this.use_embed) {
@@ -222,11 +295,13 @@ class Messager {
 
   private create_button(customId: string, label: string,
                         style: Exclude<MessageButtonStyle, "LINK">,
+                        disabled: boolean = false,
                         emoji?: string): MessageButton {
     const button_options: MessageButtonOptions = {
       style,
       customId,
       label,
+      disabled,
       emoji
     }
 

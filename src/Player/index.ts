@@ -198,8 +198,9 @@ class Player {
     }
   }
 
-  public async repeat(variables: Variables) {
-    const argument  = (variables.type === "Old" ? variables.args.join(" ")
+  public async repeat(variables: Variables, option?: RepeatOptions) {
+    const argument  = (option ? option 
+                    : variables.type === "Old" ? variables.args.join(" ")
                     : variables.interaction.options.getString("option")!)
                     .toLowerCase();
     if (argument) {
@@ -219,7 +220,14 @@ class Player {
       }
       await variables.client.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
     } else {
-      // TODO: write current repeat option and send option buttons to change
+      const list = [
+        {name: "None", id: "None", disabled: this.repeat_option === "None"},
+        {name: "One",  id: "One",  disabled: this.repeat_option === "One"},
+        {name: "All",  id: "All",  disabled: this.repeat_option === "All"},
+      ];
+      const content = `Current repeat ooption is \`${this.repeat_option}\`. Select one to change:`;
+      
+      await variables.client.messager.send_selection(variables, list, this.repeat, variables.client.player, "Repeat", content);
     }
   }
 
@@ -335,11 +343,12 @@ class Player {
       const list = raw_resoults.map((element) => {
         return {
           name: element.title as string,
-          id: element.url
+          id: element.url,
+          disabled: false
         };
       });
 
-      variables.client.messager.send_selection(variables, list, this.play, variables.client.player, "Search");
+      variables.client.messager.send_selection_from_list(variables, list, true, this.play, variables.client.player, "Search");
     } else {
       await variables.client.messager.send_err(variables,
                 "Requested song could not be found. Try to search with different key words.");
