@@ -1,5 +1,5 @@
-import { EmbedFieldData, Message, MessageActionRow, MessageButton,
-         MessageButtonOptions, MessageButtonStyle, MessageComponentInteraction,
+import { Message, MessageActionRow, MessageButton, MessageButtonOptions,
+         MessageButtonStyle, MessageComponentInteraction,
          MessageEmbedOptions, MessageOptions } from "discord.js"
 import { Variables } from "../Interfaces";
 
@@ -242,6 +242,19 @@ class Messager {
     });
   }
 
+  public async send_list(variables: Variables, title: string, content: string, list: string[],
+                         use_nums: boolean = false, start_number: number = 1,
+                         select?: number) {
+    const msg: MessageOptions = this.use_embed
+                              ? { embeds: [this.embed_list(title, content, list,
+                                                           use_nums, start_number,
+                                                           select)] }
+                              : { content: this.normal_list(content, list,
+                                                            use_nums, start_number,
+                                                            select) };
+    this.send(variables, msg);
+  }
+
   public async send_files(variables: Variables, content: string, files: string[]) {
     const msg: MessageOptions = {
       content,
@@ -271,26 +284,35 @@ class Messager {
     return embed;
   }
 
-  private normal_list(content: string, list: string[], use_nums: boolean = false): string {
+  private normal_list(content: string, list: string[],
+                      use_nums: boolean = false, start_number: number = 1,
+                      select?: number): string {
     if (use_nums) {
-      list = list.map((element, index) => {return (index + 1) + ") " + element});
+      list = list.map((element, index) => {return (index + start_number) + ") " + element});
+    }
+
+    if (select) {
+      const select_symbol = "⮞";
+      list = list.map((element, id) => {
+        if (id === select - 1) {
+          return select_symbol + "  **" + element + "**";
+        } else {
+          return "     " + element;
+        }
+      });
     }
 
     return content.concat("\n" + list.join("\n"));
   }
 
-  private embed_list(title: string, content: string, list: string[], use_nums: boolean = false): MessageEmbedOptions {
-    const basic = this.basic_embed(title, content, this.colors.normal);
-
-    const fields: EmbedFieldData[] = list.map((element, index) => {
-      if (use_nums) {
-        return {name: (index + 1) + ") " + element, value: ""};
-      } else {
-        return {name: element, value: ""};
-      }
-    });
-
-    return {...basic, fields};
+  private embed_list(title: string, content: string, list: string[],
+                     use_nums: boolean = false, start_number: number = 1,
+                     select?: number): MessageEmbedOptions {
+    console.log("select: ", select);
+    const new_content = this.normal_list(content, list, use_nums,
+                                         start_number, select);
+    console.log(new_content);
+    return this.basic_embed(title, new_content, this.colors.normal);
   }
 
   private create_button(customId: string, label: string,

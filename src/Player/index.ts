@@ -262,21 +262,20 @@ class Player {
       return;
     }
 
-    let reply_message = `Currently playing \`${this.now_playing.name}\` [${this.now_playing.length}], requested by **${this.now_playing.user_name}**\n`;
-    const queue_length = this.song_queue.length;
+    const queue_length = this.song_queue.length <= 9 ? this.song_queue.length : 9;
+    const queue_list: string[] = [];
+    const start_number = this.repeat_option === "All"
+                       ? this.repeat_queue.length + 1 : 1;
 
-    if (queue_length <= 10) {
-      for (let i = 0; i < queue_length; i++) {
-        reply_message += `**${i + 1}** \`${this.song_queue[i].name}\` [${this.song_queue[i].length}]\n`;
-      }
-    } else {
-      for (let i = 0; i <= 10; i++) {
-        reply_message += `**${i + 1}** \`${this.song_queue[i].name}\` [${this.song_queue[i].length}]\n`;
-      }
-      reply_message += `And ${queue_length - 10} more...`;
+    queue_list.push(`${this.now_playing.name} [${this.now_playing.length}]`);
+    for (let i = 0; i < queue_length; i++) {
+      queue_list.push(`${this.song_queue[i].name} [${this.song_queue[i].length}]`);
     }
 
-    await variables.client.messager.send_normal(variables, "Queue", reply_message);
+    await variables.client.messager.send_list(variables,
+                                              "Queue", "Song queue:",
+                                              queue_list, true,
+                                              start_number, 1);
   }
 
   private async change_stream() {
