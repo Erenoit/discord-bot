@@ -11,6 +11,9 @@ import playdl, { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack,
 // Interfaces
 import { RepeatOptions, Song, SpotifyConfig, StreamOptions, Variables } from "../Interfaces";
 
+//Messager
+import { bold, highlight } from "../Messager";
+
 class Player {
   private song_queue:    Array<Song>   = [];
   private repeat_queue:  Array<Song>   = [];
@@ -191,7 +194,7 @@ class Player {
   public async skip(variables: Variables) {
     if (this.now_playing) {
       await variables.client.messager.send_sucsess(variables,
-             `\`${this.now_playing.name}\` is skipped`);
+             `${highlight(this.now_playing.name)} is skipped`);
       this.start();
     } else {
       await variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
@@ -225,9 +228,11 @@ class Player {
         {name: "One",  id: "One",  disabled: this.repeat_option === "One"},
         {name: "All",  id: "All",  disabled: this.repeat_option === "All"},
       ];
-      const content = `Current repeat ooption is \`${this.repeat_option}\`. Select one to change:`;
+      const content = `Current repeat ooption is ${highlight(this.repeat_option)}. Select one to change:`;
       
-      await variables.client.messager.send_selection(variables, list, this.repeat, variables.client.player, "Repeat", content);
+      await variables.client.messager.send_selection(variables, list, this.repeat,
+                                                     variables.client.player,
+                                                     "Repeat", content);
     }
   }
 
@@ -383,7 +388,7 @@ class Player {
           });
 
           await variables.client.messager.send_sucsess(variables,
-                    `**${raw_resoults2.videos.length}** songs added to queue.`);
+                    `${bold(raw_resoults2.videos.length.toString())} songs added to queue.`);
         } else {
           await variables.client.messager.send_err(variables,
                     "Error happened while looking to playlist.");
@@ -450,7 +455,7 @@ class Player {
             this.push_to_queue(yt_resoult[0], user);
           } else {
             variables.client.messager.send_err(variables,
-                `\`${raw_resoults.name}\` could not be found`);
+                `${highlight(raw_resoults.name)} could not be found`);
             missed_songs++;
           }
         })).catch((err) => {
@@ -462,7 +467,7 @@ class Player {
         });
 
         await variables.client.messager.send_sucsess(variables,
-                  `\`${raw_resoults2.tracksCount - missed_songs}\` songs added to the queue`);
+                  `${highlight((raw_resoults2.tracksCount - missed_songs).toString())} songs added to the queue`);
       }
     } else {
       await variables.client.messager.send_err(variables,

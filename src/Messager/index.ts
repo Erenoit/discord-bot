@@ -228,8 +228,6 @@ class Messager {
         components: []
       });
 
-      console.log("Button Pressed: ", answer);
-
       if (answer === "none") {
         return;
       } else if (answer === "all") {
@@ -295,7 +293,7 @@ class Messager {
       const select_symbol = "⮞";
       list = list.map((element, id) => {
         if (id === select - 1) {
-          return select_symbol + "  **" + element + "**";
+          return bold(select_symbol + "  " + element);
         } else {
           return "     " + element;
         }
@@ -308,10 +306,8 @@ class Messager {
   private embed_list(title: string, content: string, list: string[],
                      use_nums: boolean = false, start_number: number = 1,
                      select?: number): MessageEmbedOptions {
-    console.log("select: ", select);
     const new_content = this.normal_list(content, list, use_nums,
                                          start_number, select);
-    console.log(new_content);
     return this.basic_embed(title, new_content, this.colors.normal);
   }
 
@@ -329,6 +325,30 @@ class Messager {
 
     return new MessageButton(button_options);
   }
+}
+
+//-------------------------
+// Basic Markdown functions
+//-------------------------
+
+export const bold = (message: string) => {
+  return `**${message}**`;
+}
+
+export const italic = (message: string) => {
+  return `*${message}*`;
+}
+
+export const bold_italic = (message: string) => {
+  return `***${message}***`;
+}
+
+export const highlight = (message: string) => {
+  return `\`${message}\``;
+}
+
+export const block = (message: string, block_type: string = "") => {
+  return `\`\`\`${block_type}\n${message}\n\`\`\``;
 }
 
 export default Messager;
