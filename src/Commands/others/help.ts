@@ -1,27 +1,37 @@
+import { MessageEmbedOptions } from "discord.js";
 import { Command } from "../../Interfaces";
+import { bold, bold_italic, highlight } from "../../Messager";
 
 export const command: Command = {
   name: "help",
   description: "Displays the help message.",
+  category: "Other",
   aliases: ["h"],
   run: async (variables) => {
-    const main = variables.type === "Old" ? variables.message
-               : variables.interaction;
+    let content = "";
+    let last_category = "";
 
-    // TODO: make help message automaticly created
-    main.reply(`
-**The Bot**
-**Creator**: Eren Önen
-**Commands**:
-  **- General:**
-  **(help, h):** Prints this message
-  **ping:** Can be used to test if bot is online or not
+    variables.client.commands.sort((one, two) => {
+      return one.category >= two.category ? 1 : -1;
+    }).forEach((command) => {
+      if (command.category !== last_category) {
+        content += bold(`${command.category} Commands:`) + "\n";
+        last_category = command.category;
+      }
 
-  **- Music:**
-  **(play, p) <link or song name>:** Plays the song. If it is already playing adds the song to queue.
-  **stop:** Stops the music
-  **(skip, s):** Skips the current song
-  **(queue, q):** Shows the queue
-  `);
+      let main = "";
+      
+      main += `\t${command.name}`;
+
+      command.options?.forEach((option) => {
+        main += ` ${highlight(`<${option.name}>`)}`;
+      });
+
+      main += ":";
+
+      content += `${bold(main)} ${command.description}\n`;
+    });
+
+    variables.client.messager.send_normal(variables, "Help", content);
   }
 };

@@ -4,6 +4,7 @@ import { Command } from "../../Interfaces";
 export const command: Command = {
   name: "play",
   description: "Adds song to queue",
+  category: "Music",
   options: [{
     name: "song",
     description: "Song name or Song URL",

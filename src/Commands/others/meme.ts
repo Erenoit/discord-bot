@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 export const command: Command = {
   name: "meme",
   description: "Sends random meme from r/memes",
+  category: "Entertainment",
   aliases: [],
   run: async (variables) => {
     const link = "https://www.reddit.com/r/memes/random/.json";

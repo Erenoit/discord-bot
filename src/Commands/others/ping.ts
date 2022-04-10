@@ -3,6 +3,7 @@ import { Command } from "../../Interfaces";
 export const command: Command = {
   name: "ping",
   description: "Check if bot is online.",
+  category: "Other",
   aliases: [],
   run: async (variables) => {
     const main = variables.type === "Old" ? variables.message

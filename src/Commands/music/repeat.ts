@@ -5,6 +5,7 @@ import { Command } from "../../Interfaces";
 export const command: Command = {
   name: "repeat",
   description: "Changes repeat option",
+  category: "Music",
   options: [{
     name: "option",
     description: "'None', 'one' or 'all'",

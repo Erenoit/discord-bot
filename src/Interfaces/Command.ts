@@ -23,9 +23,10 @@ interface New extends CommonVars {
 export type Variables = New | Old;
 
 export interface Command {
-  name: string;
-  description: string;
+  name: string,
+  description: string,
+  category: string,
   options?: ApplicationCommandOptionData[],
-  aliases?: string[];
-  run: Run;
+  aliases: string[],
+  run: Run,
 }
