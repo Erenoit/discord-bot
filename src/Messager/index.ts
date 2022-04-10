@@ -262,6 +262,10 @@ class Messager {
     this.send(variables, msg);
   }
 
+  public send_embed(variables: Variables, embed: MessageEmbedOptions) {
+    this.send(variables, {embeds: [embed]});
+  }
+
   private async send(variables: Variables, msg: MessageOptions) {
     const main = variables.type === "Old" ? variables.message : variables.interaction;
 
