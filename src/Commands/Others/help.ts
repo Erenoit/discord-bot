@@ -1,6 +1,5 @@
-import { MessageEmbedOptions } from "discord.js";
 import { Command } from "../../Interfaces";
-import { bold, bold_italic, highlight } from "../../Messager";
+import { bold, highlight } from "../../Messager";
 
 export const command: Command = {
   name: "help",
@@ -24,7 +23,7 @@ export const command: Command = {
       main += `\t${command.name}`;
 
       command.options?.forEach((option) => {
-        main += ` ${highlight(`<${option.name}>`)}`;
+        main += ` ${highlight(`<${option.name}${!option.required ? "?" : ""}>`)}`;
       });
 
       main += ":";
