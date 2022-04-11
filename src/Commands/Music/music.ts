@@ -39,13 +39,12 @@ export const command: Command = {
                : variables.interaction.options.getString("key")!;
 
       if (args === "help") {
-        // TODO: implement help
         variables.client.messager.send_err(variables,
-                  "help function is not implemented yet!");
+                  `Usable keys:\n\t${Array.from(keywords.keys()).join(", ")}.`);
         return;
       }
 
-        const url = keywords.get(args);
+      const url = keywords.get(args);
 
       if (url === undefined) {
         throw "Error";
