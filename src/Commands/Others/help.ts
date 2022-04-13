@@ -23,7 +23,7 @@ export const command: Command = {
       main += `\t${command.name}`;
 
       command.options?.forEach((option) => {
-        main += ` ${highlight(`<${option.name}${!option.required ? "?" : ""}>`)}`;
+        main += ` ${highlight(`<${option.name}>`)}`;
       });
 
       main += ":";

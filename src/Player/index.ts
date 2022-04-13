@@ -12,9 +12,11 @@ import playdl, { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack,
 import { RepeatOptions, Song, SpotifyConfig, StreamOptions, Variables } from "../Interfaces";
 
 //Messager
-import { bold, highlight } from "../Messager";
+import Messager, { bold, highlight } from "../Messager";
 
 class Player {
+  private messager:      Messager      = new Messager();
+
   private song_queue:    Array<Song>   = [];
   private repeat_queue:  Array<Song>   = [];
   private now_playing:   Song | null   = null;
@@ -104,7 +106,7 @@ class Player {
         if (this.connection) { return true; }
         else { return false; }
       } else {
-        await variables.client.messager.send_err(variables,
+        await this.messager.send_err(variables,
                "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
                "Failed to join to voice channel");
 
@@ -139,8 +141,8 @@ class Player {
       // Youtube link
       await this.handle_youtube(variables, argument, user);
     } else {
-      await variables.client.messager.send_err(variables,
-             "Invalid URL.", "Took invalid URL: " + url);
+      await this.messager.send_err(variables,
+                "Invalid URL.", "Took invalid URL: " + url);
       return;
     }
 
@@ -151,31 +153,31 @@ class Player {
 
   public async pause(variables: Variables) {
     if (!this.now_playing) {
-      await variables.client.messager.send_err(variables, "Nothings playing.");
+      await this.messager.send_err(variables, "Nothings playing.");
       return;
     }
 
     if (!this.is_paused) {
       this.stream.pause();
       this.is_paused = true;
-      await variables.client.messager.send_sucsess(variables, "Player is paused.");
+      await this.messager.send_sucsess(variables, "Player is paused.");
     } else {
-      await variables.client.messager.send_err(variables, "Player is already paused! :angry:");
+      await this.messager.send_err(variables, "Player is already paused! :angry:");
     }
   }
 
   public async resume(variables: Variables) {
     if (!this.now_playing) {
-      await variables.client.messager.send_err(variables, "Nothings playing.");
+      await this.messager.send_err(variables, "Nothings playing.");
       return;
     }
 
     if (this.is_paused) {
       this.stream.pause();
       this.is_paused = true;
-      await variables.client.messager.send_sucsess(variables, "Player is resumed.");
+      await this.messager.send_sucsess(variables, "Player is resumed.");
     } else {
-      await variables.client.messager.send_err(variables, "Player is already playing! :angry:");
+      await this.messager.send_err(variables, "Player is already playing! :angry:");
     }
   }
 
@@ -187,17 +189,17 @@ class Player {
     this.player.stop();
 
     if (variables) {
-      await variables.client.messager.send_normal(variables, "Goodbye", ":sob:");
+      await this.messager.send_normal(variables, "Goodbye", ":sob:");
     }
   }
 
   public async skip(variables: Variables) {
     if (this.now_playing) {
-      await variables.client.messager.send_sucsess(variables,
+      await this.messager.send_sucsess(variables,
              `${highlight(this.now_playing.name)} is skipped`);
       this.start();
     } else {
-      await variables.client.messager.send_err(variables, "We cannot skip. Nothings playing.");
+      await this.messager.send_err(variables, "We cannot skip. Nothings playing.");
     }
   }
 
@@ -218,10 +220,10 @@ class Player {
           this.repeat_option = "All";
           break;
         default:
-          await variables.client.messager.send_err(variables, "Invalid option.");
+          await this.messager.send_err(variables, "Invalid option.");
           return;
       }
-      await variables.client.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
+      await this.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
     } else {
       const list = [
         {name: "None", id: "None", disabled: this.repeat_option === "None"},
@@ -230,16 +232,15 @@ class Player {
       ];
       const content = `Current repeat ooption is ${highlight(this.repeat_option)}. Select one to change:`;
       
-      await variables.client.messager.send_selection(variables, list, this.repeat,
-                                                     variables.client.player,
-                                                     "Repeat", content);
+      await this.messager.send_selection(variables, list,
+                this.repeat, variables.client.player, "Repeat", content);
     }
   }
 
   public async shuffle(variables: Variables) {
     if (this.song_queue.length === 0 &&
         this.repeat_queue.length === 0) {
-      await variables.client.messager.send_err(variables, "Queue is empty");
+      await this.messager.send_err(variables, "Queue is empty");
       return;
     }
 
@@ -257,13 +258,13 @@ class Player {
       this.song_queue[j] = tmp;
     }
 
-    await variables.client.messager.send_sucsess(variables,
+    await this.messager.send_sucsess(variables,
            "Queue is shuffled.", "Queue shuffled");
   }
 
   public async queue(variables: Variables) {
     if (!this.now_playing) {
-      await variables.client.messager.send_err(variables, "Nothings playing. :unamused: ");
+      await this.messager.send_err(variables, "Nothings playing. :unamused: ");
       return;
     }
 
@@ -277,10 +278,8 @@ class Player {
       queue_list.push(`${this.song_queue[i].name} [${this.song_queue[i].length}]`);
     }
 
-    await variables.client.messager.send_list(variables,
-                                              "Queue", "Song queue:",
-                                              queue_list, true,
-                                              start_number, 1);
+    await this.messager.send_list(variables, "Queue", "Song queue:",
+              queue_list, true, start_number, 1);
   }
 
   private async change_stream() {
@@ -352,9 +351,10 @@ class Player {
         };
       });
 
-      variables.client.messager.send_selection_from_list(variables, list, true, this.play, variables.client.player, "Search");
+      this.messager.send_selection_from_list(variables, list,
+                   true, this.play, variables.client.player, "Search");
     } else {
-      await variables.client.messager.send_err(variables,
+      await this.messager.send_err(variables,
                 "Requested song could not be found. Try to search with different key words.");
     }
   }
@@ -366,10 +366,10 @@ class Player {
 
       if (raw_resoults) {
         this.push_to_queue(raw_resoults.video_details, user);
-        await variables.client.messager.send_sucsess(variables,
+        await this.messager.send_sucsess(variables,
                   `${raw_resoults.video_details.title} has been added to the queue.`);
       } else {
-        await variables.client.messager.send_err(variables,
+        await this.messager.send_err(variables,
                   "Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
       }
     } else {
@@ -380,21 +380,21 @@ class Player {
         const raw_resoults2 = raw_resoults.toJSON();
         
         if (raw_resoults2.videos) {
-           await variables.client.messager.send_normal(variables,
-                           "Started", "Started to add songs to queue");
+           await this.messager.send_normal(variables,
+                     "Started", "Started to add songs to queue");
 
           raw_resoults2.videos.forEach((raw_song) => {
             this.push_to_queue(raw_song, user);
           });
 
-          await variables.client.messager.send_sucsess(variables,
+          await this.messager.send_sucsess(variables,
                     `${bold(raw_resoults2.videos.length.toString())} songs added to queue.`);
         } else {
-          await variables.client.messager.send_err(variables,
+          await this.messager.send_err(variables,
                     "Error happened while looking to playlist.");
         }
       } else {
-        await variables.client.messager.send_err(variables,
+        await this.messager.send_err(variables,
                   "Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
@@ -402,7 +402,7 @@ class Player {
 
   private async handle_spotify(variables: Variables, argument: string, user: string) {
     if (!this.can_use_sp) {
-      await variables.client.messager.send_err(variables,
+      await this.messager.send_err(variables,
                 "Bot is not logined to spotify. Please request from bot's administrator.",
                 "Spotify support wanted");
       return;
@@ -424,10 +424,10 @@ class Player {
 
         if (yt_resoult && yt_resoult.length > 0) {
           this.push_to_queue(yt_resoult[0], user);
-          await variables.client.messager.send_sucsess(variables,
+          await this.messager.send_sucsess(variables,
                     `${yt_resoult[0].title} has been added to the queue.`);
         } else {
-          await variables.client.messager.send_err(variables,
+          await this.messager.send_err(variables,
                     "Requested song could not be found.");
         }
       } else if (raw_resoults.type === "playlist" || raw_resoults.type === "album") {
@@ -442,7 +442,7 @@ class Player {
 
         const track_list = await raw_resoults2.all_tracks();
 
-        await variables.client.messager.send_normal(variables,
+        await this.messager.send_normal(variables,
                   "Started", "Started to add songs to queue");
 
         const wait = track_list.map((raw_song) => {
@@ -454,23 +454,23 @@ class Player {
           if (yt_resoult.length > 0) {
             this.push_to_queue(yt_resoult[0], user);
           } else {
-            variables.client.messager.send_err(variables,
+            this.messager.send_err(variables,
                 `${highlight(raw_resoults.name)} could not be found`);
             missed_songs++;
           }
         })).catch((err) => {
-          variables.client.messager.send_err(variables,
+          this.messager.send_err(variables,
               "An error accured while opening the "
               + raw_resoults.type === "playlist" ? "playlist"
                                                  : "album");
           console.log(err);
         });
 
-        await variables.client.messager.send_sucsess(variables,
+        await this.messager.send_sucsess(variables,
                   `${highlight((raw_resoults2.tracksCount - missed_songs).toString())} songs added to the queue`);
       }
     } else {
-      await variables.client.messager.send_err(variables,
+      await this.messager.send_err(variables,
                 "We cannot found anything with this link. Thw link may be broken.");
     }
   }
