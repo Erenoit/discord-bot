@@ -3,24 +3,25 @@
 
 ## Quick Start
 1. Clone this repository:
-    ```shell
-    $ git clone https://gitlab.com/Erenoit/discord-bot.git
-    ```
-2. Add evironmental variables (or use a .env file in project root) with (you can ignore the ones with `?`),
-    ```.env
-    TOKEN=YOUR_BOT_TOKEN,
-    PREFIX=PREFERED_PREFIX,
-    YT_COOKIE?=YOUR_YOUTUBE_COOKIE
-    SP_CLIENT_ID?=YOUR_SPOTIFY_CLIENT_ID
-    SP_CLIENT_SECRET?=YOUR_SPOTIFY_CLIENT_SECRET
-    SP_REFRESH_TOKEN?=YOUR_SPOTIFY_REFRESH_TOKEN
-    ```
+```shell
+$ git clone https://gitlab.com/Erenoit/discord-bot.git
+```
+
+2. Add environmental variables (or use a .env file in project root):
+- **TOKEN:** Your bot's token,
+- **PREFIX:** Prefix you want to use with commands,
+- **YT_COOKIE:** YouTube cookie *optional*
+- **SP_CLIENT_ID:** Spotify client ID *optional*
+- **SP_CLIENT_SECRET:** Spotify client secret *optional*
+- **SP_REFRESH_TOKEN:** Spotify refresh token *optional*
+**More info:** [playdl instructions](https://github.com/play-dl/play-dl/tree/main/instructions).
+
 3. `cd` into repository and run the following commands:
-    ```shell
-    $ yarn install
-    $ tsc
-    $ node ./compiled/index.js
-    ```
+```shell
+$ yarn install
+$ tsc
+$ node ./compiled/index.js
+```
 
 ## Dependencies
 - [Node.js](https://nodejs.org/)
