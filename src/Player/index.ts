@@ -224,9 +224,11 @@ class Player {
       switch (argument) {
         case "none":
           this.repeat_option = "None";
+          this.repeat_queue  = [];
           break;
         case "one":
           this.repeat_option = "One";
+          this.repeat_queue  = [];
           break;
         case "all":
           this.repeat_option = "All";
@@ -245,7 +247,7 @@ class Player {
       const content = `Current repeat ooption is ${highlight(this.repeat_option)}. Select one to change:`;
       
       await this.messager.send_selection(variables, list,
-                this.repeat, variables.client.player, "Repeat", content);
+                this.repeat, this, "Repeat", content);
     }
   }
 
@@ -364,7 +366,7 @@ class Player {
       });
 
       this.messager.send_selection_from_list(variables, list,
-                   true, this.play, variables.client.player, "Search");
+                   true, this.play, this, "Search");
     } else {
       await this.messager.send_err(variables,
                 "Requested song could not be found. Try to search with different key words.");

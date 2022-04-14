@@ -9,6 +9,5 @@ export const command: Command = {
     variables.client.messager.send_confirm(variables,
               variables.client.player.shuffle, variables.client.player, [variables],
               "You cannot undo shuffleing.");
-    ;
   }
 }
