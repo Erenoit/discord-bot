@@ -187,8 +187,7 @@ class Player {
 
   public async stop(variables?: Variables) {
     this.now_playing  = null;
-    this.song_queue   = [];
-    this.repeat_queue = [];
+    this.clear();
 
     this.player.stop();
 
@@ -204,6 +203,15 @@ class Player {
       this.start();
     } else {
       await this.messager.send_err(variables, "We cannot skip. Nothings playing.");
+    }
+  }
+
+  public clear(variables?: Variables) {
+    this.song_queue   = [];
+    this.repeat_queue = [];
+
+    if (variables) {
+      this.messager.send_sucsess(variables, "The queue is cleared.");
     }
   }
 
