@@ -113,7 +113,14 @@ class Player {
     } else { return true; }
   }
 
+  public leaveVC(variables: Variables) {
+    if (!this.connection || this.connection.state.status === "ready") {
+      this.messager.send_err(variables, "I am not in a voice channel");
+      return;
     }
+
+    this.connection.disconnect();
+    this.stop();
   }
 
   public async play(variables: Variables, url?: string) {
