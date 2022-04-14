@@ -87,9 +87,7 @@ class Player {
   }
 
   public async joinVC(variables: Variables): Promise<boolean> {
-    if (!this.connection) {
-      console.log("FIRST TIME JOIN");
-
+    if (!this.connection || this.connection.state.status !== "ready") {
       const main = variables.type === "Old" ? variables.message : variables.interaction;;
       const channelID = (main.member as GuildMember).voice?.channel?.id
       const guildID   = main.guild?.id;
@@ -112,10 +110,9 @@ class Player {
 
         return false;
       }
-    } else {
-      console.log("RECONNECTING");
-      const sonnection = this.connection.rejoin();
-      return sonnection;
+    } else { return true; }
+  }
+
     }
   }
 
@@ -370,7 +367,8 @@ class Player {
                   `${raw_resoults.video_details.title} has been added to the queue.`);
       } else {
         await this.messager.send_err(variables,
-                  "Requested song could not be found. Link may be broken, from hidden video or from unsported source.");
+                  "Requested song could not be found. Link may be broken, from hidden video or from unsported source."
+                + `\nThe link was: ${argument}`);
       }
     } else {
       const raw_resoults = await playdl.playlist_info(argument, { incomplete: true })

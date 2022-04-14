@@ -3,7 +3,7 @@ import { Command } from "../../Interfaces";
 
 export const command: Command = {
   name: "join",
-  description: "Joins to the voice channel",
+  description: "Joins the voice channel",
   category: "Music",
   options: [{
     name: "channel",
