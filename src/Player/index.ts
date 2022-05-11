@@ -200,7 +200,15 @@ class Player {
     if (this.now_playing) {
       await this.messager.send_sucsess(variables,
              `${highlight(this.now_playing.name)} is skipped`);
-      this.start();
+
+      // Fix for skip with repeat one
+      if (this.repeat_option === "One") {
+        this.repeat(variables, "None", true);
+        this.start();
+        this.repeat(variables, "One", true);
+      } else {
+        this.start();
+      }
     } else {
       await this.messager.send_err(variables, "We cannot skip. Nothings playing.");
     }
@@ -215,7 +223,7 @@ class Player {
     }
   }
 
-  public async repeat(variables: Variables, option?: RepeatOptions) {
+  public async repeat(variables: Variables, option?: RepeatOptions, silent?: boolean) {
     const argument  = (option ? option 
                     : variables.type === "Old" ? variables.args.join(" ")
                     : variables.interaction.options.getString("option")!)
@@ -237,7 +245,8 @@ class Player {
           await this.messager.send_err(variables, "Invalid option.");
           return;
       }
-      await this.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
+      if (!silent)
+        await this.messager.send_sucsess(variables, `Repeat is changed to ${argument}.`);
     } else {
       const list = [
         {name: "None", id: "None", disabled: this.repeat_option === "None"},
