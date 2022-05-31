@@ -218,13 +218,15 @@ class Messager {
     this.send(variables, {embeds: [embed]});
   }
 
-  private async send(variables: Variables, msg: MessageOptions) {
-    const main = variables.type === "Old" ? variables.message : variables.interaction;
-
-    if (variables.type === "New" && variables.interaction.replied) {
-      return await variables.interaction.followUp(msg);
+  private async send(variables: Variables, msg: MessageOptions): Promise<Message> {
+    if (variables.type === "New") {
+      if (variables.interaction.replied) {
+      return await variables.interaction.followUp({...msg, fetchReply: true}) as Message;
+      } else {
+        return await variables.interaction.reply({...msg, fetchReply: true}) as Message;
+      }
     } else {
-      return await main.reply(msg);
+      return await variables.message.reply(msg);
     }
   }
 
@@ -291,7 +293,7 @@ class Messager {
                                  end_text?: string,
                                  custom_end_func?: (collection: Collection<Interaction>, reason: string) => void
                                 ) {
-    const sent_msg = await this.send(variables, message) as Message;
+    const sent_msg = await this.send(variables, message);
 
     const collector = channel.createMessageComponentCollector({
       filter,
