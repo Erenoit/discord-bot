@@ -5,6 +5,7 @@ import { Variables } from "../Interfaces";
 
 class Messager {
   private use_embed: boolean = false;
+  private time_limit: number = 30 * 1000;
   private colors = {
     sucsess: 0x00ff00,
     normal:  0x0000ff,
@@ -70,7 +71,7 @@ class Messager {
     const collector = channel.createMessageComponentCollector({
       filter,
       max: 1, // take input only once
-      time: 10 * 1000 // 10sec time limit
+      time: this.time_limit
     });
 
     // TODO: use reason variable to respond specific to reasons
@@ -136,7 +137,7 @@ class Messager {
     const collector = channel.createMessageComponentCollector({
       filter,
       max: 1, // take input only once
-      time: 10 * 1000 // 10sec time limit
+      time: this.time_limit
     });
 
     // TODO: use reason variable to respond specific to reasons
@@ -213,7 +214,7 @@ class Messager {
     const collector = channel.createMessageComponentCollector({
       filter,
       max: 1, // take input only once
-      time: 10 * 1000 // 10sec time limit
+      time: this.time_limit
     });
 
     // TODO: use reason variable to respond specific to reasons
