@@ -1,4 +1,4 @@
-import { ButtonInteraction, Interaction, Message, MessageActionRow,
+import { ButtonInteraction, Interaction, InteractionReplyOptions, Message, MessageActionRow,
          MessageButton, MessageButtonOptions, MessageButtonStyle,
          MessageComponentInteraction, MessageEmbedOptions,
          MessageOptions, TextBasedChannel } from "discord.js"
@@ -221,9 +221,11 @@ class Messager {
   private async send(variables: Variables, msg: MessageOptions): Promise<Message> {
     if (variables.type === "New") {
       if (variables.interaction.replied) {
-      return await variables.interaction.followUp({...msg, fetchReply: true}) as Message;
+        return await variables.interaction.followUp({...(msg as InteractionReplyOptions),
+                                                     fetchReply: true}) as Message;
       } else {
-        return await variables.interaction.reply({...msg, fetchReply: true}) as Message;
+        return await variables.interaction.reply({...(msg as InteractionReplyOptions),
+                                                  fetchReply: true}) as Message;
       }
     } else {
       return await variables.message.reply(msg);

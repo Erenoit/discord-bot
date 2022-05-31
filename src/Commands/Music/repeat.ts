@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionChoice } from "discord.js";
+import { ApplicationCommandOptionChoiceData } from "discord.js";
 import { ApplicationCommandOptionTypes } from "discord.js/typings/enums";
 import { Command } from "../../Interfaces";
 
@@ -15,7 +15,7 @@ export const command: Command = {
       {name: "None", value: "none"},
       {name: "One", value: "one"},
       {name: "All", value: "all"},
-    ] as ApplicationCommandOptionChoice[],
+    ] as ApplicationCommandOptionChoiceData[],
     //autocomplete: true,
   }],
   aliases: ["r"],
