@@ -1,6 +1,8 @@
-import { Message, MessageActionRow, MessageButton, MessageButtonOptions,
-         MessageButtonStyle, MessageComponentInteraction,
-         MessageEmbedOptions, MessageOptions } from "discord.js"
+import { ButtonInteraction, Interaction, Message, MessageActionRow,
+         MessageButton, MessageButtonOptions, MessageButtonStyle,
+         MessageComponentInteraction, MessageEmbedOptions,
+         MessageOptions, TextBasedChannel } from "discord.js"
+import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
 
 class Messager {
@@ -60,36 +62,19 @@ class Messager {
       components: [row]
     };
 
-    await this.send(variables, msg);
-
     const filter = (interaction: MessageComponentInteraction) => {
       const user_id = variables.type === "Old" ? variables.message.member?.user.id
                                                : variables.interaction.user.id;
       return interaction.user.id === user_id;
     };
 
-    const collector = channel.createMessageComponentCollector({
-      filter,
-      max: 1, // take input only once
-      time: this.time_limit
-    });
-
-    // TODO: use reason variable to respond specific to reasons
-    collector.on("end", (collection, reason) => {
-      const btn_inter = collection.first();
-      if (!btn_inter) { return; }
-      const answer = btn_inter.customId;
-      const btn_msg = btn_inter.message as Message;
-
-      btn_msg.edit({
-        content: end_text || "An action has already been taken",
-        components: []
-      });
-
-      if (answer === "confirm_yes") {
+    const collect_fun = (interaction: ButtonInteraction) => {
+      if (interaction.customId === "confirm_yes") {
         call_func.apply(func_this, func_params);
       }
-    });
+    };
+
+    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_selection(variables: Variables,
@@ -126,42 +111,25 @@ class Messager {
       };
     }
 
-    await this.send(variables, msg);
-
     const filter = (interaction: MessageComponentInteraction) => {
       const user_id = variables.type === "Old" ? variables.message.member?.user.id
                                                : variables.interaction.user.id;
       return interaction.user.id === user_id;
     };
 
-    const collector = channel.createMessageComponentCollector({
-      filter,
-      max: 1, // take input only once
-      time: this.time_limit
-    });
-
-    // TODO: use reason variable to respond specific to reasons
-    collector.on("end", (collection, reason) => {
-      const btn_inter = collection.first();
-      if (!btn_inter) { return; }
-      const answer = btn_inter.customId;
-      const btn_msg = btn_inter.message as Message;
-
-      btn_msg.edit({
-        content: end_text || "An action has already been taken",
-        components: []
-      });
-
-      if (answer === "none") {
+    const collect_fun = (interaction: ButtonInteraction) => {
+      if (interaction.customId === "none") {
         return;
-      } else if (answer === "all") {
+      } else if (interaction.customId === "all") {
         list.forEach(({name, id}) => {
           call_func.apply(func_this, [variables, id]);
         });
       } else {
-        call_func.apply(func_this, [variables, answer]);
+        call_func.apply(func_this, [variables, interaction.customId]);
       }
-    });
+    };
+    
+    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_selection_from_list(variables: Variables,
@@ -203,42 +171,25 @@ class Messager {
       };
     }
 
-    await this.send(variables, msg);
-
     const filter = (interaction: MessageComponentInteraction) => {
       const user_id = variables.type === "Old" ? variables.message.member?.user.id
                                                : variables.interaction.user.id;
       return interaction.user.id === user_id;
     };
 
-    const collector = channel.createMessageComponentCollector({
-      filter,
-      max: 1, // take input only once
-      time: this.time_limit
-    });
-
-    // TODO: use reason variable to respond specific to reasons
-    collector.on("end", (collection, reason) => {
-      const btn_inter = collection.first();
-      if (!btn_inter) { return; }
-      const answer = btn_inter.customId;
-      const btn_msg = btn_inter.message as Message;
-
-      btn_msg.edit({
-        content: end_text || "An action has already been taken",
-        components: []
-      });
-
-      if (answer === "none") {
+    const collect_fun = (interaction: ButtonInteraction) => {
+      if (interaction.customId === "none") {
         return;
-      } else if (answer === "all") {
+      } else if (interaction.customId === "all") {
         list.forEach(({name, id}) => {
           call_func.apply(func_this, [variables, id]);
         });
       } else {
-        call_func.apply(func_this, [variables, answer]);
+        call_func.apply(func_this, [variables, interaction.customId]);
       }
-    });
+    };
+
+    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_list(variables: Variables, title: string, content: string, list: string[],
@@ -271,9 +222,9 @@ class Messager {
     const main = variables.type === "Old" ? variables.message : variables.interaction;
 
     if (variables.type === "New" && variables.interaction.replied) {
-      await variables.interaction.followUp(msg);
+      return await variables.interaction.followUp(msg);
     } else {
-      await main.reply(msg);
+      return await main.reply(msg);
     }
   }
 
@@ -329,6 +280,42 @@ class Messager {
     }
 
     return new MessageButton(button_options);
+  }
+
+  private async handle_collector(variables: Variables,
+                                 message: MessageOptions, channel: TextBasedChannel,
+                                 collector_func: ((interaction: Interaction) => void)
+                                               | ((interction: ButtonInteraction) => void),
+                                 filter?: (interaction: MessageComponentInteraction) => boolean,
+                                 max_interaction?: number,
+                                 end_text?: string,
+                                 custom_end_func?: (collection: Collection<Interaction>, reason: string) => void
+                                ) {
+    const sent_msg = await this.send(variables, message) as Message;
+
+    const collector = channel.createMessageComponentCollector({
+      filter,
+      max: max_interaction,
+      time: this.time_limit
+    });
+
+    collector.on("collect", collector_func);
+
+    collector.on("end", custom_end_func || ((collection, reason) => {
+      if (reason === "time") {
+        sent_msg.edit({
+          content: "Interaction timed out.",
+          components: []
+        });
+      } else if (reason === "limit") {
+        sent_msg.edit({
+          content: end_text || "An action has already been taken.",
+          components: []
+        });
+      } else {
+        console.log("New reason:", reason);
+      }
+    }));
   }
 }
 
