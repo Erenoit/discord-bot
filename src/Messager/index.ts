@@ -121,7 +121,7 @@ class Messager {
       if (interaction.customId === "none") {
         return;
       } else if (interaction.customId === "all") {
-        list.forEach(({name, id}) => {
+        list.forEach(({id}) => {
           call_func.apply(func_this, [variables, id]);
         });
       } else {
@@ -148,7 +148,7 @@ class Messager {
     const msg_title = title ? title : "Select";
     const main_row = new MessageActionRow()
                 .addComponents(
-                  ...list.map(({name, id, disabled}, index) => {
+                  ...list.map(({id, disabled}, index) => {
                     return this.create_button(id, (index + 1).toString(), "PRIMARY", disabled);
                   }));
     const secondary_row = new MessageActionRow()
@@ -181,7 +181,7 @@ class Messager {
       if (interaction.customId === "none") {
         return;
       } else if (interaction.customId === "all") {
-        list.forEach(({name, id}) => {
+        list.forEach(({id}) => {
           call_func.apply(func_this, [variables, id]);
         });
       } else {
@@ -303,7 +303,7 @@ class Messager {
 
     collector.on("collect", collector_func);
 
-    collector.on("end", custom_end_func || ((collection, reason) => {
+    collector.on("end", custom_end_func || ((_collection, reason) => {
       if (reason === "time") {
         sent_msg.edit({
           content: "Interaction timed out.",
