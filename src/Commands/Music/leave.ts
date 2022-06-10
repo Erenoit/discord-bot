@@ -6,7 +6,7 @@ export const command: Command = {
   category: "Music",
   aliases: ["l"],
   run: (variables) => {
-    variables.client.player.leaveVC(variables);
+    variables.client.servers.get(variables.guild_id)?.player.leaveVC(variables);
   }
 }
 

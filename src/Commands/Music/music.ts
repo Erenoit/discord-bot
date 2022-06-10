@@ -50,7 +50,7 @@ export const command: Command = {
         throw "Error";
       }
 
-      variables.client.player.play(variables, url);
+      variables.client.servers.get(variables.guild_id)?.player.play(variables, url);
     } catch {
       variables.client.messager.send_err(variables,
                 "Invalid argument. Use `-music help` for more information.");

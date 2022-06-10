@@ -20,6 +20,6 @@ export const command: Command = {
   }],
   aliases: ["r"],
   run: (variables) => {
-    variables.client.player.repeat(variables);
+    variables.client.servers.get(variables.guild_id)?.player.repeat(variables);
   }
 }

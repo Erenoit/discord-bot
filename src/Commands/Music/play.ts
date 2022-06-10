@@ -13,6 +13,6 @@ export const command: Command = {
   }],
   aliases: ["p"],
   run: (variables) => {
-    variables.client.player.play(variables);
+    variables.client.servers.get(variables.guild_id)?.player.play(variables);
   }
 }

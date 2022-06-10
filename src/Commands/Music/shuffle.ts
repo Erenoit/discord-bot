@@ -6,8 +6,10 @@ export const command: Command = {
   category: "Music",
   aliases: [],
   run: (variables) => {
-    variables.client.messager.send_confirm(variables,
-              variables.client.player.shuffle, variables.client.player, [variables],
-              "You cannot undo shuffleing.");
+    const plyr = variables.client.servers.get(variables.guild_id)?.player;
+
+    if (plyr)
+      variables.client.messager.send_confirm(variables,
+                plyr.shuffle, plyr, [variables], "You cannot undo shuffleing.");
   }
 }

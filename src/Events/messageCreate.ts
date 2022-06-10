@@ -22,9 +22,10 @@ export const event: Event = {
     const given: Variables = {
       type: "Old",
       client,
+      guild_id: message.guild.id,
       message,
       args,
-    }
+    };
 
     const command = client.commands.get(cmd.toLowerCase()) || client.aliases.get(cmd.toLowerCase());
     if (command) { console.log(`Command: ${command.name}`); command.run(given); }

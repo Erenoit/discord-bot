@@ -6,6 +6,6 @@ export const command: Command = {
   category: "Music",
   aliases: [],
   run: (variables) => {
-    variables.client.player.pause(variables);
+    variables.client.servers.get(variables.guild_id)?.player.pause(variables);
   }
 }

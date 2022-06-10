@@ -10,6 +10,13 @@ export const event: Event = {
         return;
       }
 
+      const guild_id = interaction.guild?.id;
+
+      if (!guild_id) {
+        interaction.reply("An error accured. Please try again.");
+        return;
+      }
+
       const cmd = client.commands.get(interaction.commandName);
 
       if (!cmd) {
@@ -21,9 +28,10 @@ export const event: Event = {
 
       const given: Variables = {
         type: "New",
+        guild_id,
         client,
         interaction
-      }
+      };
 
       cmd.run(given);
     }

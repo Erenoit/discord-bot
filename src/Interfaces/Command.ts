@@ -1,6 +1,7 @@
 import Client from "../Client/";
 import { ApplicationCommandOptionData,
-         CommandInteraction, Message } from "discord.js";
+         CommandInteraction, Message,
+         Snowflake } from "discord.js";
 
 interface Run {
   (variables: Variables): void;
@@ -8,6 +9,7 @@ interface Run {
 
 interface CommonVars {
   client: Client,
+  guild_id: Snowflake
 }
 
 interface Old extends CommonVars {

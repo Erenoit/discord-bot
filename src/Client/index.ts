@@ -1,21 +1,22 @@
 import { ApplicationCommandManager, Client,
-         Collection, GuildApplicationCommandManager } from "discord.js";
+         Collection, GuildApplicationCommandManager,
+         Snowflake } from "discord.js";
 import { readdirSync } from "fs";
 import path from "path";
 import dotenv from "dotenv";
 
-import { Command, Config, Event } from "../Interfaces";
+import { Command, Config, Event, Server } from "../Interfaces";
 import Player from "../Player";
 import Messager from "../Messager";
 
 
 
 class MyClient extends Client {
-  public commands: Collection<string, Command> = new Collection();
-  public events:   Collection<string, Event>   = new Collection();
-  public aliases:  Collection<string, Command> = new Collection();
-  public player:   Player                      = new Player();
-  public messager: Messager                    = new Messager();  
+  public commands: Collection<string, Command>   = new Collection();
+  public events:   Collection<string, Event>     = new Collection();
+  public aliases:  Collection<string, Command>   = new Collection();
+  public servers:  Collection<Snowflake, Server> = new Collection();
+  public messager: Messager                      = new Messager();
   public config:   Config;
 
   public async init() {
@@ -28,18 +29,6 @@ class MyClient extends Client {
 
     // Events
     this.init_events();
-
-    // YouTube
-    if (this.config.yt_cookie) {
-      console.log("---------------- Youtube Cookies Found ----------------");
-      this.player.set_yt_cookie(this.config.yt_cookie);
-    }
-
-    // Spotify
-    if (this.config.spotify) {
-      console.log("---------------- Spotify Configs Found ----------------");
-      this.player.set_sp_tokens(this.config.spotify);
-    }
 
     // Login
     this.login(this.config.token);
@@ -140,6 +129,36 @@ class MyClient extends Client {
         options: command.options
       });
     });
+  }
+
+  public register_servers() {
+    this.guilds.cache.forEach((server) => {
+      const s: Server = {
+        guild_id: server.id,
+        prefix: this.config.prefix,
+        player: new Player()
+      };
+
+      this.servers.set(server.id, s);
+    });
+  }
+
+  public register_yt_cookie() {
+    if (this.config.yt_cookie) {
+      console.log("---------------- Youtube Cookies Found ----------------");
+      this.servers.forEach((server) => {
+        server.player.set_yt_cookie(this.config.yt_cookie!);
+      });
+    }
+  }
+
+  public register_sp_tokens() {
+    if (this.config.spotify) {
+      console.log("---------------- Spotify Configs Found ----------------");
+      this.servers.forEach((server) => {
+        server.player.set_sp_tokens(this.config.spotify!);
+      });
+    }
   }
 }
 

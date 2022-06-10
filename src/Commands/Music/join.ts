@@ -13,6 +13,6 @@ export const command: Command = {
   }],
   aliases: ["j"],
   run: (variables) => {
-    variables.client.player.joinVC(variables);
+    variables.client.servers.get(variables.guild_id)?.player.joinVC(variables);
   }
 }
