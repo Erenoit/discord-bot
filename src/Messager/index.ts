@@ -14,37 +14,37 @@ class Messager {
     error:   0xff0000,
   };
 
-  public async send_sucsess(variables: Variables, content: string, log_text?: string) {
+  public async send_sucsess(variables: Variables, content: string, log_text?: string): Promise<Message> {
     const title = "Sucsess";
-    await this.send_message(variables, title, content, this.colors.sucsess, log_text);
+    return this.send_message(variables, title, content, this.colors.sucsess, log_text);
   }
 
-  public async send_normal(variables: Variables, title: string, content: string, log_text?: string) {
-    await this.send_message(variables, title, content, this.colors.normal, log_text);
+  public async send_normal(variables: Variables, title: string, content: string, log_text?: string): Promise<Message> {
+    return this.send_message(variables, title, content, this.colors.normal, log_text);
   }
 
-  public async send_err(variables: Variables, content: string, log_text?: string) {
+  public async send_err(variables: Variables, content: string, log_text?: string): Promise<Message> {
     const title = "Error";
-    await this.send_message(variables, title, content, this.colors.error, log_text);
+    return this.send_message(variables, title, content, this.colors.error, log_text);
   }
 
   public async send_message(variables: Variables, title: string,
                       content: string, color: number,
-                      log_text?: string) {
+                      log_text?: string): Promise<Message> {
     const msg: MessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
                                                 : { content };
-
-    await this.send(variables, msg);
 
     if (log_text) {
       console.log(log_text);
     }
+
+    return this.send(variables, msg);
   }
 
   // TODO: find a way to not use (or better way to use) function pointers
   public async send_confirm(variables: Variables,
                       call_func: Function, func_this: any, func_params: any[],
-                      additional_text?: string, end_text?: string) {
+                      additional_text?: string, end_text?: string): Promise<Message | undefined> {
     const channel = variables.type === "Old" ? variables.message.channel
                                              : variables.interaction.channel;
     if (!channel) {
@@ -74,13 +74,13 @@ class Messager {
       }
     };
 
-    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
+    return this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_selection(variables: Variables,
                               list: Array<{name: string, id: string, disabled: boolean}>,
                               call_func: Function, func_this: any,
-                              title?: string, content?: string, end_text?: string) {
+                              title?: string, content?: string, end_text?: string): Promise<Message | undefined> {
     const channel = variables.type === "Old" ? variables.message.channel
                                              : variables.interaction.channel;
     if (!channel) {
@@ -129,14 +129,14 @@ class Messager {
       }
     };
     
-    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
+    return this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_selection_from_list(variables: Variables,
                                         list: Array<{name: string, id: string, disabled: boolean}>,
                                         use_second_row: boolean,
                                         call_func: Function, func_this: any,
-                                        title?: string, content?: string, end_text?: string) {
+                                        title?: string, content?: string, end_text?: string): Promise<Message | undefined> {
     const channel = variables.type === "Old" ? variables.message.channel
                                              : variables.interaction.channel;
     if (!channel) {
@@ -189,12 +189,12 @@ class Messager {
       }
     };
 
-    this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
+    return this.handle_collector(variables, msg, channel, collect_fun, filter, 1, end_text);
   }
 
   public async send_list(variables: Variables, title: string, content: string, list: string[],
                          use_nums: boolean = false, start_number: number = 1,
-                         select?: number) {
+                         select?: number): Promise<Message> {
     const msg: MessageOptions = this.use_embed
                               ? { embeds: [this.embed_list(title, content, list,
                                                            use_nums, start_number,
@@ -202,20 +202,20 @@ class Messager {
                               : { content: this.normal_list(content, list,
                                                             use_nums, start_number,
                                                             select) };
-    this.send(variables, msg);
+    return this.send(variables, msg);
   }
 
-  public async send_files(variables: Variables, content: string, files: string[]) {
+  public async send_files(variables: Variables, content: string, files: string[]): Promise<Message> {
     const msg: MessageOptions = {
       content,
       files
     };
 
-    this.send(variables, msg);
+    return this.send(variables, msg);
   }
 
-  public send_embed(variables: Variables, embed: MessageEmbedOptions) {
-    this.send(variables, {embeds: [embed]});
+  public async send_embed(variables: Variables, embed: MessageEmbedOptions): Promise<Message> {
+    return this.send(variables, {embeds: [embed]});
   }
 
   private async send(variables: Variables, msg: MessageOptions): Promise<Message> {
@@ -294,7 +294,7 @@ class Messager {
                                  max_interaction?: number,
                                  end_text?: string,
                                  custom_end_func?: (collection: Collection<Interaction>, reason: string) => void
-                                ) {
+                                ): Promise<Message> {
     const sent_msg = await this.send(variables, message);
 
     const collector = channel.createMessageComponentCollector({
@@ -320,6 +320,8 @@ class Messager {
         console.log("New reason:", reason);
       }
     }));
+
+    return sent_msg;
   }
 }
 
