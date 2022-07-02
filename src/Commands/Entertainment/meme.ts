@@ -31,7 +31,7 @@ export const command: Command = {
       };
 
       variables.client.messager.send_embed(variables, embed);
-    }).catch((err) => console.error(err));
+    });
   }
 };
 

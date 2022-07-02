@@ -4,8 +4,10 @@ import { ButtonInteraction, Interaction, InteractionReplyOptions, Message, Messa
          MessageOptions, TextBasedChannel } from "discord.js"
 import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
+import Logger from "../Logger";
 
 class Messager {
+  private logger:    Logger = new Logger();
   private use_embed: boolean = false;
   private time_limit: number = 30 * 1000;
   private colors = {
@@ -14,29 +16,24 @@ class Messager {
     error:   0xff0000,
   };
 
-  public async send_sucsess(variables: Variables, content: string, log_text?: string): Promise<Message> {
+  public async send_sucsess(variables: Variables, content: string): Promise<Message> {
     const title = "Sucsess";
-    return this.send_message(variables, title, content, this.colors.sucsess, log_text);
+    return this.send_message(variables, title, content, this.colors.sucsess);
   }
 
-  public async send_normal(variables: Variables, title: string, content: string, log_text?: string): Promise<Message> {
-    return this.send_message(variables, title, content, this.colors.normal, log_text);
+  public async send_normal(variables: Variables, title: string, content: string): Promise<Message> {
+    return this.send_message(variables, title, content, this.colors.normal);
   }
 
-  public async send_err(variables: Variables, content: string, log_text?: string): Promise<Message> {
+  public async send_err(variables: Variables, content: string): Promise<Message> {
     const title = "Error";
-    return this.send_message(variables, title, content, this.colors.error, log_text);
+    return this.send_message(variables, title, content, this.colors.error);
   }
 
   public async send_message(variables: Variables, title: string,
-                      content: string, color: number,
-                      log_text?: string): Promise<Message> {
+                      content: string, color: number): Promise<Message> {
     const msg: MessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
                                                 : { content };
-
-    if (log_text) {
-      console.log(log_text);
-    }
 
     return this.send(variables, msg);
   }
@@ -317,7 +314,7 @@ class Messager {
           components: []
         });
       } else {
-        console.log("New reason:", reason);
+        this.logger.warn("Unknown Collector End Reason", "Reason is: " + reason);
       }
     }));
 

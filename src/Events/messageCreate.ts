@@ -28,7 +28,7 @@ export const event: Event = {
     };
 
     const command = client.commands.get(cmd.toLowerCase()) || client.aliases.get(cmd.toLowerCase());
-    if (command) { console.log(`Command: ${command.name}`); command.run(given); }
-    else { message.reply("We do not have that command! :angry:") }
+    if (command) { client.logger.log(`Command: ${command.name}`); command.run(given); }
+    else { message.reply("We do not have that command! :angry:"); client.logger.error("Unknown Command", "Command Name: " + cmd) }
   }
 };

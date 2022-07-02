@@ -24,7 +24,7 @@ export const event: Event = {
         return;
       }
 
-      console.log(`Command: ${cmd.name}`);
+      client.logger.log(`Command: ${cmd.name}`);
 
       const given: Variables = {
         type: "New",

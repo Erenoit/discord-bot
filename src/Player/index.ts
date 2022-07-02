@@ -13,9 +13,11 @@ import { RepeatOptions, Song, SpotifyConfig, StreamOptions, Variables } from "..
 
 //Messager
 import Messager, { bold, highlight } from "../Messager";
+import Logger from "../Logger";
 
 class Player {
   private messager:      Messager      = new Messager();
+  private logger:        Logger        = new Logger();
 
   private song_queue:    Array<Song>   = [];
   private repeat_queue:  Array<Song>   = [];
@@ -50,7 +52,7 @@ class Player {
 
   constructor() {
     this.player.on("error", (err) => {
-      console.error(err);
+      this.logger.error(err.name, err.message);
       this.start();
     });
 
@@ -105,8 +107,8 @@ class Player {
         else { return false; }
       } else {
         await this.messager.send_err(variables,
-               "Failed to join to voice channel. (Posibly you are not in a voice channel.)",
-               "Failed to join to voice channel");
+               "Failed to join to voice channel. (Posibly you are not in a voice channel.)");
+        this.logger.error("Failed to join to voice channel");
 
         return false;
       }
@@ -145,8 +147,8 @@ class Player {
       // Youtube link
       await this.handle_youtube(variables, argument, user);
     } else {
-      await this.messager.send_err(variables,
-                "Invalid URL.", "Took invalid URL: " + url);
+      await this.messager.send_err(variables, "Invalid URL.");
+      this.logger.error("Invalid URL", url);
       return;
     }
 
@@ -281,8 +283,8 @@ class Player {
       this.song_queue[j] = tmp;
     }
 
-    await this.messager.send_sucsess(variables,
-           "Queue is shuffled.", "Queue shuffled");
+    await this.messager.send_sucsess(variables, "Queue is shuffled.");
+    this.logger.info("Queue shuffled");
   }
 
   public async queue(variables: Variables) {
@@ -307,7 +309,7 @@ class Player {
 
   private async change_stream() {
     if (!this.now_playing) { return; }
-    console.log("Now playing: ", this.now_playing.url);
+    this.logger.log("Now Playing", `Name: ${this.now_playing.name}\nURL: ${this.now_playing.url}`);
     this.stream = await playdl.stream(this.now_playing.url, this.stream_options);
     this.resource = createAudioResource(this.stream.stream, { inputType: this.stream.type });
     this.player.play(this.resource);
@@ -357,13 +359,17 @@ class Player {
         }
         break;
       default:
-        console.log("Impossible repeat block.");
+        this.logger.warn("Impossible repeat block.");
     }
   }
 
   private async handle_search(variables: Variables, argument: string) {
     const raw_resoults = await playdl.search(argument, { source: { youtube: "video" }, limit: 5 })
-        .catch( err => console.error(err) );
+        .catch(async (err) => {
+          this.logger.error(err.label, err.message);
+          await this.messager.send_err(variables,
+                "Requested song could not be found. Try to search with different key words.");
+        });
 
     if (raw_resoults && raw_resoults.length > 0) {
       const list = raw_resoults.map((element) => {
@@ -376,29 +382,31 @@ class Player {
 
       this.messager.send_selection_from_list(variables, list,
                    true, this.play, this, "Search");
-    } else {
-      await this.messager.send_err(variables,
-                "Requested song could not be found. Try to search with different key words.");
     }
   }
 
   private async handle_youtube(variables: Variables, argument: string, user: string) {
     if (argument.search("list=") === -1) {
       const raw_resoults = await playdl.video_info(argument)
-          .catch( err => console.error(err) );
+          .catch(async (err) => {
+            this.logger.error(err.label, err.message);
+            await this.messager.send_err(variables,
+                  "Requested song could not be found. Link may be broken, from hidden video or from unsported source."
+                + `\nThe link was: ${argument}`);
+          });
 
       if (raw_resoults) {
         this.push_to_queue(raw_resoults.video_details, user);
         await this.messager.send_sucsess(variables,
                   `${raw_resoults.video_details.title} has been added to the queue.`);
-      } else {
-        await this.messager.send_err(variables,
-                  "Requested song could not be found. Link may be broken, from hidden video or from unsported source."
-                + `\nThe link was: ${argument}`);
       }
     } else {
       const raw_resoults = await playdl.playlist_info(argument, { incomplete: true })
-          .catch( err => console.error(err) );
+          .catch(async (err) => {
+            this.logger.error(err.label, err.message);
+            await this.messager.send_err(variables,
+                  "Requested playlist could not be found. It may be hidden or from unsported source.");
+          });
 
       if (raw_resoults) {
         const raw_resoults2 = raw_resoults.toJSON();
@@ -417,9 +425,6 @@ class Player {
           await this.messager.send_err(variables,
                     "Error happened while looking to playlist.");
         }
-      } else {
-        await this.messager.send_err(variables,
-                  "Requested playlist could not be found. It may be hidden or from unsported source.");
       }
     }
   }
@@ -427,8 +432,9 @@ class Player {
   private async handle_spotify(variables: Variables, argument: string, user: string) {
     if (!this.can_use_sp) {
       await this.messager.send_err(variables,
-                "Bot is not logined to spotify. Please request from bot's administrator.",
-                "Spotify support wanted");
+                "Bot is not logined to spotify. Please request from bot's administrator.");
+      this.logger.error("No Spotify Support",
+                "Spotify track requested but could not opened due to lack of Spotify Configs");
       return;
     }
     if (playdl.is_expired()) {
@@ -436,7 +442,11 @@ class Player {
     }
 
     const raw_resoults = await playdl.spotify(argument)
-        .catch( err => console.error(err) );
+        .catch(async (err) => {
+          this.logger.error(err.label, err.message);
+          await this.messager.send_err(variables,
+                "We cannot found anything with this link. Thw link may be broken.");
+        });
 
     if (raw_resoults) {
       if (raw_resoults.type === "track") {
@@ -444,13 +454,17 @@ class Player {
 
         const search_string = raw_resoults2.artists[0].name + " - " + raw_resoults2.name + " lyrics";
         const yt_resoult = await playdl.search(search_string, { source: { youtube: "video" }, limit: 1 })
-            .catch( err => console.error(err) );
+            .catch(async (err) => {
+              this.logger.error(err.label, err.message);
+              await this.messager.send_err(variables,
+                    "An error happend in search. Please try again.");
+            });
 
         if (yt_resoult && yt_resoult.length > 0) {
           this.push_to_queue(yt_resoult[0], user);
           await this.messager.send_sucsess(variables,
                     `${yt_resoult[0].title} has been added to the queue.`);
-        } else {
+        } else if (yt_resoult && yt_resoult.length == 0) {
           await this.messager.send_err(variables,
                     "Requested song could not be found.");
         }
@@ -483,19 +497,16 @@ class Player {
             missed_songs++;
           }
         })).catch((err) => {
+          this.logger.error(err.label, err.message);
           this.messager.send_err(variables,
               "An error accured while opening the "
               + raw_resoults.type === "playlist" ? "playlist"
                                                  : "album");
-          console.log(err);
         });
 
         await this.messager.send_sucsess(variables,
                   `${highlight((raw_resoults2.tracksCount - missed_songs).toString())} songs added to the queue`);
       }
-    } else {
-      await this.messager.send_err(variables,
-                "We cannot found anything with this link. Thw link may be broken.");
     }
   }
 

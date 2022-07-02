@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import { Command, Config, Event, Server } from "../Interfaces";
 import Player from "../Player";
 import Messager from "../Messager";
+import Logger from "../Logger";
 
 
 
@@ -17,6 +18,7 @@ class MyClient extends Client {
   public aliases:  Collection<string, Command>   = new Collection();
   public servers:  Collection<Snowflake, Server> = new Collection();
   public messager: Messager                      = new Messager();
+  public logger:   Logger                        = new Logger();
   public config:   Config;
 
   public async init() {
@@ -41,13 +43,15 @@ class MyClient extends Client {
     const token  = process.env.TOKEN;
     const prefix = process.env.PREFIX;
     if (!token) {
-      console.log("You must have TOKEN environment variable as your bots token.");
+      this.logger.error("No Token", "You must have TOKEN environment variable as your bots token.");
       return;
     }
     if (!prefix) {
-      console.log("You must have PREFIX environment variable as your bots prefix.");
+      this.logger.error("No Default Prefix", "You must have PREFIX environment variable as your bots prefix.");
       return;
     }
+
+    this.logger.log("Registering Configs");
 
     this.config = {
       token,
@@ -80,7 +84,7 @@ class MyClient extends Client {
   }
 
   private init_commands() {
-    console.log("----- Generating Commands -----");
+    this.logger.log("Generating Commands");
     const command_path = path.join(__dirname, "..", "Commands");
     readdirSync(command_path).forEach((dir) => {
       const commands = readdirSync(`${command_path}/${dir}`);
@@ -89,7 +93,7 @@ class MyClient extends Client {
         const { command } = require(`${command_path}/${dir}/${file}`);
         this.commands.set(command.name, command);
 
-        console.log(command);
+        this.logger.secondary_log(`${command.name}: ${command.description}`);
 
         if (command?.aliases.length > 0) {
           command.aliases.forEach((alias: string) => {
@@ -101,19 +105,20 @@ class MyClient extends Client {
   }
 
   private init_events() {
-    console.log("----- Generating Events -----");
+    this.logger.log("Generating Events");
     const event_path = path.join(__dirname, "..", "Events");
     readdirSync(event_path).forEach(async (file) => {
       const { event } = await import(`${event_path}/${file}`);
       this.events.set(event.name, event);
 
-      console.log(event);
+      this.logger.secondary_log(event.name);
 
       this.on(event.name, event.run.bind(null, this));
     });
   }
 
   public register_commands(isTesting: Boolean = false) {
+    this.logger.log("Registering Commands");
     let command_manager: GuildApplicationCommandManager | ApplicationCommandManager;
 
     if (isTesting) {
@@ -132,6 +137,7 @@ class MyClient extends Client {
   }
 
   public register_servers() {
+    this.logger.log("Registering Servers");
     this.guilds.cache.forEach((server) => {
       const s: Server = {
         guild_id: server.id,
@@ -145,20 +151,22 @@ class MyClient extends Client {
 
   public register_yt_cookie() {
     if (this.config.yt_cookie) {
-      console.log("---------------- Youtube Cookies Found ----------------");
+      this.logger.log("Registering Youtube Cookies");
       this.servers.forEach((server) => {
         server.player.set_yt_cookie(this.config.yt_cookie!);
       });
-    }
+    } else
+      this.logger.warn("No Youtube Cookies Found");
   }
 
   public register_sp_tokens() {
     if (this.config.spotify) {
-      console.log("---------------- Spotify Configs Found ----------------");
+      this.logger.log("Registering Spotify Configs");
       this.servers.forEach((server) => {
         server.player.set_sp_tokens(this.config.spotify!);
       });
-    }
+    } else
+      this.logger.warn("No Spotify Configs Found");
   }
 }
 
