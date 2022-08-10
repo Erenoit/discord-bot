@@ -1,7 +1,8 @@
-import { ActionRowData, APIEmbed, ButtonComponentData, ButtonInteraction,
-         ButtonStyle, Interaction, InteractionReplyOptions, Message,
+import { ActionRowData, ActionRowComponentData, APIActionRowComponentTypes,
+         APIEmbed, ButtonComponentData, ButtonInteraction, ButtonStyle,
+         Interaction, InteractionReplyOptions, Message,
          MessageComponentInteraction, MessageOptions, TextBasedChannel,
-         ComponentType } from "discord.js"
+         ComponentType, JSONEncodable} from "discord.js"
 import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
 import Logger from "../Logger";
@@ -50,13 +51,10 @@ class Messager {
     }
 
     const default_message = "Are you sure?";
-    const row: ActionRowData<ButtonComponentData> = {
-      type: ComponentType.ActionRow,
-      components: [
-        this.create_button("confirm_yes", "Yes", ButtonStyle.Success),
-        this.create_button("confirm_no", "No", ButtonStyle.Danger)
-      ]
-    }
+    const row = this. create_action_row([
+      this.create_button("confirm_yes", "Yes", ButtonStyle.Success),
+      this.create_button("confirm_no", "No", ButtonStyle.Danger)
+    ]);
                                
     const msg: MessageOptions = {
       content: additional_text ? additional_text + " " + default_message
@@ -92,14 +90,11 @@ class Messager {
 
     const msg_content = content ? content : "Select one of them:";
     const msg_title = title ? title : "Select";
-    const main_row: ActionRowData<ButtonComponentData> = {
-      type: ComponentType.ActionRow,
-      components: [
-        ...list.map(({name, id, disabled}) => {
-          return this.create_button(id, name, ButtonStyle.Primary, disabled);
-        })
-      ]
-    }
+    const main_row = this.create_action_row([
+      ...list.map(({name, id, disabled}) => {
+        return this.create_button(id, name, ButtonStyle.Primary, disabled);
+      })
+    ]);
     let msg: MessageOptions = {
       components: [main_row]
     };
@@ -151,21 +146,15 @@ class Messager {
 
     const msg_content = content ? content : "Select one of them:";
     const msg_title = title ? title : "Select";
-    const main_row: ActionRowData<ButtonComponentData> = {
-      type: ComponentType.ActionRow,
-      components: [
-        ...list.map(({id, disabled}, index) => {
-          return this.create_button(id, (index + 1).toString(), ButtonStyle.Primary, disabled);
-        })
-      ]
-    }
-    const secondary_row: ActionRowData<ButtonComponentData> = {
-      type: ComponentType.ActionRow,
-      components: [
-        this.create_button("all", "All", ButtonStyle.Success),
-        this.create_button("none", "None", ButtonStyle.Danger)
-      ]
-    }
+    const main_row = this.create_action_row([
+      ...list.map(({id, disabled}, index) => {
+        return this.create_button(id, (index + 1).toString(), ButtonStyle.Primary, disabled);
+      })
+    ]);
+    const secondary_row = this.create_action_row([
+      this.create_button("all", "All", ButtonStyle.Success),
+      this.create_button("none", "None", ButtonStyle.Danger)
+    ]);
     let msg: MessageOptions = {
       components: use_second_row ? [main_row, secondary_row] : [main_row]
     };
@@ -296,6 +285,15 @@ class Messager {
     }
 
     return button_options;
+  }
+
+  private create_action_row<T extends JSONEncodable<APIActionRowComponentTypes> | ActionRowComponentData>(components: T[]): ActionRowData<T> {
+    const action_row: ActionRowData<T> = {
+      type: ComponentType.ActionRow,
+      components
+    }
+
+    return action_row;
   }
 
   private async handle_collector(variables: Variables,
