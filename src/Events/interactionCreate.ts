@@ -4,7 +4,7 @@ import { Event, Variables } from "../Interfaces";
 export const event: Event = {
   name: "interactionCreate",
   run: (client, interaction: Interaction) => {
-    if (interaction.isCommand()) {
+    if (interaction.isChatInputCommand()) {
       if (interaction.user.bot) {
         interaction.reply("Bots cannot use commands!");
         return;

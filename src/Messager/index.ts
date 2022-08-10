@@ -1,7 +1,7 @@
-import { ButtonInteraction, Interaction, InteractionReplyOptions, Message, MessageActionRow,
-         MessageButton, MessageButtonOptions, MessageButtonStyle,
-         MessageComponentInteraction, MessageEmbedOptions,
-         MessageOptions, TextBasedChannel } from "discord.js"
+import { ActionRowData, APIEmbed, ButtonComponentData, ButtonInteraction,
+         ButtonStyle, Interaction, InteractionReplyOptions, Message,
+         MessageComponentInteraction, MessageOptions, TextBasedChannel,
+         ComponentType } from "discord.js"
 import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
 import Logger from "../Logger";
@@ -50,9 +50,14 @@ class Messager {
     }
 
     const default_message = "Are you sure?";
-    const row = new MessageActionRow()
-                .addComponents(this.create_button("confirm_yes", "Yes", "SUCCESS"),
-                               this.create_button("confirm_no", "No", "DANGER"));
+    const row: ActionRowData<ButtonComponentData> = {
+      type: ComponentType.ActionRow,
+      components: [
+        this.create_button("confirm_yes", "Yes", ButtonStyle.Success),
+        this.create_button("confirm_no", "No", ButtonStyle.Danger)
+      ]
+    }
+                               
     const msg: MessageOptions = {
       content: additional_text ? additional_text + " " + default_message
                                : default_message,
@@ -87,11 +92,14 @@ class Messager {
 
     const msg_content = content ? content : "Select one of them:";
     const msg_title = title ? title : "Select";
-    const main_row = new MessageActionRow()
-                .addComponents(
-                  ...list.map(({name, id, disabled}) => {
-                    return this.create_button(id, name, "PRIMARY", disabled);
-                  }));
+    const main_row: ActionRowData<ButtonComponentData> = {
+      type: ComponentType.ActionRow,
+      components: [
+        ...list.map(({name, id, disabled}) => {
+          return this.create_button(id, name, ButtonStyle.Primary, disabled);
+        })
+      ]
+    }
     let msg: MessageOptions = {
       components: [main_row]
     };
@@ -143,15 +151,21 @@ class Messager {
 
     const msg_content = content ? content : "Select one of them:";
     const msg_title = title ? title : "Select";
-    const main_row = new MessageActionRow()
-                .addComponents(
-                  ...list.map(({id, disabled}, index) => {
-                    return this.create_button(id, (index + 1).toString(), "PRIMARY", disabled);
-                  }));
-    const secondary_row = new MessageActionRow()
-                .addComponents(
-                  this.create_button("all", "All", "SUCCESS"),
-                  this.create_button("none", "None", "DANGER"));
+    const main_row: ActionRowData<ButtonComponentData> = {
+      type: ComponentType.ActionRow,
+      components: [
+        ...list.map(({id, disabled}, index) => {
+          return this.create_button(id, (index + 1).toString(), ButtonStyle.Primary, disabled);
+        })
+      ]
+    }
+    const secondary_row: ActionRowData<ButtonComponentData> = {
+      type: ComponentType.ActionRow,
+      components: [
+        this.create_button("all", "All", ButtonStyle.Success),
+        this.create_button("none", "None", ButtonStyle.Danger)
+      ]
+    }
     let msg: MessageOptions = {
       components: use_second_row ? [main_row, secondary_row] : [main_row]
     };
@@ -211,7 +225,7 @@ class Messager {
     return this.send(variables, msg);
   }
 
-  public async send_embed(variables: Variables, embed: MessageEmbedOptions): Promise<Message> {
+  public async send_embed(variables: Variables, embed: APIEmbed): Promise<Message> {
     return this.send(variables, {embeds: [embed]});
   }
 
@@ -229,8 +243,8 @@ class Messager {
     }
   }
 
-  private basic_embed(title: string, description: string, color: number): MessageEmbedOptions {
-    const embed: MessageEmbedOptions = {
+  private basic_embed(title: string, description: string, color: number): APIEmbed {
+    const embed: APIEmbed = {
       color,
       title,
       description,
@@ -262,17 +276,18 @@ class Messager {
 
   private embed_list(title: string, content: string, list: string[],
                      use_nums: boolean = false, start_number: number = 1,
-                     select?: number): MessageEmbedOptions {
+                     select?: number): APIEmbed {
     const new_content = this.normal_list(content, list, use_nums,
                                          start_number, select);
     return this.basic_embed(title, new_content, this.colors.normal);
   }
 
   private create_button(customId: string, label: string,
-                        style: Exclude<MessageButtonStyle, "LINK">,
+                        style: Exclude<ButtonStyle, ButtonStyle.Link>,
                         disabled: boolean = false,
-                        emoji?: string): MessageButton {
-    const button_options: MessageButtonOptions = {
+                        emoji?: string): ButtonComponentData {
+    const button_options: ButtonComponentData = {
+      type: ComponentType.Button,
       style,
       customId,
       label,
@@ -280,7 +295,7 @@ class Messager {
       emoji
     }
 
-    return new MessageButton(button_options);
+    return button_options;
   }
 
   private async handle_collector(variables: Variables,

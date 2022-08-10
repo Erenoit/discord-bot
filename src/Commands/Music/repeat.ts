@@ -1,5 +1,5 @@
-import { ApplicationCommandOptionChoiceData } from "discord.js";
-import { ApplicationCommandOptionTypes } from "discord.js/typings/enums";
+import { ApplicationCommandOptionChoiceData,
+         ApplicationCommandOptionType } from "discord.js";
 import { Command } from "../../Interfaces";
 
 export const command: Command = {
@@ -9,7 +9,7 @@ export const command: Command = {
   options: [{
     name: "option",
     description: "'None', 'one' or 'all'",
-    type: ApplicationCommandOptionTypes.STRING,
+    type: ApplicationCommandOptionType.String,
     required: false,
     choices: [
       {name: "None", value: "none"},

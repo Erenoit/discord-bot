@@ -1,6 +1,6 @@
 import Client from "../Client/";
 import { ApplicationCommandOptionData,
-         CommandInteraction, Message,
+         ChatInputCommandInteraction, Message,
          Snowflake } from "discord.js";
 
 interface Run {
@@ -19,7 +19,7 @@ interface Old extends CommonVars {
 }
 interface New extends CommonVars {
   type: "New",
-  interaction: CommandInteraction,
+  interaction: ChatInputCommandInteraction,
 }
 
 export type Variables = New | Old;

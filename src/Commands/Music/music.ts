@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionTypes } from "discord.js/typings/enums";
+import { ApplicationCommandOptionType } from "discord.js";
 import { Command } from "../../Interfaces";
 
 export const command: Command = {
@@ -8,7 +8,7 @@ export const command: Command = {
   options: [{
     name: "key",
     description: "Key of wanted list/video",
-    type: ApplicationCommandOptionTypes.STRING,
+    type: ApplicationCommandOptionType.String,
     required: true
   }],
   aliases: ["m"],

@@ -1,4 +1,4 @@
-import { MessageEmbedOptions } from "discord.js";
+import { APIEmbed } from "discord.js";
 import { Command } from "../../Interfaces";
 import fetch from "node-fetch";
 
@@ -22,8 +22,8 @@ export const command: Command = {
       const votes    = post.ups;
       const comments = post.num_comments;
 
-      const embed: MessageEmbedOptions = {
-        color: "#e0af68",
+      const embed: APIEmbed = {
+        color: 0xe0af68,
         title,
         url,
         image: {url: image},
