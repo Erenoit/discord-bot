@@ -14,7 +14,8 @@ $ git clone https://gitlab.com/Erenoit/discord-bot.git
 - **SP_CLIENT_ID:** Spotify client ID *optional*
 - **SP_CLIENT_SECRET:** Spotify client secret *optional*
 - **SP_REFRESH_TOKEN:** Spotify refresh token *optional*
-**More info:** [playdl instructions](https://github.com/play-dl/play-dl/tree/main/instructions).
+
+**More information:** [playdl instructions](https://github.com/play-dl/play-dl/tree/main/instructions).
 
 3. `cd` into repository and run the following commands:
 ```shell
