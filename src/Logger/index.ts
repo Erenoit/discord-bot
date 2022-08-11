@@ -26,17 +26,23 @@ class Logger {
   }
 
   public secondary_info(secondary_str: string) {
-    console.info("\t", secondary_str);
+    secondary_str = "\t".concat(secondary_str.replaceAll("\n", "\n\t"));
+    console.info(secondary_str);
   }
 
   public secondary_log(secondary_str: string) {
-    console.log("\t", secondary_str);
+    secondary_str = "\t".concat(secondary_str.replaceAll("\n", "\n\t"));
+    console.log(secondary_str);
   }
+
   public secondary_warn(secondary_str: string) {
-    console.warn("\t", secondary_str);
+    secondary_str = "\t".concat(secondary_str.replaceAll("\n", "\n\t"));
+    console.warn(secondary_str);
   }
+
   public secondary_error(secondary_str: string) {
-    console.error("\t", secondary_str);
+    secondary_str = "\t".concat(secondary_str.replaceAll("\n", "\n\t"));
+    console.error(secondary_str);
   }
 }
 
