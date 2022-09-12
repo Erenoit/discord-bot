@@ -1,4 +1,5 @@
 mod bot;
+mod logger;
 
 use bot::Bot;
 

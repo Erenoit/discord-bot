@@ -1,6 +1,8 @@
 use super::config::Config;
+use crate::logger;
 
 use std::sync::Arc;
+use colored::Colorize;
 use serenity::{
     async_trait,
     model::{
@@ -39,12 +41,12 @@ impl EventHandler for Handler {
 
         if trim_msg[0] == "ping" {
             if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-                println!("Error sending message: {:?}", why);
+                logger::log(format!("Error sending message: {:?}", why), None);
             }
         }
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        logger::log(format!("{} is online!", ready.user.name.magenta()), None);
     }
 }
