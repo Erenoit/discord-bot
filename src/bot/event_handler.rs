@@ -39,11 +39,11 @@ impl EventHandler for Handler {
         .split(" ")
         .collect();
 
-        if trim_msg[0] == "ping" {
-            if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-                logger::log(format!("Error sending message: {:?}", why), None);
-            }
-        }
+        //if trim_msg[0] == "ping" {
+        //    if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
+        //        logger::log(format!("Error sending message: {:?}", why), None);
+        //    }
+        //}
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
