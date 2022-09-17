@@ -6,44 +6,29 @@ use event_handler::Handler;
 use config::Config;
 
 use std::sync::Arc;
-use serenity::{
-    client::ClientBuilder,
-    prelude::{
-        Client,
-        GatewayIntents,
-    },
-};
+use serenity::prelude::GatewayIntents;
 
 pub struct Bot {
-    //client: Client,
     config: Arc<Config>,
 }
 
 impl Bot {
-    pub async fn new(intents: GatewayIntents) -> Self {
+    pub fn new() -> Self {
         let config = Arc::new(Config::generate());
 
-        //let client = Client::builder(config.token(), intents)
-        //    .event_handler(Handler::new(Arc::clone(&config)))
-        //    .await
-        //    .expect("Failed to create the client");
-
         Self {
-        //    client,
             config,
         }
     }
 
     pub async fn run(&mut self) {
-        //if let Err(why) = self.client.start().await {
-        //    println!("Client error: {:?}", why);
-        //}
-
         let options = poise::FrameworkOptions {
             commands: vec![
                 commands::others::help::help(),
                 commands::others::register::register(),
                 commands::others::ping::ping(),
+                commands::entertainment::sus::sus(),
+                commands::entertainment::meme::meme(),
             ],
             //listener: |ctx, event, framework, user_data| {
             //    Box::pin(event_listener(ctx, event, framework, user_data))
@@ -61,10 +46,10 @@ impl Bot {
                 prefix: Some(self.config.prefix().to_string()),
                 mention_as_prefix: false,
 
-            //    // An edit tracker needs to be supplied here to make edit tracking in commands work
-            //    edit_tracker: Some(poise::EditTracker::for_timespan(
-            //        std::time::Duration::from_secs(3600 * 3),
-            //    )),
+                //// An edit tracker needs to be supplied here to make edit tracking in commands work
+                //edit_tracker: Some(poise::EditTracker::for_timespan(
+                //    std::time::Duration::from_secs(3600 * 3),
+                //)),
                 ..Default::default()
             },
 
