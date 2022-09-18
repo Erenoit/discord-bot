@@ -1,5 +1,5 @@
 # The Bot
-**The Bot** is a basic music bot for [Discord](https://discord.com/).
+**The Bot** is a basic music bot for [Discord](https://discord.com/) written in [Rust](https://www.rust-lang.org/). This branch is not production ready at the moment. If you want to use this bot, [TypeScript](https://www.typescriptlang.org/) version is recomended. TypeScript version can be found in the [main](https://gitlab.com/Erenoit/discord-bot) branch.
 
 ## Quick Start
 1. Clone this repository:
@@ -10,23 +10,15 @@ $ git clone https://gitlab.com/Erenoit/discord-bot.git
 2. Add environmental variables (or use a .env file in project root):
 - **TOKEN:** Your bot's token,
 - **PREFIX:** Prefix you want to use with commands,
-- **YT_COOKIE:** YouTube cookie *optional*
-- **SP_CLIENT_ID:** Spotify client ID *optional*
-- **SP_CLIENT_SECRET:** Spotify client secret *optional*
-- **SP_REFRESH_TOKEN:** Spotify refresh token *optional*
-
-**More information:** [playdl instructions](https://github.com/play-dl/play-dl/tree/main/instructions).
 
 3. `cd` into repository and run the following commands:
 ```shell
-$ yarn install
-$ tsc
-$ node ./compiled/index.js
+$ cargo build --release
+$ ./target/release/discord-bot
 ```
 
 ## Dependencies
-- [Node.js](https://nodejs.org/)
+- [Rust](https://www.rust-lang.org/)
 - [FFmpeg](https://www.ffmpeg.org/download.html)
-- [libsodium-wrappers](https://www.npmjs.com/package/libsodium-wrappers)
-- [Yarn](https://yarnpkg.com/) *optional*
-- [Visual Studio Build Tools 2022 with "Desktop development with C++"](https://visualstudio.microsoft.com/downloads/) *only for Windows*
+- [youtube-dl](https://youtube-dl.org/)
+- [Opus](https://opus-codec.org/)
