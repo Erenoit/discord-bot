@@ -1,4 +1,6 @@
 mod bot;
+mod player;
+#[allow(dead_code)]
 mod logger;
 
 use bot::Bot;

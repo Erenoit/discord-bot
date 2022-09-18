@@ -1,6 +1,6 @@
 [package]
 name = "discord-bot"
-version = "0.1.0"
+version = "2.0.0-bate"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,8 +8,9 @@ edition = "2021"
 [dependencies]
 colored = "2.0"
 dotenv = "0.15"
-poise = "0.3.0"
-reqwest = "0.11.11"
+reqwest = "0.11"
 json = "0.12"
-serenity = { version = "0.11", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
+songbird = "0.3"
+poise = "0.3"
+serenity = { version = "0.11", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "voice"] }
 tokio = { version = "1.21", features = ["macros", "rt-multi-thread"] }

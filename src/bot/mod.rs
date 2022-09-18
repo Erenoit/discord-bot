@@ -1,4 +1,4 @@
-mod commands;
+pub mod commands;
 mod config;
 mod event_handler;
 
@@ -7,6 +7,7 @@ use config::Config;
 
 use std::sync::Arc;
 use serenity::prelude::GatewayIntents;
+use songbird::SerenityInit;
 
 pub struct Bot {
     config: Arc<Config>,
@@ -29,6 +30,8 @@ impl Bot {
                 commands::others::ping::ping(),
                 commands::entertainment::sus::sus(),
                 commands::entertainment::meme::meme(),
+                commands::music::join::join(),
+                commands::music::play::play(),
             ],
             //listener: |ctx, event, framework, user_data| {
             //    Box::pin(event_listener(ctx, event, framework, user_data))
@@ -63,6 +66,7 @@ impl Bot {
         .options(options)
         .client_settings(move |c| {
             c.event_handler(Handler::new(cfg))
+                .register_songbird()
         })
         .user_data_setup(|_ctx, _data_about_bot, _framework| {
             Box::pin(async move {
