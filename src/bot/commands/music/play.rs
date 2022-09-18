@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::player::play::open_yt_url;
+use crate::{messager, player};
 
 /// Adds song to queue 
 #[poise::command(slash_command, prefix_command, category="Music", guild_only)]
@@ -13,14 +13,14 @@ pub async fn play(
 
     if !song.starts_with("http://") && !song.starts_with("https://") {
         // TODO: Add search support
-        _ = ctx.say("Search support is not ready yet! :P").await;
+        messager::send_error(&ctx, "Search support is not ready yet! :P", false).await;
     } else if song.contains("youtube.com") {
-        open_yt_url(&ctx, &guild_id, &song).await;
+        player::play::open_yt_url(&ctx, &guild_id, &song).await;
     } else if song.contains("spotify.com") {
         // TODO: Add Spotify link support
-        _ = ctx.say("Spotify url support is not ready yet! :P").await;
+        messager::send_error(&ctx, "Spotify url support is not ready yet! :P", false).await;
     } else {
-        _ = ctx.say("Link is from unsupported source. :angry:").await;
+        messager::send_error(&ctx, "Link is from unsupported source. :angry:", false).await;
     }
 
     Ok(())

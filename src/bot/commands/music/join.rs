@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::{logger, player};
+use crate::{messager, player};
 use serenity::model::channel::GuildChannel;
 
 /// Bot joins the voice channel
@@ -19,14 +19,14 @@ pub async fn join(
         .and_then(|voice_state| voice_state.channel_id) {
         channel_id
     } else {
-        _ = ctx.say("Couldn't connect to a voice channel. Neither you are in a voice channel nor you provided a channel to join.").await;
+        messager::send_error(&ctx, "Couldn't connect to a voice channel. Neither you are in a voice channel nor you provided a channel to join.", true).await;
         return Ok(());
     };
 
     // TODO: Already joined. Would you like to change?
     player::join::join(&ctx, &guild_id, &channel_id).await;
 
-    _ = ctx.say("Connected to the voice channel").await;
+    messager::send_sucsess(&ctx, "Connected to the voice channel", true).await;
 
     Ok(())
 }

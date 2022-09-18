@@ -1,4 +1,4 @@
-use crate::bot::commands::Context;
+use crate::{bot::commands::Context, messager};
 use serenity::model::id::GuildId;
 
 pub async fn open_yt_url(ctx: &Context<'_>, guild_id: &GuildId, url: &String) {
@@ -14,7 +14,7 @@ pub async fn open_yt_url(ctx: &Context<'_>, guild_id: &GuildId, url: &String) {
             Err(why) => {
                 println!("Err starting source: {:?}", why);
 
-                _ = ctx.say("Error sourcing ffmpeg").await;
+                messager::send_error(ctx, "Error sourcing ffmpeg", false).await;
 
                 return;
             },
@@ -22,9 +22,15 @@ pub async fn open_yt_url(ctx: &Context<'_>, guild_id: &GuildId, url: &String) {
 
         handler.play_source(source);
 
-        _ = ctx.say("Playing song").await;
+        messager::send_sucsess(ctx, "Playing song", false).await;
     } else {
-        _ = ctx.say("Not in a voice channel to play in").await;
+        messager::send_error(ctx, "Not in a voice channel to play in", false).await;
     }
+}
+
+pub async fn open_sp_url(ctx: &Context<'_>, guild_id: &GuildId, url: &String) {
+}
+
+async fn add_to_queue(ctx: &Context<'_>, guild_id: &GuildId, url: &String) {
 }
 
