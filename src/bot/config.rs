@@ -10,13 +10,13 @@ pub(super) struct Config {
 
 impl Config {
     pub fn generate() -> Self {
-        logger::log("Registering Configs".to_string(), None);
+        logger::info("Registering Configs");
         _ = dotenv::dotenv();
 
-        logger::secondary_info("token".to_string());
+        logger::secondary_info("token");
         let token = env::var("TOKEN").expect("Couldn't find the token");
 
-        logger::secondary_info("prefix".to_string());
+        logger::secondary_info("prefix");
         let prefix = env::var("PREFIX").expect("Couldn't find the prefix");
 
         Self { token, prefix }

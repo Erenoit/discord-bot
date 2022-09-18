@@ -41,12 +41,13 @@ impl EventHandler for Handler {
 
         //if trim_msg[0] == "ping" {
         //    if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-        //        logger::log(format!("Error sending message: {:?}", why), None);
+        //        logger::info("Error sending message");
+        //        logger::secondary_error(why);
         //    }
         //}
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
-        logger::log(format!("{} is online!", ready.user.name.magenta()), None);
+        logger::info(format!("{} is online!", ready.user.name.magenta()));
     }
 }

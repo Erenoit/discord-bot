@@ -1,87 +1,59 @@
-use colored::*;
+use std::fmt::Display;
+use colored::Colorize;
 
-#[inline]
-pub fn info(main_str: String, secondary_str: Option<String>) {
+#[inline(always)]
+pub fn info<S: Display>(main_str: S) {
     main_print(main_str, LogType::Info);
-
-    if let Some(s) = secondary_str {
-        secondary_info(s);
-    }
 }
 
-#[inline]
-pub fn log(main_str: String, secondary_str: Option<String>) {
-    main_print(main_str, LogType::Log);
-
-    if let Some(s) = secondary_str {
-        secondary_log(s);
-    }
-}
-
-#[inline]
-pub fn warn(main_str: String, secondary_str: Option<String>) {
+#[inline(always)]
+pub fn warn<S: Display>(main_str: S) {
     main_print(main_str, LogType::Warn);
-
-    if let Some(s) = secondary_str {
-        secondary_warn(s);
-    }
 }
 
-#[inline]
-pub fn error(main_str: String, secondary_str: Option<String>) {
+#[inline(always)]
+pub fn error<S: Display>(main_str: S) {
     main_print(main_str, LogType::Error);
-
-    if let Some(s) = secondary_str {
-        secondary_error(s);
-    }
 }
 
-#[inline]
-pub fn secondary_info(secondary_str: String) {
+#[inline(always)]
+pub fn secondary_info<S: Display>(secondary_str: S) {
     secondary_print(secondary_str, LogType::Info);
 }
 
-#[inline]
-pub fn secondary_log(secondary_str: String) {
-    secondary_print(secondary_str, LogType::Log);
-}
-
-#[inline]
-pub fn secondary_warn(secondary_str: String) {
+#[inline(always)]
+pub fn secondary_warn<S: Display>(secondary_str: S) {
     secondary_print(secondary_str, LogType::Warn);
 }
 
-#[inline]
-pub fn secondary_error(secondary_str: String) {
+#[inline(always)]
+pub fn secondary_error<S: Display>(secondary_str: S) {
     secondary_print(secondary_str, LogType::Error);
 }
 
-#[inline]
-fn main_print(main_str: String, log_type: LogType) {
+#[inline(always)]
+fn main_print<S: Display>(main_str: S, log_type: LogType) {
     let chr = match log_type {
-        LogType::Info  => "[I]".blue(),
-        LogType::Log   => "[L]".green(),
+        LogType::Info  => "[I]".green(),
         LogType::Warn  => "[W]".yellow(),
         LogType::Error => "[E]".red(),
     };
 
     let m_str = match log_type {
-        LogType::Info  => main_str.blue(),
-        LogType::Log   => main_str.green(),
-        LogType::Warn  => main_str.yellow(),
-        LogType::Error => main_str.red(),
+        LogType::Info  => format!("{}", main_str).green(),
+        LogType::Warn  => format!("{}", main_str).yellow(),
+        LogType::Error => format!("{}", main_str).red(),
     };
 
     println!("{} {}", chr, m_str);
 }
 
-#[inline]
-fn secondary_print(secondary_str: String, log_type: LogType) {
+#[inline(always)]
+fn secondary_print<S: Display>(secondary_str: S, log_type: LogType) {
     let s_str = match log_type {
-        LogType::Info  => secondary_str.blue(),
-        LogType::Log   => secondary_str.green(),
-        LogType::Warn  => secondary_str.yellow(),
-        LogType::Error => secondary_str.red(),
+        LogType::Info  => format!("{}", secondary_str).blue(),
+        LogType::Warn  => format!("{}", secondary_str).cyan(),
+        LogType::Error => format!("{}", secondary_str).magenta(),
     };
 
     println!("\t{}", s_str);
@@ -89,7 +61,6 @@ fn secondary_print(secondary_str: String, log_type: LogType) {
 
 enum LogType {
     Info,
-    Log,
     Warn,
     Error,
 }

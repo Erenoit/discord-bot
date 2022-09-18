@@ -14,11 +14,13 @@ pub async fn join(ctx: &Context<'_>, guild_id: &GuildId, channel_id: &ChannelId)
     let (call_mutex, result) = manager.join(*guild_id, *channel_id).await;
 
     if let Err(why) = result {
-        logger::error("Couldn't join the voice channel.".to_string(), Some(why.to_string()));
+        logger::error("Couldn't join the voice channel.");
+        logger::secondary_error(why);
     } else {
         let mut call = call_mutex.lock().await;
         if let Err(why) = call.deafen(true).await {
-            logger::error("Couldn't deafen the bot.".to_string(), Some(why.to_string()));
+            logger::error("Couldn't deafen the bot.");
+            logger::secondary_error(why);
         }
     }
 

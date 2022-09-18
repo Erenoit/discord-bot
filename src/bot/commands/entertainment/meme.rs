@@ -8,7 +8,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let url = if let Ok(u) = reqwest::Url::parse(link) {
         u
     } else {
-        logger::error("Couldn't parse the URL.".to_string(), None);
+        logger::error("Couldn't parse the URL.");
         _ = ctx.send(|f| {
             f.content("An error occured, please try again later.")
         }).await;
@@ -20,7 +20,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         let res_str = if let Ok(s) = res.text().await {
             s
         } else {
-            logger::error("Couldn't get respoense.".to_string(), None);
+            logger::error("Couldn't get respoense.");
             _ = ctx.send(|f| {
                 f.content("An error occured, please try again later.")
             }).await;
@@ -43,7 +43,8 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             }).await;
 
             if let Err(why) = a {
-                logger::error(format!("Couldn't send a message \"{}\".", why), None);
+                logger::error("Couldn't send a message.");
+                logger::secondary_error(why);
                 _ = ctx.send(|f| {
                     f.content("An error occured, please try again later.")
                 }).await;
@@ -52,7 +53,8 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
 
-        logger::error(format!("Couldn't serialize the data \"{}\".", link), None);
+        logger::error("Couldn't serialize the data.");
+        logger::secondary_error(format!("Link: {}", link));
         _ = ctx.send(|f| {
             f.content("An error occured, please try again later.")
         }).await;
@@ -60,7 +62,8 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     }
 
-    logger::error(format!("Couldn't fetch from \"{}\".", link), None);
+    logger::error("Couldn't fetch from.");
+    logger::secondary_error(format!("Link: {}", link));
     _ = ctx.send(|f| {
         f.content("An error occured, please try again later.")
     }).await;
