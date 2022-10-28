@@ -11,6 +11,6 @@ dotenv = "0.15"
 reqwest = "0.11"
 json = "0.12"
 songbird = "0.3"
-poise = "0.3"
+poise = "0.4"
 serenity = { version = "0.11", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "voice"] }
 tokio = { version = "1.21", features = ["macros", "rt-multi-thread"] }
