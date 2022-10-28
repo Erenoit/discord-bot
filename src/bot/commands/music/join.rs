@@ -3,7 +3,7 @@ use crate::{messager, player};
 use serenity::model::channel::GuildChannel;
 
 /// Bot joins the voice channel
-#[poise::command(slash_command, prefix_command, category="Music", guild_only)]
+#[poise::command(slash_command, prefix_command, aliases("j"), category="Music", guild_only)]
 pub async fn join(
     ctx: Context<'_>,
     #[description = "Which channel to join"]

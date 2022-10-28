@@ -2,7 +2,7 @@ use super::super::{Context, Error};
 use crate::{messager, player};
 
 /// Adds song to queue 
-#[poise::command(slash_command, prefix_command, category="Music", guild_only)]
+#[poise::command(slash_command, prefix_command, aliases("p"), category="Music", guild_only)]
 pub async fn play(
     ctx: Context<'_>,
     #[description = "Song name or Song URL"] song: String
