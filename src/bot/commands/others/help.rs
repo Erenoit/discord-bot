@@ -7,7 +7,9 @@ pub async fn help(
     #[description = "Command to display specific information about"] command: Option<String>,
 ) -> Result<(), Error> {
     let config = poise::builtins::HelpConfiguration {
-        ..Default::default()
+        extra_text_at_bottom: concat!("The Bot version ", env!("CARGO_PKG_VERSION")),
+        ephemeral: true,
+        show_context_menu_commands: true
     };
 
     poise::builtins::help(ctx, command.as_deref(), config).await?;
