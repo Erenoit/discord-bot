@@ -5,14 +5,8 @@ use std::sync::Arc;
 use colored::Colorize;
 use serenity::{
     async_trait,
-    model::{
-        channel::Message,
-        gateway::Ready,
-    },
-    prelude::{
-        Context,
-        EventHandler,
-    },
+    model::gateway::Ready,
+    client::{EventHandler, Context},
 };
 
 pub(super) struct Handler {
@@ -27,27 +21,7 @@ impl Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.bot
-        || msg.guild_id.is_none()
-        || !msg.content.starts_with(self.config.prefix()) {
-            return;
-        }
-
-        let trim_msg: Vec<_> = msg.content[self.config.prefix().len()..]
-        .trim()
-        .split(" ")
-        .collect();
-
-        //if trim_msg[0] == "ping" {
-        //    if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-        //        logger::info("Error sending message");
-        //        logger::secondary_error(why);
-        //    }
-        //}
-    }
-
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, _ctx: Context, ready: Ready) {
         logger::info(format!("{} is online!", ready.user.name.magenta()));
     }
 }
