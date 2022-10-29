@@ -5,7 +5,7 @@ mod event_handler;
 use event_handler::Handler;
 use config::Config;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
 
@@ -71,7 +71,7 @@ impl Bot {
         .user_data_setup(|_ctx, _data_about_bot, _framework| {
             Box::pin(async move {
                 Ok(commands::Data {
-                    command_counter: std::sync::Mutex::new(std::collections::HashMap::new()),
+                    servers: HashMap::new()
                 })
             })
         })

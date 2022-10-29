@@ -1,5 +1,6 @@
 mod bot;
 mod player;
+mod common;
 #[allow(dead_code)]
 mod logger;
 #[allow(dead_code)]

@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::{messager, player};
+use crate::messager;
 use serenity::model::channel::GuildChannel;
 
 /// Bot joins the voice channel
@@ -11,7 +11,7 @@ pub async fn join(
     channel: Option<GuildChannel>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let guild_id = ctx.guild_id().unwrap();
+    let server = ctx.data().servers.get(&guild.id).unwrap();
 
     let channel_id = if let Some(channel) = channel {
         channel.id
@@ -24,7 +24,8 @@ pub async fn join(
     };
 
     // TODO: Already joined. Would you like to change?
-    player::join::join(&ctx, &guild_id, &channel_id).await;
+    // TODO: handle poisoned mutexes as well
+    server.player.lock().await.connect_to_voice_channel(&ctx, &channel_id).await;
 
     messager::send_sucsess(&ctx, "Connected to the voice channel", true).await;
 
