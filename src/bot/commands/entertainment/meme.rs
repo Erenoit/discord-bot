@@ -2,7 +2,7 @@ use super::super::{Context, Error};
 use crate::{logger, messager};
 
 /// Sends random meme from r/memes.
-#[poise::command(slash_command, prefix_command, category="Others")]
+#[poise::command(slash_command, prefix_command, category="Entertainment")]
 pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let link = "https://www.reddit.com/r/memes/random/.json";
     let url = if let Ok(u) = reqwest::Url::parse(link) {
