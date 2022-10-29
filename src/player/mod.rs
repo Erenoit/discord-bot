@@ -1,7 +1,31 @@
 mod song;
 
 use crate::{bot::commands::Context, logger, messager, player::song::Song};
+use std::sync::Arc;
 use serenity::model::id::{ChannelId, GuildId};
+use songbird::{Call, Songbird};
+use tokio::sync::Mutex;
+
+
+#[inline(always)]
+async fn get_songbird_manager(ctx: &Context<'_>) -> Arc<Songbird> {
+    songbird::get(ctx.discord())
+        .await
+        .expect("Songbird Voice client placed in at initialisation.")
+        .clone()
+}
+
+#[inline(always)]
+async fn get_call_mutex(ctx: &Context<'_>, guild_id: &GuildId) -> Option<Arc<Mutex<Call>>> {
+    get_songbird_manager(ctx).await.get(*guild_id)
+}
+
+#[inline(always)]
+fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
+    ctx.guild().expect("Guild should be Some")
+                .voice_states.get(&ctx.author().id)
+                .and_then(|voice_state| voice_state.channel_id)
+}
 
 pub struct Player {
     guild_id: GuildId,
@@ -47,9 +71,9 @@ impl Player {
     pub async fn play(&mut self, ctx: &Context<'_>, url: String) {
         if self.connected_channel.is_none() {
             if let Some(channel_id) = context_to_voice_channel_id(ctx) {
-                self.connect_to_voice_channel(&ctx, &channel_id);
+                self.connect_to_voice_channel(&ctx, &channel_id).await;
             } else {
-                messager::send_error(ctx, "You are not in the voice channel", true);
+                messager::send_error(ctx, "You are not in the voice channel", true).await;
                 return;
             }
         }
@@ -58,14 +82,14 @@ impl Player {
         self.song_queue.push(s);
 
         if self.now_playing.is_none() {
-            self.start().await
+            self.start(ctx).await
         }
     }
 
-    pub async fn start(&mut self) {
-        if self.song_queue.is_empty() { self.stop(); return; }
+    pub async fn start(&mut self, ctx: &Context<'_>) {
+        if self.song_queue.is_empty() { self.stop(ctx).await; return; }
 
-        if let Some(call_mutex) = songbird::Songbird::get(self.guild_id) {
+        if let Some(call_mutex) = get_call_mutex(ctx, &self.guild_id).await {
             let next_song = self.song_queue.pop().expect("Queue cannot be empty at this point");
 
             let source = match songbird::ytdl(next_song.url()).await {
@@ -82,15 +106,14 @@ impl Player {
         } else {
             unreachable!("Not in a voice channel to play in")
         }
-        todo!()
     }
 
-    pub async fn stop(&self) {
-        if let Some(call_mutex) = get_call_mutex(ctx, guild_id).await {
+    pub async fn stop(&mut self, ctx: &Context<'_>) {
+        if let Some(call_mutex) = get_call_mutex(ctx, &self.guild_id).await {
             let mut call = call_mutex.lock().await;
             call.stop();
+            self.now_playing = None;
         }
-        todo!()
     }
 }
 
