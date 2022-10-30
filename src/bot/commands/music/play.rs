@@ -10,7 +10,7 @@ pub async fn play(
     let guild = ctx.guild().expect("Guild should be Some");
     let server = ctx.data().servers.get(&guild.id).unwrap();
 
-    if song.starts_with("http://") && song.starts_with("https://") {
+    if song.starts_with("http://") || song.starts_with("https://") {
         // TODO: handle poisoned mutexes as well
         server.player.lock().await.play(&ctx, song).await;
     } else {
