@@ -31,6 +31,7 @@ impl Bot {
                 commands::entertainment::sus::sus(),
                 commands::entertainment::meme::meme(),
                 commands::music::join::join(),
+                commands::music::leave::leave(),
                 commands::music::play::play(),
             ],
             //listener: |ctx, event, framework, user_data| {

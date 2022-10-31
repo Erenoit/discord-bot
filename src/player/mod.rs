@@ -68,6 +68,20 @@ impl Player {
         }
     }
 
+    pub async fn leave_voice_channel(&mut self, ctx: &Context<'_>) {
+        if self.connected_channel == None {
+            messager::send_error(ctx, "Not in a voice channel", true).await;
+            return;
+        }
+
+        if let Some(call_mutex) = get_call_mutex(ctx, &self.guild_id).await {
+            let mut call = call_mutex.lock().await;
+
+            call.leave().await.expect("There shold be no error while leaving the call");
+            self.connected_channel = None;
+        }
+    }
+
     pub async fn play(&mut self, ctx: &Context<'_>, url: String) {
         if self.connected_channel.is_none() {
             if let Some(channel_id) = context_to_voice_channel_id(ctx) {
