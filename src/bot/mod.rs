@@ -33,6 +33,7 @@ impl Bot {
                 commands::music::join::join(),
                 commands::music::leave::leave(),
                 commands::music::play::play(),
+                commands::music::clear::clear(),
             ],
             //listener: |ctx, event, framework, user_data| {
             //    Box::pin(event_listener(ctx, event, framework, user_data))

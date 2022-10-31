@@ -141,6 +141,15 @@ impl Player {
             self.now_playing = None;
         }
     }
+
+    pub async fn clear_the_queues(&mut self) {
+        self.song_queue   = VecDeque::with_capacity(100);
+        self.repeat_queue = VecDeque::with_capacity(100);
+    }
+
+    pub fn is_queues_empty(&self) -> bool {
+        self.song_queue.is_empty() && self.repeat_queue.is_empty()
+    }
 }
 
 // TODO: add repeat algorithm
