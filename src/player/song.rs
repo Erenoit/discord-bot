@@ -61,6 +61,7 @@ impl Song {
         .collect())
     }
 
+    // TODO: youtube-dl is slow sometimes
     // TODO: cannot open age restricted videos
     #[inline(always)]
     async fn yt_url(url: String) -> Result<(String, String, String)> {
@@ -101,7 +102,7 @@ impl Song {
     #[inline(always)]
     async fn yt_playlist(url: String) -> Result<Vec<(String, String, String)>> {
         if let Ok(res) = Command::new("youtube-dl")
-            .args(["--get-title", "--get-id", "--get-duration", &url])
+            .args(["--flat-playlist","--get-title", "--get-id", "--get-duration", &url])
             .output().await
             {
                 if !res.status.success() {
@@ -113,10 +114,12 @@ impl Song {
                 let splited_res: Vec<String> = String::from_utf8(res.stdout)
                     .expect("Output must be valid UTF-8")
                     .split("\n")
+                    .filter(|e| !e.is_empty())
                     .map(|e| e.to_string())
                     .collect();
 
                 if splited_res.len() % 3 != 0 {
+                    crate::logger::error("youtube-dl returned wrong number of arguments");
                     return Err(anyhow!("Output must be dividable by 3"))
                 }
 
