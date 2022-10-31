@@ -78,8 +78,19 @@ impl Player {
             }
         }
 
-        let s = Song::new(url, &ctx.author().name).await;
-        self.song_queue.push(s);
+        if url.contains("list=") || url.contains("/playlist/") {
+            if let Ok(mut list) = Song::from_playlist(url, &ctx.author().name).await {
+                self.song_queue.append(&mut list);
+            } else {
+                messager::send_error(ctx, "Error happened while fetching data about playlist. Please try again later.", true).await;
+                return;
+            }
+        } else if let Ok(s) = Song::new(url, &ctx.author().name).await {
+            self.song_queue.push(s);
+        } else {
+            messager::send_error(ctx, "Error happened while fetching data about song. Please try again later.", true).await;
+            return;
+        }
 
         if self.now_playing.is_none() {
             self.start(ctx).await
