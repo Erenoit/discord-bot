@@ -95,12 +95,14 @@ impl Player {
         if url.contains("list=") || url.contains("/playlist/") {
             if let Ok(list) = Song::from_playlist(url, &ctx.author().name).await {
                 // CHECK: if "Vec -> VecDeque" reallocates the memmory
+                messager::send_sucsess(ctx, format!("{} songs added to the list", list.len()), true).await;
                 self.song_queue.append(&mut VecDeque::from(list));
             } else {
                 messager::send_error(ctx, "Error happened while fetching data about playlist. Please try again later.", true).await;
                 return;
             }
         } else if let Ok(s) = Song::new(url, &ctx.author().name).await {
+            messager::send_sucsess(ctx, format!("{} is added to the list", s.title()), true).await;
             self.song_queue.push_back(s);
         } else {
             messager::send_error(ctx, "Error happened while fetching data about song. Please try again later.", true).await;
