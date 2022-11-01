@@ -33,6 +33,7 @@ impl Bot {
                 commands::music::join::join(),
                 commands::music::leave::leave(),
                 commands::music::play::play(),
+                commands::music::music::music(),
                 commands::music::clear::clear(),
                 commands::music::shuffle::shuffle(),
             ],
