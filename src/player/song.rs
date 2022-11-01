@@ -126,9 +126,9 @@ impl Song {
                 let mut list: Vec<(String, String, String)> = Vec::with_capacity(splited_res.len() / 3);
 
                 for i in 0 .. splited_res.len() / 3 {
-                    list.push((splited_res.get(i + 0).unwrap().to_string(),
-                               splited_res.get(i + 1).unwrap().to_string(),
-                               splited_res.get(i + 2).unwrap().to_string()))
+                    list.push((splited_res.get(i * 3 + 0).unwrap().to_string(),
+                               splited_res.get(i * 3 + 1).unwrap().to_string(),
+                               splited_res.get(i * 3 + 2).unwrap().to_string()))
                 }
 
                 Ok(list)
