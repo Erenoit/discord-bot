@@ -352,6 +352,7 @@ dependencies = [
  "dotenv",
  "json",
  "poise",
+ "rand",
  "reqwest",
  "serenity",
  "songbird",

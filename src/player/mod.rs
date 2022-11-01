@@ -147,6 +147,13 @@ impl Player {
         self.repeat_queue = VecDeque::with_capacity(100);
     }
 
+    pub async fn shuffle_song_queue(&mut self) {
+        for i in 0 ..= self.song_queue.len() - 2 {
+          let j = (rand::random::<f32>() * (i as f32 - 1.0)) as usize;
+          self.song_queue.swap(i, j);
+        }
+    }
+
     pub fn is_queues_empty(&self) -> bool {
         self.song_queue.is_empty() && self.repeat_queue.is_empty()
     }

@@ -34,6 +34,7 @@ impl Bot {
                 commands::music::leave::leave(),
                 commands::music::play::play(),
                 commands::music::clear::clear(),
+                commands::music::shuffle::shuffle(),
             ],
             //listener: |ctx, event, framework, user_data| {
             //    Box::pin(event_listener(ctx, event, framework, user_data))
