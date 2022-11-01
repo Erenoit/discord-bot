@@ -83,27 +83,27 @@ pub async fn send_files<S: Display>(ctx: &Context<'_>, content: S, files: Vec<&P
 }
 
 #[inline(always)]
-pub async fn bold<S: Display>(message: S) -> String {
+pub fn bold<S: Display>(message: S) -> String {
     return format!("**{message}**");
 }
 
 #[inline(always)]
-pub async fn italic<S: Display>(message: S) -> String {
+pub fn italic<S: Display>(message: S) -> String {
     return format!("*{message}*");
 }
 
 #[inline(always)]
-pub async fn bold_italic<S: Display>(message: S) -> String {
+pub fn bold_italic<S: Display>(message: S) -> String {
     return format!("***{message}***");
 }
 
 #[inline(always)]
-pub async fn highlight<S: Display>(message: S) -> String {
+pub fn highlight<S: Display>(message: S) -> String {
     return format!("`{message}`");
 }
 
 #[inline(always)]
-pub async fn block<S: Display, T: Display>(block_type: T, message: S) -> String {
+pub fn block<S: Display, T: Display>(block_type: T, message: S) -> String {
     return format!("```{block_type}\n{message}\n```");
 }
 
