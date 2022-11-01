@@ -34,6 +34,7 @@ impl Bot {
                 commands::music::leave::leave(),
                 commands::music::play::play(),
                 commands::music::music::music(),
+                commands::music::queue::queue(),
                 commands::music::clear::clear(),
                 commands::music::shuffle::shuffle(),
             ],

@@ -158,6 +158,63 @@ impl Player {
         }
     }
 
+    pub async fn print_queue(&self, ctx: &Context<'_>) {
+        if self.now_playing.is_none() {
+            messager::send_error(ctx, "Nothings playing :unamused:", true).await;
+            return;
+        }
+
+        let mut s = String::with_capacity(1024);
+        let s_len = self.song_queue.len();
+        let r_len = self.repeat_queue.len();
+        let (after, before) = {
+            let is_song_queue_enough = s_len >= 5;
+            let is_repeat_queue_enough = r_len >= 5;
+
+            if !is_song_queue_enough && !is_repeat_queue_enough {
+                (s_len, r_len)
+            } else if !is_song_queue_enough {
+                (s_len, std::cmp::min(10 - s_len, r_len))
+            } else if !is_repeat_queue_enough {
+                (std::cmp::min(10 - r_len, s_len), r_len)
+            } else {
+                (5, 5)
+            }
+        };
+
+        let mut num = r_len - before + 1;
+
+        for i in (r_len - before) .. r_len {
+            Self::add_to_queue_string(&mut s, &self.repeat_queue[i], num, false);
+            num +=1;
+        }
+
+        Self::add_to_queue_string(&mut s, &self.now_playing.as_ref().unwrap(), num, true);
+        num +=1;
+
+        for i in 0 .. after {
+            Self::add_to_queue_string(&mut s, &self.song_queue[i], num, false);
+            num +=1;
+        }
+
+        messager::send_normal(ctx, "Queue", s, false).await;
+    }
+
+    fn add_to_queue_string(s: &mut String, song: &Song, num: usize, selected: bool) {
+        let selected_char = "➤";
+        let selected_whitespace = "  ";
+        let normal_whitespace = "     ";
+        let number_style = format!("{num}) ");
+        let song_str = song.to_string();
+
+        if selected {
+            s.push_str(&messager::bold(format!("{}{}{}{}\n", selected_char, selected_whitespace, number_style, song_str)));
+        } else {
+            s.push_str(&format!("{}{}{}\n", normal_whitespace, number_style, song_str));
+        }
+
+    }
+
     pub fn is_queues_empty(&self) -> bool {
         self.song_queue.is_empty() && self.repeat_queue.is_empty()
     }
