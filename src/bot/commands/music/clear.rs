@@ -1,7 +1,7 @@
 use super::super::{Context, Error};
 use crate::messager;
 
-/// Bot joins the voice channel
+/// Clears the queue but do not stop current playing song
 #[poise::command(slash_command, prefix_command, category="Music", guild_only)]
 pub async fn clear(
     ctx: Context<'_>,

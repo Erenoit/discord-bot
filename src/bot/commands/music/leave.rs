@@ -1,7 +1,7 @@
 use super::super::{Context, Error};
 use crate::messager;
 
-/// Bot joins the voice channel
+/// Leaves the voice channel
 #[poise::command(slash_command, prefix_command, aliases("l"), category="Music", guild_only)]
 pub async fn leave(
     ctx: Context<'_>,

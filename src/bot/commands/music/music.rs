@@ -1,7 +1,6 @@
 use super::super::{Context, Error};
 use crate::messager;
 use std::collections::HashMap;
-use tokio::process::Command;
 
 /// Adds song to queue
 #[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only)]

@@ -2,7 +2,7 @@ use super::super::{Context, Error};
 use crate::messager;
 use serenity::model::channel::GuildChannel;
 
-/// Bot joins the voice channel
+/// Joins to the voice channel
 #[poise::command(slash_command, prefix_command, aliases("j"), category="Music", guild_only)]
 pub async fn join(
     ctx: Context<'_>,

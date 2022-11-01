@@ -1,7 +1,7 @@
 use super::super::{Context, Error};
 use crate::messager;
 
-/// Bot joins the voice channel
+/// Shuffles the queue
 #[poise::command(slash_command, prefix_command, category="Music", guild_only)]
 pub async fn shuffle(
     ctx: Context<'_>,
