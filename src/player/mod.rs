@@ -131,6 +131,8 @@ impl Player {
 
             let mut call = call_mutex.lock().await;
             call.play_source(source);
+
+            self.now_playing = Some(next_song);
         } else {
             unreachable!("Not in a voice channel to play in")
         }
