@@ -147,6 +147,18 @@ impl Player {
         }
     }
 
+    pub async fn skip_song(&mut self, ctx: &Context<'_>) {
+        self.move_to_repeat_queue().await;
+        self.stop_stream(ctx).await;
+        self.start_stream(ctx).await;
+    }
+
+    pub async fn move_to_repeat_queue(&mut self) {
+        if self.now_playing.is_some() {
+            self.repeat_queue.push_back(self.now_playing.as_ref().unwrap().clone());
+        }
+    }
+
     pub async fn clear_the_queues(&mut self) {
         self.song_queue   = VecDeque::with_capacity(100);
         self.repeat_queue = VecDeque::with_capacity(100);

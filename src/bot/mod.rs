@@ -34,6 +34,7 @@ impl Bot {
                 commands::music::leave::leave(),
                 commands::music::play::play(),
                 commands::music::stop::stop(),
+                commands::music::skip::skip(),
                 commands::music::repeat::repeat(),
                 commands::music::music::music(),
                 commands::music::queue::queue(),

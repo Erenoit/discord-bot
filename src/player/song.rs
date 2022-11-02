@@ -2,6 +2,7 @@ use std::fmt::Display;
 use anyhow::{anyhow, Result};
 use tokio::process::Command;
 
+#[derive(Clone)]
 pub(super) struct Song {
     title: String,
     url: String,
