@@ -1,12 +1,10 @@
 mod song;
 
 use crate::{bot::commands::Context, logger, messager, player::song::Song};
-use std::{collections::{HashMap, VecDeque}, sync::Arc};
+use std::{collections::VecDeque, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Songbird};
 use tokio::sync::Mutex;
-use anyhow::anyhow;
-
 
 #[inline(always)]
 async fn get_songbird_manager(ctx: &Context<'_>) -> Arc<Songbird> {

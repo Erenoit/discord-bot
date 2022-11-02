@@ -4,7 +4,6 @@ mod event_handler;
 use event_handler::Handler;
 
 use crate::CONFIG;
-use std::{collections::HashMap, sync::Arc};
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
 
