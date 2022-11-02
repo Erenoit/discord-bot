@@ -70,9 +70,7 @@ impl Bot {
         })
         .user_data_setup(|_ctx, _data_about_bot, _framework| {
             Box::pin(async move {
-                Ok(commands::Data {
-                    servers: HashMap::new()
-                })
+                Ok(commands::Data)
             })
         })
         .run_autosharded()

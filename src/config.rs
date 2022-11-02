@@ -1,11 +1,14 @@
-use crate::logger;
-
+use crate::{logger, common::Server};
+use std::{collections::HashMap, env};
 use dotenv;
-use std::env;
+use serenity::model::id::GuildId;
+
+use tokio::sync::RwLock;
 
 pub struct Config {
     token: String,
     prefix: String,
+    servers: RwLock<HashMap<GuildId, Server>>,
 }
 
 impl Config {
@@ -19,7 +22,10 @@ impl Config {
         logger::secondary_info("prefix");
         let prefix = env::var("PREFIX").expect("Couldn't find the prefix");
 
-        Self { token, prefix }
+        logger::secondary_info("empty servers hashmap");
+        let servers = RwLock::new(HashMap::new());
+
+        Self { token, prefix, servers }
     }
 
     pub fn token(&self) -> &String {
@@ -27,5 +33,9 @@ impl Config {
     }
      pub fn prefix(&self) -> &String {
         return &self.prefix
+     }
+
+     pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
+        return &self.servers;
      }
 }

@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::messager;
+use crate::{CONFIG, messager};
 
 /// Clears the queue but do not stop current playing song
 #[poise::command(slash_command, prefix_command, category="Music", guild_only)]
@@ -7,7 +7,8 @@ pub async fn clear(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let server = ctx.data().servers.get(&guild.id).unwrap();
+    let servers = CONFIG.get().unwrap().servers().read().await;
+    let server = servers.get(&guild.id).unwrap();
 
     // TODO: handle poisoned mutexes as well
     let mut player = server.player.lock().await;

@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::messager;
+use crate::{CONFIG, messager};
 
 /// Prints song queue
 #[poise::command(slash_command, prefix_command, aliases("q"), category="Music", guild_only)]
@@ -7,7 +7,8 @@ pub async fn queue(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let server = ctx.data().servers.get(&guild.id).unwrap();
+    let servers = CONFIG.get().unwrap().servers().read().await;
+    let server = servers.get(&guild.id).unwrap();
 
     // TODO: handle poisoned mutexes as well
     let player = server.player.lock().await;
