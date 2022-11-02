@@ -1,7 +1,7 @@
 pub mod commands;
-mod event_handler;
+mod event;
 
-use event_handler::Handler;
+use event::Handler;
 
 use crate::CONFIG;
 use serenity::prelude::GatewayIntents;

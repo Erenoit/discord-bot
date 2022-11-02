@@ -1,7 +1,7 @@
-mod player_events;
+mod event;
 mod song;
 
-use crate::{bot::commands::Context, CONFIG, logger, messager, player::song::Song};
+use crate::{bot::commands::Context, CONFIG, logger, messager, player::{event::SongEnd, song::Song}};
 use std::{collections::VecDeque, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
@@ -131,7 +131,7 @@ impl Player {
 
             let mut call = call_mutex.lock().await;
             _ = call.play_source(source)
-                .add_event(Event::Track(TrackEvent::End), player_events::SongEnd { guild_id: self.guild_id });
+                .add_event(Event::Track(TrackEvent::End), SongEnd { guild_id: self.guild_id });
             *self.now_playing.lock().await  = Some(next_song);
         } else {
             unreachable!("Not in a voice channel to play in")
