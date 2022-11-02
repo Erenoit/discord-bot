@@ -1,3 +1,4 @@
+use crate::{logger, messager};
 use std::fmt::Display;
 use anyhow::{anyhow, Result};
 use tokio::process::Command;
@@ -71,8 +72,8 @@ impl Song {
             .output().await
             {
                 if !res.status.success() {
-                    crate::logger::error("YouTube data fetch with youtube-dl failed:");
-                    crate::logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
+                    logger::error("YouTube data fetch with youtube-dl failed:");
+                    logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
                     return Err(anyhow!("youtube-dl failed"));
                 }
 
@@ -87,7 +88,7 @@ impl Song {
                 let duration = splited_res.get(2);
 
                 if title.is_none() || id.is_none() || duration.is_none() {
-                    crate::logger::error("Somehow youtube-dl returned less data");
+                    logger::error("Somehow youtube-dl returned less data");
                     return Err(anyhow!("youtube-dl failed"));
                 }
 
@@ -95,7 +96,7 @@ impl Song {
                     format!("https://youtube.com/watch?v={}", id.unwrap()),
                     duration.unwrap().to_string()))
             } else {
-                crate::logger::error("Command creation for youtube-dl failed");
+                logger::error("Command creation for youtube-dl failed");
                 Err(anyhow!("youtube-dl failed"))
             }
     }
@@ -107,8 +108,8 @@ impl Song {
             .output().await
             {
                 if !res.status.success() {
-                    crate::logger::error("YouTube data fetch with youtube-dl failed:");
-                    crate::logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
+                    logger::error("YouTube data fetch with youtube-dl failed:");
+                    logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
                     return Err(anyhow!("youtube-dl failed"));
                 }
 
@@ -120,7 +121,7 @@ impl Song {
                     .collect();
 
                 if splited_res.len() % 3 != 0 {
-                    crate::logger::error("youtube-dl returned wrong number of arguments");
+                    logger::error("youtube-dl returned wrong number of arguments");
                     return Err(anyhow!("Output must be dividable by 3"))
                 }
 
@@ -134,7 +135,7 @@ impl Song {
 
                 Ok(list)
             } else {
-                crate::logger::error("Command creation for youtube-dl failed");
+                logger::error("Command creation for youtube-dl failed");
                 Err(anyhow!("youtube-dl failed"))
             }
     }
