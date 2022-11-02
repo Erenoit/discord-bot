@@ -111,12 +111,12 @@ impl Player {
         }
 
         if self.now_playing.is_none() {
-            self.start(ctx).await
+            self.start_stream(ctx).await
         }
     }
 
-    pub async fn start(&mut self, ctx: &Context<'_>) {
-        if self.song_queue.is_empty() { self.stop(ctx).await; return; }
+    pub async fn start_stream(&mut self, ctx: &Context<'_>) {
+        if self.song_queue.is_empty() { self.stop_stream(ctx).await; return; }
 
         if let Some(call_mutex) = get_call_mutex(ctx, &self.guild_id).await {
             let next_song = self.song_queue.pop_front().expect("Queue cannot be empty at this point");
@@ -139,7 +139,7 @@ impl Player {
         }
     }
 
-    pub async fn stop(&mut self, ctx: &Context<'_>) {
+    pub async fn stop_stream(&mut self, ctx: &Context<'_>) {
         if let Some(call_mutex) = get_call_mutex(ctx, &self.guild_id).await {
             let mut call = call_mutex.lock().await;
             call.stop();
