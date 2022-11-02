@@ -173,7 +173,7 @@ impl Song {
 
 impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}]", self.title, self.length)
+        write!(f, "{} [{}] {}", self.title(), self.length(), messager::highlight(format!("requested by {}", self.user_name())))
     }
 }
 
