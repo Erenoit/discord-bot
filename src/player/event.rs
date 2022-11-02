@@ -1,4 +1,4 @@
-use crate::CONFIG;
+use crate::get_config;
 use songbird::{Event, EventContext, EventHandler};
 use serenity::model::id::GuildId;
 
@@ -11,7 +11,7 @@ impl EventHandler for SongEnd {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         match ctx {
             EventContext::Track(..) => {
-                CONFIG.get().unwrap()
+                get_config()
                     .servers().read().await
                     .get(&self.guild_id).unwrap()
                     .player

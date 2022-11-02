@@ -3,7 +3,7 @@ mod event;
 
 use event::Handler;
 
-use crate::CONFIG;
+use crate::get_config;
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
 
@@ -46,7 +46,7 @@ impl Bot {
 
             // Options specific to prefix commands, i.e. commands invoked via chat messages
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(CONFIG.get().unwrap().prefix().to_string()),
+                prefix: Some(get_config().prefix().to_string()),
                 mention_as_prefix: false,
 
                 //// An edit tracker needs to be supplied here to make edit tracking in commands work
@@ -60,12 +60,12 @@ impl Bot {
         };
 
         poise::Framework::builder()
-        .token(CONFIG.get().unwrap().token())
+        .token(get_config().token())
         .intents(GatewayIntents::all())
         .options(options)
         .client_settings(move |c| {
             c.event_handler(Handler::new())
-                .register_songbird_with(CONFIG.get().unwrap().songbird())
+                .register_songbird_with(get_config().songbird())
         })
         .user_data_setup(|_ctx, _data_about_bot, _framework| {
             Box::pin(async move {

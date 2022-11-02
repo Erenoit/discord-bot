@@ -1,4 +1,4 @@
-use crate::{server::Server, CONFIG, logger};
+use crate::{get_config, logger, server::Server};
 
 use colored::Colorize;
 use serenity::{
@@ -19,7 +19,7 @@ impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         // TODO: find a better way to init servers (if there is)
         logger::info("Guilds:");
-        let mut servers = CONFIG.get().unwrap().servers().write().await;
+        let mut servers = get_config().servers().write().await;
 
         for g in ready.guilds {
             logger::secondary_info(format!("{}", g.id));

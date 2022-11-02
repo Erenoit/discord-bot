@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::{CONFIG, messager};
+use crate::{get_config, messager};
 use serenity::model::channel::GuildChannel;
 
 /// Joins to the voice channel
@@ -11,7 +11,7 @@ pub async fn join(
     channel: Option<GuildChannel>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let servers = CONFIG.get().unwrap().servers().read().await;
+    let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     let channel_id = if let Some(channel) = channel {

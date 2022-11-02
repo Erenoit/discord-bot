@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::CONFIG;
+use crate::get_config;
 use tokio::process::Command;
 
 /// Adds song to queue 
@@ -9,7 +9,7 @@ pub async fn play(
     #[description = "Song name or Song URL"] song: String
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
-    let servers = CONFIG.get().unwrap().servers().read().await;
+    let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     if song.starts_with("http://") || song.starts_with("https://") {

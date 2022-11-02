@@ -1,5 +1,5 @@
 use super::super::{Context, Error};
-use crate::{CONFIG, messager};
+use crate::{get_config, messager};
 use std::collections::HashMap;
 
 /// Adds song to queue
@@ -9,7 +9,7 @@ pub async fn music(
     #[description = "Keyword for wanted video/playlist"] keyword: String
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
-    let servers = CONFIG.get().unwrap().servers().read().await;
+    let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     // TODO: use proper database

@@ -11,3 +11,9 @@ use config::Config;
 use tokio::sync::OnceCell;
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
+
+#[inline(always)]
+fn get_config() -> &'static Config {
+    CONFIG.get().expect("CONFIG should be initialized at start")
+}
+

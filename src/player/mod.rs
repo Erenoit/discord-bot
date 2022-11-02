@@ -1,7 +1,7 @@
 mod event;
 mod song;
 
-use crate::{bot::commands::Context, CONFIG, logger, messager, player::{event::SongEnd, song::Song}};
+use crate::{bot::commands::Context, get_config, logger, messager, player::{event::SongEnd, song::Song}};
 use std::{collections::VecDeque, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 
 #[inline(always)]
 fn get_songbird_manager() -> Arc<Songbird> {
-    CONFIG.get().unwrap().songbird()
+    get_config().songbird()
 }
 
 #[inline(always)]
