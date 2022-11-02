@@ -9,6 +9,7 @@ pub struct Config {
     token: String,
     prefix: String,
     servers: RwLock<HashMap<GuildId, Server>>,
+    songbird: std::sync::Arc<songbird::Songbird>,
 }
 
 impl Config {
@@ -25,7 +26,10 @@ impl Config {
         logger::secondary_info("empty servers hashmap");
         let servers = RwLock::new(HashMap::new());
 
-        Self { token, prefix, servers }
+        logger::secondary_info("songbird");
+        let songbird = songbird::Songbird::serenity();
+
+        Self { token, prefix, servers, songbird }
     }
 
     pub fn token(&self) -> &String {
@@ -37,5 +41,9 @@ impl Config {
 
      pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
         return &self.servers;
+     }
+
+     pub fn songbird(&self) -> std::sync::Arc<songbird::Songbird> {
+         return std::sync::Arc::clone(&self.songbird);
      }
 }

@@ -13,7 +13,7 @@ pub async fn stop(
     // TODO: handle poisoned mutexes as well
     // TODO: add chack for already stopped bot
     server.player.lock().await.clear_the_queues().await;
-    server.player.lock().await.stop_stream(&ctx).await;
+    server.player.lock().await.stop_stream().await;
     messager::send_sucsess(&ctx, ":sob:", true).await;
 
     Ok(())

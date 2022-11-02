@@ -26,7 +26,7 @@ pub async fn join(
 
     // TODO: Already joined. Would you like to change?
     // TODO: handle poisoned mutexes as well
-    server.player.lock().await.connect_to_voice_channel(&ctx, &channel_id).await;
+    server.player.lock().await.connect_to_voice_channel(&channel_id).await;
 
     messager::send_sucsess(&ctx, "Connected to the voice channel", true).await;
 

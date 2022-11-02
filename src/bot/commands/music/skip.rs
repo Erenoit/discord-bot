@@ -12,7 +12,7 @@ pub async fn skip(
 
     // TODO: handle poisoned mutexes as well
     // TODO: add chack for already stopped bot
-    server.player.lock().await.skip_song(&ctx).await;
+    server.player.lock().await.skip_song().await;
 
     Ok(())
 }
