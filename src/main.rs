@@ -1,15 +1,16 @@
-mod bot;
-mod player;
-mod common;
-#[allow(dead_code)]
-mod logger;
-#[allow(dead_code)]
-mod messager;
+use discord_bot::{
+    bot::Bot,
+    config::Config,
+    CONFIG,
+};
 
-use bot::Bot;
 
 #[tokio::main]
 async fn main() {
+    if let Err(why) = CONFIG.set(Config::generate()) {
+        panic!("Config could not be created: {}", why);
+    }
+
     let mut bot = Bot::new();
     bot.run().await;
 }

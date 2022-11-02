@@ -1,25 +1,18 @@
 pub mod commands;
-mod config;
 mod event_handler;
 
 use event_handler::Handler;
-use config::Config;
 
+use crate::CONFIG;
 use std::{collections::HashMap, sync::Arc};
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
 
-pub struct Bot {
-    config: Arc<Config>,
-}
+pub struct Bot;
 
 impl Bot {
     pub fn new() -> Self {
-        let config = Arc::new(Config::generate());
-
-        Self {
-            config,
-        }
+        Self
     }
 
     pub async fn run(&mut self) {
@@ -54,7 +47,7 @@ impl Bot {
 
             // Options specific to prefix commands, i.e. commands invoked via chat messages
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(self.config.prefix().to_string()),
+                prefix: Some(CONFIG.get().unwrap().prefix().to_string()),
                 mention_as_prefix: false,
 
                 //// An edit tracker needs to be supplied here to make edit tracking in commands work
@@ -67,13 +60,12 @@ impl Bot {
             ..Default::default()
         };
 
-        let cfg = Arc::clone(&self.config);
         poise::Framework::builder()
-        .token(self.config.token())
+        .token(CONFIG.get().unwrap().token())
         .intents(GatewayIntents::all())
         .options(options)
         .client_settings(move |c| {
-            c.event_handler(Handler::new(cfg))
+            c.event_handler(Handler::new())
                 .register_songbird()
         })
         .user_data_setup(|_ctx, _data_about_bot, _framework| {

@@ -3,7 +3,7 @@ use crate::logger;
 use dotenv;
 use std::env;
 
-pub(super) struct Config {
+pub struct Config {
     token: String,
     prefix: String,
 }

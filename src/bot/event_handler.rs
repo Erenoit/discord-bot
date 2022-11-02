@@ -1,7 +1,5 @@
-use super::config::Config;
 use crate::logger;
 
-use std::sync::Arc;
 use colored::Colorize;
 use serenity::{
     async_trait,
@@ -9,13 +7,10 @@ use serenity::{
     client::{EventHandler, Context},
 };
 
-pub(super) struct Handler {
-    config: Arc<Config>
-}
-
+pub struct Handler;
 impl Handler {
-    pub fn new(config: Arc<Config>) -> Self {
-        Self{ config }
+    pub fn new() -> Self {
+        Self
     }
 }
 
