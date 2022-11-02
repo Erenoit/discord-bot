@@ -10,14 +10,11 @@ pub async fn shuffle(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
-    let mut player = server.player.lock().await;
-
-    if player.is_queues_empty() {
+    if server.player.is_queues_empty().await {
         messager::send_error(&ctx, "Queue is empty", true).await;
     } else {
         // TODO: r u sure??
-        player.shuffle_song_queue().await;
+        server.player.shuffle_song_queue().await;
         messager::send_sucsess(&ctx, "Queue shuffled", true).await;
     }
 

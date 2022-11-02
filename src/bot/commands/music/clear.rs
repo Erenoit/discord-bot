@@ -10,13 +10,10 @@ pub async fn clear(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
-    let mut player = server.player.lock().await;
-
-    if player.is_queues_empty() {
+    if server.player.is_queues_empty().await {
         messager::send_error(&ctx, "Queue is already empty", true).await;
     } else {
-        player.clear_the_queues().await;
+        server.player.clear_the_queues().await;
         messager::send_sucsess(&ctx, "Queue cleared", true).await;
     }
 

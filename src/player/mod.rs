@@ -34,24 +34,24 @@ fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
 
 pub struct Player {
     guild_id: GuildId,
-    now_playing:  Option<Song>,
-    repeat_mode:  Repeat,
-    song_queue:   VecDeque<Song>,
-    repeat_queue: VecDeque<Song>,
+    now_playing:  Mutex<Option<Song>>,
+    repeat_mode:  Mutex<Repeat>,
+    song_queue:   Mutex<VecDeque<Song>>,
+    repeat_queue: Mutex<VecDeque<Song>>,
 }
 
 impl Player {
     pub fn new(guild_id: GuildId) -> Self {
         Self {
             guild_id,
-            now_playing:       None,
-            repeat_mode:       Repeat::Off,
-            song_queue:        VecDeque::with_capacity(100),
-            repeat_queue:      VecDeque::with_capacity(100),
+            now_playing:  Mutex::new(None),
+            repeat_mode:  Mutex::new(Repeat::Off),
+            song_queue:   Mutex::new(VecDeque::with_capacity(100)),
+            repeat_queue: Mutex::new(VecDeque::with_capacity(100)),
         }
     }
 
-    pub async fn connect_to_voice_channel(&mut self, channel_id: &ChannelId) {
+    pub async fn connect_to_voice_channel(&self, channel_id: &ChannelId) {
         let manager = get_songbird_manager();
 
         let (call_mutex, result) = manager.join(self.guild_id, *channel_id).await;
@@ -68,7 +68,7 @@ impl Player {
         }
     }
 
-    pub async fn leave_voice_channel(&mut self, ctx: &Context<'_>) {
+    pub async fn leave_voice_channel(&self, ctx: &Context<'_>) {
         if !is_in_vc(self.guild_id).await {
             messager::send_error(ctx, "Not in a voice channel", true).await;
             return;
@@ -81,7 +81,7 @@ impl Player {
         }
     }
 
-    pub async fn play(&mut self, ctx: &Context<'_>, url: String) {
+    pub async fn play(&self, ctx: &Context<'_>, url: String) {
         if !is_in_vc(self.guild_id).await {
             if let Some(channel_id) = context_to_voice_channel_id(ctx) {
                 self.connect_to_voice_channel(&channel_id).await;
@@ -95,29 +95,29 @@ impl Player {
             if let Ok(list) = Song::from_playlist(url, &ctx.author().name).await {
                 // CHECK: if "Vec -> VecDeque" reallocates the memmory
                 messager::send_sucsess(ctx, format!("{} songs added to the list", list.len()), true).await;
-                self.song_queue.append(&mut VecDeque::from(list));
+                self.song_queue.lock().await.append(&mut VecDeque::from(list));
             } else {
                 messager::send_error(ctx, "Error happened while fetching data about playlist. Please try again later.", true).await;
                 return;
             }
         } else if let Ok(s) = Song::new(url, &ctx.author().name).await {
             messager::send_sucsess(ctx, format!("{} is added to the list", s.title()), true).await;
-            self.song_queue.push_back(s);
+            self.song_queue.lock().await.push_back(s);
         } else {
             messager::send_error(ctx, "Error happened while fetching data about song. Please try again later.", true).await;
             return;
         }
 
-        if self.now_playing.is_none() {
+        if self.now_playing.lock().await.is_none() {
             self.start_stream().await
         }
     }
 
-    pub async fn start_stream(&mut self) {
-        if self.song_queue.is_empty() { self.stop_stream().await; return; }
+    pub async fn start_stream(&self) {
+        if self.song_queue.lock().await.is_empty() { self.stop_stream().await; return; }
 
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
-            let next_song = self.song_queue.pop_front().expect("Queue cannot be empty at this point");
+            let next_song = self.song_queue.lock().await.pop_front().expect("Queue cannot be empty at this point");
 
             let source = match songbird::ytdl(next_song.url()).await {
                 Ok(source) => source,
@@ -130,54 +130,56 @@ impl Player {
 
             let mut call = call_mutex.lock().await;
             call.play_source(source);
-
-            self.now_playing = Some(next_song);
+            *self.now_playing.lock().await  = Some(next_song);
         } else {
             unreachable!("Not in a voice channel to play in")
         }
     }
 
-    pub async fn stop_stream(&mut self) {
+    pub async fn stop_stream(&self) {
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
             let mut call = call_mutex.lock().await;
             call.stop();
-            self.now_playing = None;
+            *self.now_playing.lock().await = None;
         }
     }
 
-    pub async fn skip_song(&mut self) {
+    pub async fn skip_song(&self) {
         self.move_to_repeat_queue().await;
         self.stop_stream().await;
         self.start_stream().await;
     }
 
-    pub async fn move_to_repeat_queue(&mut self) {
-        if self.now_playing.is_some() {
-            self.repeat_queue.push_back(self.now_playing.as_ref().unwrap().clone());
+    pub async fn move_to_repeat_queue(&self) {
+        if self.now_playing.lock().await.is_some() {
+            self.repeat_queue.lock().await.push_back(self.now_playing.lock().await.as_ref().unwrap().clone());
         }
     }
 
-    pub async fn clear_the_queues(&mut self) {
-        self.song_queue   = VecDeque::with_capacity(100);
-        self.repeat_queue = VecDeque::with_capacity(100);
+    pub async fn clear_the_queues(&self) {
+        *self.song_queue.lock().await   = VecDeque::with_capacity(100);
+        *self.repeat_queue.lock().await = VecDeque::with_capacity(100);
     }
 
-    pub async fn shuffle_song_queue(&mut self) {
-        for i in 0 ..= self.song_queue.len() - 2 {
+    pub async fn shuffle_song_queue(&self) {
+        let mut queue = self.song_queue.lock().await;
+        for i in 0 ..= queue.len() - 2 {
           let j = (rand::random::<f32>() * (i as f32 - 1.0)) as usize;
-          self.song_queue.swap(i, j);
+          queue.swap(i, j);
         }
     }
 
     pub async fn print_queue(&self, ctx: &Context<'_>) {
-        if self.now_playing.is_none() {
+        if self.now_playing.lock().await.is_none() {
             messager::send_error(ctx, "Nothings playing :unamused:", true).await;
             return;
         }
 
         let mut s = String::with_capacity(1024);
-        let s_len = self.song_queue.len();
-        let r_len = self.repeat_queue.len();
+        let s_queue = self.song_queue.lock().await;
+        let r_queue = self.repeat_queue.lock().await;
+        let s_len = s_queue.len();
+        let r_len = r_queue.len();
         let (after, before) = {
             let is_song_queue_enough = s_len >= 5;
             let is_repeat_queue_enough = r_len >= 5;
@@ -196,15 +198,15 @@ impl Player {
         let mut num = r_len - before + 1;
 
         for i in (r_len - before) .. r_len {
-            Self::add_to_queue_string(&mut s, &self.repeat_queue[i], num, false);
+            Self::add_to_queue_string(&mut s, &r_queue[i], num, false);
             num +=1;
         }
 
-        Self::add_to_queue_string(&mut s, &self.now_playing.as_ref().unwrap(), num, true);
+        Self::add_to_queue_string(&mut s, &self.now_playing.lock().await.as_ref().unwrap(), num, true);
         num +=1;
 
         for i in 0 .. after {
-            Self::add_to_queue_string(&mut s, &self.song_queue[i], num, false);
+            Self::add_to_queue_string(&mut s, &s_queue[i], num, false);
             num +=1;
         }
 
@@ -226,12 +228,12 @@ impl Player {
 
     }
 
-    pub fn is_queues_empty(&self) -> bool {
-        self.song_queue.is_empty() && self.repeat_queue.is_empty()
+    pub async fn is_queues_empty(&self) -> bool {
+        self.song_queue.lock().await.is_empty() && self.repeat_queue.lock().await.is_empty()
     }
 
-    pub async fn change_repeat_mode(&mut self, ctx: &Context<'_>, new_mode: &Repeat) {
-        self.repeat_mode = *new_mode;
+    pub async fn change_repeat_mode(&self, ctx: &Context<'_>, new_mode: &Repeat) {
+        *self.repeat_mode.lock().await = *new_mode;
         messager::send_sucsess(ctx, format!("Repeat mode changed to {}", new_mode), false).await;
     }
 }

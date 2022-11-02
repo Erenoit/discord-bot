@@ -10,8 +10,7 @@ pub async fn leave(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
-    server.player.lock().await.leave_voice_channel(&ctx).await;
+    server.player.leave_voice_channel(&ctx).await;
     messager::send_sucsess(&ctx, "Left the voice channel", true).await;
 
     Ok(())

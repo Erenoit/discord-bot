@@ -13,8 +13,7 @@ pub async fn repeat(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
-    server.player.lock().await.change_repeat_mode(&ctx, &repeat_mode).await;
+    server.player.change_repeat_mode(&ctx, &repeat_mode).await;
 
     Ok(())
 }

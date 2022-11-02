@@ -10,9 +10,8 @@ pub async fn skip(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
     // TODO: add chack for already stopped bot
-    server.player.lock().await.skip_song().await;
+    server.player.skip_song().await;
 
     Ok(())
 }

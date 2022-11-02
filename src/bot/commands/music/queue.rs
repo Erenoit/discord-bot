@@ -10,13 +10,10 @@ pub async fn queue(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
-    let player = server.player.lock().await;
-
-    if player.is_queues_empty() {
+    if server.player.is_queues_empty().await {
         messager::send_error(&ctx, "Queue is empty", true).await;
     } else {
-        player.print_queue(&ctx).await;
+        server.player.print_queue(&ctx).await;
     }
 
     Ok(())

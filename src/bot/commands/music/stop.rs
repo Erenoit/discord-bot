@@ -10,10 +10,9 @@ pub async fn stop(
     let servers = CONFIG.get().unwrap().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: handle poisoned mutexes as well
     // TODO: add chack for already stopped bot
-    server.player.lock().await.clear_the_queues().await;
-    server.player.lock().await.stop_stream().await;
+    server.player.clear_the_queues().await;
+    server.player.stop_stream().await;
     messager::send_sucsess(&ctx, ":sob:", true).await;
 
     Ok(())

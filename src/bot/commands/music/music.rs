@@ -34,7 +34,7 @@ pub async fn music(
 
     // TODO: help for available keywords
     if let Some(url) = data.get(keyword.as_str()) {
-        server.player.lock().await.play(&ctx, url.to_string()).await;
+        server.player.play(&ctx, url.to_string()).await;
     } else {
         messager::send_error(&ctx, "Invalid keyword", true).await;
     }
