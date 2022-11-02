@@ -4,5 +4,6 @@ pub mod leave;
 pub mod music;
 pub mod play;
 pub mod queue;
+pub mod repeat;
 pub mod shuffle;
 

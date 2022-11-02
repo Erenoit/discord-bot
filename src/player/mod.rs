@@ -1,10 +1,11 @@
 mod song;
 
 use crate::{bot::commands::Context, logger, messager, player::song::Song};
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::{HashMap, VecDeque}, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Songbird};
 use tokio::sync::Mutex;
+use anyhow::anyhow;
 
 
 #[inline(always)]
@@ -218,9 +219,15 @@ impl Player {
     pub fn is_queues_empty(&self) -> bool {
         self.song_queue.is_empty() && self.repeat_queue.is_empty()
     }
+
+    pub async fn change_repeat_mode(&mut self, ctx: &Context<'_>, new_mode: &Repeat) {
+        self.repeat_mode = *new_mode;
+        messager::send_sucsess(ctx, format!("Repeat mode changed to {}", new_mode), false).await;
+    }
 }
 
 // TODO: add repeat algorithm
+#[derive(poise::ChoiceParameter, Copy, Clone)]
 pub enum Repeat {
     Off,
     One,
