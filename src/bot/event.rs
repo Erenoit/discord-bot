@@ -1,4 +1,4 @@
-use crate::{common::Server, CONFIG, logger};
+use crate::{server::Server, CONFIG, logger};
 
 use colored::Colorize;
 use serenity::{

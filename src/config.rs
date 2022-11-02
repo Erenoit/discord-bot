@@ -1,4 +1,4 @@
-use crate::{logger, common::Server};
+use crate::{logger, server::Server};
 use std::{collections::HashMap, env};
 use dotenv;
 use serenity::model::id::GuildId;

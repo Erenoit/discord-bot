@@ -1,7 +1,7 @@
 pub mod bot;
 pub mod config;
 pub mod player;
-pub mod common;
+pub mod server;
 #[allow(dead_code)]
 pub mod logger;
 #[allow(dead_code)]
