@@ -17,6 +17,15 @@ fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
 }
 
 #[inline(always)]
+async fn is_in_vc(guild_id: GuildId) -> bool {
+    if let Some(call_mutex) = get_call_mutex(guild_id) {
+        call_mutex.lock().await.current_channel().is_some()
+    } else {
+        false
+    }
+}
+
+#[inline(always)]
 fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
     ctx.guild().expect("Guild should be Some")
                 .voice_states.get(&ctx.author().id)
@@ -25,7 +34,6 @@ fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
 
 pub struct Player {
     guild_id: GuildId,
-    connected_channel: Option<ChannelId>,
     now_playing:  Option<Song>,
     repeat_mode:  Repeat,
     song_queue:   VecDeque<Song>,
@@ -36,7 +44,6 @@ impl Player {
     pub fn new(guild_id: GuildId) -> Self {
         Self {
             guild_id,
-            connected_channel: None,
             now_playing:       None,
             repeat_mode:       Repeat::Off,
             song_queue:        VecDeque::with_capacity(100),
@@ -45,7 +52,7 @@ impl Player {
     }
 
     pub async fn connect_to_voice_channel(&mut self, channel_id: &ChannelId) {
-        let manager = CONFIG.get().unwrap().songbird();
+        let manager = get_songbird_manager();
 
         let (call_mutex, result) = manager.join(self.guild_id, *channel_id).await;
 
@@ -53,8 +60,6 @@ impl Player {
             logger::error("Couldn't join the voice channel.");
             logger::secondary_error(why);
         } else {
-            self.connected_channel = Some(*channel_id);
-
             let mut call = call_mutex.lock().await;
             if let Err(why) = call.deafen(true).await {
                 logger::error("Couldn't deafen the bot.");
@@ -64,7 +69,7 @@ impl Player {
     }
 
     pub async fn leave_voice_channel(&mut self, ctx: &Context<'_>) {
-        if self.connected_channel == None {
+        if !is_in_vc(self.guild_id).await {
             messager::send_error(ctx, "Not in a voice channel", true).await;
             return;
         }
@@ -73,12 +78,11 @@ impl Player {
             let mut call = call_mutex.lock().await;
 
             call.leave().await.expect("There shold be no error while leaving the call");
-            self.connected_channel = None;
         }
     }
 
     pub async fn play(&mut self, ctx: &Context<'_>, url: String) {
-        if self.connected_channel.is_none() {
+        if !is_in_vc(self.guild_id).await {
             if let Some(channel_id) = context_to_voice_channel_id(ctx) {
                 self.connect_to_voice_channel(&channel_id).await;
             } else {
