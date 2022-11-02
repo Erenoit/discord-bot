@@ -204,7 +204,7 @@ impl Player {
             num +=1;
         }
 
-        Self::add_to_queue_string(&mut s, &self.now_playing.lock().await.as_ref().unwrap(), num, true);
+        Self::add_to_queue_string(&mut s, self.now_playing.lock().await.as_ref().unwrap(), num, true);
         num +=1;
 
         for i in 0 .. after {

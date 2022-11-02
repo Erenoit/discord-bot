@@ -84,26 +84,26 @@ pub async fn send_files<S: Display>(ctx: &Context<'_>, content: S, files: Vec<&P
 
 #[inline(always)]
 pub fn bold<S: Display>(message: S) -> String {
-    return format!("**{message}**");
+    format!("**{message}**")
 }
 
 #[inline(always)]
 pub fn italic<S: Display>(message: S) -> String {
-    return format!("*{message}*");
+    format!("*{message}*")
 }
 
 #[inline(always)]
 pub fn bold_italic<S: Display>(message: S) -> String {
-    return format!("***{message}***");
+    format!("***{message}***")
 }
 
 #[inline(always)]
 pub fn highlight<S: Display>(message: S) -> String {
-    return format!("`{message}`");
+    format!("`{message}`")
 }
 
 #[inline(always)]
 pub fn block<S: Display, T: Display>(block_type: T, message: S) -> String {
-    return format!("```{block_type}\n{message}\n```");
+    format!("```{block_type}\n{message}\n```")
 }
 

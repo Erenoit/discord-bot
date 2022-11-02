@@ -77,3 +77,9 @@ impl Bot {
         .expect("Client error");
     }
 }
+
+impl Default for Bot {
+    fn default() -> Self {
+        Self::new()
+    }
+}

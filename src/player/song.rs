@@ -53,7 +53,7 @@ impl Song {
             return Err(anyhow!("Unsupported source"));
         }.into_iter()
         .map(|e| {
-            return Self {
+            Self {
                 title: e.0,
                 url: e.1,
                 length: e.2,
@@ -79,7 +79,7 @@ impl Song {
 
                 let splited_res: Vec<String> = String::from_utf8(res.stdout)
                     .expect("Output must be valid UTF-8")
-                    .split("\n")
+                    .split('\n')
                     .map(|e| e.to_string())
                     .collect();
 
@@ -115,7 +115,7 @@ impl Song {
 
                 let splited_res: Vec<String> = String::from_utf8(res.stdout)
                     .expect("Output must be valid UTF-8")
-                    .split("\n")
+                    .split('\n')
                     .filter(|e| !e.is_empty())
                     .map(|e| e.to_string())
                     .collect();

@@ -1,7 +1,8 @@
 use crate::{logger, server::Server};
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, sync::Arc};
 use dotenv;
 use serenity::model::id::GuildId;
+use songbird::Songbird;
 
 use tokio::sync::RwLock;
 
@@ -9,7 +10,7 @@ pub struct Config {
     token: String,
     prefix: String,
     servers: RwLock<HashMap<GuildId, Server>>,
-    songbird: std::sync::Arc<songbird::Songbird>,
+    songbird: Arc<Songbird>,
 }
 
 impl Config {
@@ -27,23 +28,23 @@ impl Config {
         let servers = RwLock::new(HashMap::new());
 
         logger::secondary_info("songbird");
-        let songbird = songbird::Songbird::serenity();
+        let songbird = Songbird::serenity();
 
         Self { token, prefix, servers, songbird }
     }
 
     pub fn token(&self) -> &String {
-        return &self.token
+        &self.token
     }
      pub fn prefix(&self) -> &String {
-        return &self.prefix
+        &self.prefix
      }
 
      pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
-        return &self.servers;
+        &self.servers
      }
 
-     pub fn songbird(&self) -> std::sync::Arc<songbird::Songbird> {
-         return std::sync::Arc::clone(&self.songbird);
+     pub fn songbird(&self) -> Arc<Songbird> {
+         Arc::clone(&self.songbird)
      }
 }
