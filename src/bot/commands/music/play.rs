@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::get_config;
+use crate::{get_config, bot::commands::{Context, Error}};
 use tokio::process::Command;
 
 /// Adds song to queue 

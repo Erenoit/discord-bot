@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{get_config, messager};
+use crate::{get_config, messager, bot::commands::{Context, Error}};
 
 /// Stops the song stream and clears the queue
 #[poise::command(slash_command, prefix_command, aliases("st"), category="Music", guild_only)]

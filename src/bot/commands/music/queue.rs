@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{get_config, messager};
+use crate::{get_config, messager, bot::commands::{Context, Error}};
 
 /// Prints song queue
 #[poise::command(slash_command, prefix_command, aliases("q"), category="Music", guild_only)]

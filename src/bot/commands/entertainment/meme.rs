@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{logger, messager};
+use crate::{logger, messager, bot::commands::{Context, Error}};
 
 /// Sends random meme from r/memes.
 #[poise::command(slash_command, prefix_command, category="Entertainment")]

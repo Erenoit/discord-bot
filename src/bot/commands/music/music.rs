@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{get_config, messager};
+use crate::{get_config, messager, bot::commands::{Context, Error}};
 use std::collections::HashMap;
 
 /// Adds song to queue

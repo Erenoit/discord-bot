@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::get_config;
+use crate::{get_config, bot::commands::{Context, Error}};
 
 /// Skips the current playing song
 #[poise::command(slash_command, prefix_command, aliases("s"), category="Music", guild_only)]

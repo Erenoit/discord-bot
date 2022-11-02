@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-
+use crate::bot::commands::{Context, Error};
 /// Displays the help message.
 #[poise::command(slash_command, prefix_command, aliases("h"), category="Others")]
 pub async fn help(

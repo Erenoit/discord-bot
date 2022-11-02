@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{get_config, player::Repeat};
+use crate::{get_config, player::Repeat, bot::commands::{Context, Error}};
 
 /// Change repat mode
 #[poise::command(slash_command, prefix_command, aliases("r"), category="Music", guild_only)]

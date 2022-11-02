@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::{get_config, messager};
+use crate::{get_config, messager, bot::commands::{Context, Error}};
 
 /// Leaves the voice channel
 #[poise::command(slash_command, prefix_command, aliases("l"), category="Music", guild_only)]

@@ -1,5 +1,4 @@
-use super::super::{Context, Error};
-use crate::messager;
+use crate::{messager, bot::commands::{Context, Error}};
 
 /// Sends sus dog.
 #[poise::command(slash_command, prefix_command, category="Entertainment")]
