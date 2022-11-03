@@ -1,8 +1,9 @@
-pub mod commands;
+mod commands;
 mod event;
 
-use event::Handler;
+pub use commands::Context;
 
+use event::Handler;
 use crate::get_config;
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;

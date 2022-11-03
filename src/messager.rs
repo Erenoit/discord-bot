@@ -1,4 +1,4 @@
-use crate::{bot::commands::Context, logger};
+use crate::{bot::Context, logger};
 use std::{fmt::Display, path::Path};
 use serenity::{builder::CreateEmbed, model::channel::{AttachmentType, Embed}};
 
