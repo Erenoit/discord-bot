@@ -2,7 +2,7 @@ mod event;
 mod song;
 
 use crate::{bot::Context, get_config, logger, messager, player::{event::SongEnd, song::Song}};
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, slice::Iter, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
 use tokio::sync::Mutex;
@@ -238,13 +238,24 @@ impl Player {
         *self.repeat_mode.lock().await = *new_mode;
         messager::send_sucsess(ctx, format!("Repeat mode changed to {}", new_mode), false).await;
     }
+
+    pub async fn get_repeat_mode(&self) -> Repeat {
+        self.repeat_mode.lock().await.clone()
+    }
 }
 
 // TODO: add repeat algorithm
-#[derive(poise::ChoiceParameter, Copy, Clone)]
+#[derive(poise::ChoiceParameter, Copy, Clone, Eq, PartialEq)]
 pub enum Repeat {
     Off,
     One,
     All,
+}
+
+impl Repeat {
+    pub fn variants() -> Iter<'static, Repeat> {
+        static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
+        V.iter()
+    }
 }
 
