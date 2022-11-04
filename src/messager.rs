@@ -1,5 +1,5 @@
 use crate::{bot::Context, logger};
-use std::{fmt::Display, path::Path, time::Duration};
+use std::{cmp::min, fmt::Display, path::Path, time::Duration};
 use serenity::{
     builder::{CreateButton, CreateComponents, CreateEmbed},
     model::{
@@ -150,6 +150,82 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
     } else {
         return false;
     }
+}
+
+pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, list: Vec<(String, String)>) -> String {
+    if list.len() > 10 {
+        send_error(ctx, "An error happened", false).await;
+        logger::error("List cannot contain more than 10 elements");
+    } else if list.len() == 0 {
+        send_error(ctx, "An error happened", false).await;
+        logger::error("List cannot be empty");
+    }
+
+    let mut msg = String::with_capacity(1024);
+
+    msg.push_str(&bold(title));
+    msg.push_str("\n");
+
+    for (i, element) in list.iter().enumerate() {
+        msg.push_str(&format!("{}) ", i + 1));
+        msg.push_str(&element.0);
+        msg.push_str("\n");
+    }
+
+    let res = ctx.send(|m| {
+        m.content(msg).components(|c| {
+            c.create_action_row(|row| {
+                for i in 0 .. min(5, list.len()) {
+                    let e = &list[i];
+                    row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
+                }
+                row
+            });
+
+            if list.len() > 5 {
+                c.create_action_row(|row| {
+                    for i in 5 .. list.len() {
+                        let e = &list[i];
+                        row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
+                    }
+                    row
+                });
+            }
+
+            c.create_action_row(|row| {
+                row.add_button(success_button("All".to_string()));
+                row.add_button(danger_button("None".to_string()))
+            })
+        })
+    }).await;
+
+    if let Err(why) = res {
+        logger::error("Couldn't send confirm message.");
+        logger::secondary_error(why);
+        return BUTTON_ID_DANGER.to_string();
+    }
+
+    let handle = res.unwrap();
+
+    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
+        Some(x) => x,
+        None => {
+            _ = handle.edit(ctx.clone(), |m| {
+                m.content("Interaction timed out.").components(|c| {
+                    c.create_action_row(|row| row)
+                })
+            }).await;
+            return BUTTON_ID_DANGER.to_string();
+        }
+    };
+
+    _ = interaction.create_interaction_response(ctx.discord(), |r| {
+        r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
+            d.content("An action has already been taken.").set_components(CreateComponents::default())
+        })
+    }).await;
+
+    interaction.data.custom_id.clone()
 }
 
 #[inline(always)]
