@@ -37,7 +37,7 @@ impl Song {
         })
     }
 
-        pub async fn from_playlist<A, B>(url: A, user_name: B) -> Result<Vec<Self>>
+    pub async fn from_playlist<A, B>(url: A, user_name: B) -> Result<Vec<Self>>
     where
         A: Into<String>,
         B: Into<String>
