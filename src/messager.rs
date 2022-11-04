@@ -119,7 +119,7 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
     let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
         Some(x) => x,
         None => {
-            _ = handle.edit(ctx.clone(), |m| {
+            _ = handle.edit(*ctx, |m| {
                 m.content("Interaction timed out.").components(|c| {
                     c.create_action_row(|row| row)
                 })
@@ -145,18 +145,14 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
     //    }).await;
     //}
 
-    if interaction.data.custom_id == BUTTON_ID_SUCCESS {
-        return true;
-    } else {
-        return false;
-    }
+    interaction.data.custom_id == BUTTON_ID_SUCCESS
 }
 
 pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(String, String, bool)>) -> String {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot contain more than 10 elements");
-    } else if list.len() == 0 {
+    } else if list.is_empty() {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot be empty");
     }
@@ -164,8 +160,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
     let res = ctx.send(|m| {
         m.content(msg.to_string()).components(|c| {
             c.create_action_row(|row| {
-                for i in 0 .. min(5, list.len()) {
-                    let e = &list[i];
+                for e in list.iter().take(min(5, list.len())) {
                     row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
                 }
                 row
@@ -173,8 +168,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
 
             if list.len() > 5 {
                 c.create_action_row(|row| {
-                    for i in 5 .. list.len() {
-                        let e = &list[i];
+                    for e in list.iter().skip(5) {
                         row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
                     }
                     row
@@ -196,7 +190,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
     let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
         Some(x) => x,
         None => {
-            _ = handle.edit(ctx.clone(), |m| {
+            _ = handle.edit(*ctx, |m| {
                 m.content("Interaction timed out.").components(|c| {
                     c.create_action_row(|row| row)
                 })
@@ -218,7 +212,7 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot contain more than 10 elements");
-    } else if list.len() == 0 {
+    } else if list.is_empty() {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot be empty");
     }
@@ -226,19 +220,18 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
     let mut msg = String::with_capacity(1024);
 
     msg.push_str(&bold(title));
-    msg.push_str("\n");
+    msg.push('\n');
 
     for (i, element) in list.iter().enumerate() {
         msg.push_str(&format!("{}) ", i + 1));
         msg.push_str(&element.0);
-        msg.push_str("\n");
+        msg.push('\n');
     }
 
     let res = ctx.send(|m| {
         m.content(msg).components(|c| {
             c.create_action_row(|row| {
-                for i in 0 .. min(5, list.len()) {
-                    let e = &list[i];
+                for (i, e) in list.iter().enumerate().take(min(5, list.len())) {
                     row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
                 }
                 row
@@ -246,8 +239,7 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
 
             if list.len() > 5 {
                 c.create_action_row(|row| {
-                    for i in 5 .. list.len() {
-                        let e = &list[i];
+                    for (i, e) in list.iter().enumerate().skip(5) {
                         row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
                     }
                     row
@@ -272,7 +264,7 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
     let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
         Some(x) => x,
         None => {
-            _ = handle.edit(ctx.clone(), |m| {
+            _ = handle.edit(*ctx, |m| {
                 m.content("Interaction timed out.").components(|c| {
                     c.create_action_row(|row| row)
                 })

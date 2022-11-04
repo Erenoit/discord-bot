@@ -240,7 +240,7 @@ impl Player {
     }
 
     pub async fn get_repeat_mode(&self) -> Repeat {
-        self.repeat_mode.lock().await.clone()
+        *self.repeat_mode.lock().await
     }
 }
 
