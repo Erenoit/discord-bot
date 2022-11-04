@@ -1,6 +1,6 @@
 [package]
 name = "discord-bot"
-version = "2.0.0-beta1"
+version = "2.0.0-beta2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,3 +22,4 @@ opt-level = 3
 lto = true
 panic = 'abort'
 overflow-checks = false
+
