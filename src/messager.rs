@@ -208,7 +208,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
     interaction.data.custom_id.clone()
 }
 
-pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, list: Vec<(String, String)>) -> String {
+pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, list: &Vec<(String, String)>) -> String {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot contain more than 10 elements");

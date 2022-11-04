@@ -32,8 +32,14 @@ pub async fn play(
             l.push((l_seperated[i * 2].to_string(), l_seperated[i * 2 + 1].to_string()));
         }
 
-        let answer = messager::send_selection_from_list(&ctx, "Search", l).await;
-        server.player.play(&ctx, format!("https://youtube.com/watch?v={}", answer)).await;
+        let answer = messager::send_selection_from_list(&ctx, "Search", &l).await;
+        if answer == "success" {
+            for e in l {
+                server.player.play(&ctx, format!("https://youtube.com/watch?v={}", e.1)).await;
+            }
+        } else if answer != "danger" {
+            server.player.play(&ctx, format!("https://youtube.com/watch?v={}", answer)).await;
+        }
     }
 
     Ok(())
