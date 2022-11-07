@@ -1,74 +1,104 @@
-use crate::{get_config, logger, messager};
-use std::fmt::Display;
+use crate::{bot::Context, get_config, logger, messager};
+use std::{collections::VecDeque, fmt::Display};
 use anyhow::{anyhow, Result};
 use tokio::process::Command;
 
 #[derive(Clone)]
-pub(super) struct Song {
+pub struct Song {
     title: String,
-    url: String,
-    length: String,
+    id: String,
+    duration: String,
     user_name: String,
 }
 
 impl Song {
-    pub async fn new<A, B>(url: A, user_name: B) -> Result<Self>
-    where
-        A: Into<String>,
-        B: Into<String>
-    {
-        let s = {
-            let u = url.into();
+    pub async fn new<S: Display>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
+        let song = song.to_string();
+        let user_name = ctx.author().name.to_string();
 
-            if u.contains("youtube.com") {
-                Self::yt_url(u).await?
-            } else if u.contains("spotify.com") {
-                Self::sp_url(u).await?
+        if song.starts_with("http://") || song.starts_with("https://") {
+            if song.contains("youtube") {
+                if song.contains("list") {
+                    Self::yt_url(song, user_name).await
+                } else {
+                    Self::yt_playlist(song, user_name).await
+                }
+            } else if song.contains("spotify") {
+                if song.contains("/track/") {
+                    Self::sp_url(song, user_name).await
+                } else if song.contains("/playlist/") {
+                    Self::sp_playlist(song, user_name).await
+                } else if song.contains("/artist/") {
+                    Self::sp_artist(song, user_name).await
+                } else {
+                    messager::send_error(ctx, "Unsupported spotify url", true).await;
+                    Err(anyhow!("Unsupported spotify url"))
+                }
             } else {
-                return Err(anyhow!("Unsupported source"));
+                messager::send_error(ctx, "Unsupported music source", true).await;
+                Err(anyhow!("Unsupported music source"))
             }
-        };
-
-        Ok(Self {
-            title: s.0,
-            url: s.1,
-            length: s.2,
-            user_name: user_name.into(),
-        })
+        } else {
+            Self::yt_search(ctx, song, user_name).await
+        }
     }
 
-    pub async fn from_playlist<A, B>(url: A, user_name: B) -> Result<Vec<Self>>
-    where
-        A: Into<String>,
-        B: Into<String>
+    #[inline(always)]
+    pub async fn yt_search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>>
     {
-        let u = url.into();
-        let usr = user_name.into();
+        // TODO: change something faster than youtube-dl
+        // TODO: clean this code
+        let search_count = 5;
+        let out = Command::new("youtube-dl")
+            .args(["--no-playlist", "--get-title", "--get-id", "--get-duration", &format!("ytsearch{}:{}", search_count, song)])
+            .output().await?;
 
-        Ok(if u.contains("youtube.com") {
-            Self::yt_playlist(u).await?
-        } else if u.contains("spotify.com") {
-            Self::sp_playlist(u).await?
-        } else {
-            return Err(anyhow!("Unsupported source"));
-        }.into_iter()
-        .map(|e| {
-            Self {
-                title: e.0,
-                url: e.1,
-                length: e.2,
-                user_name: usr.clone(),
+
+        let list = String::from_utf8(out.stdout).unwrap();
+        let list_seperated = list.split('\n').collect::<Vec<_>>();
+
+        let mut l: Vec<(String, String)> = Vec::with_capacity(search_count);
+        for i in 0 .. search_count {
+            l.push((list_seperated[i * 3].to_string(), list_seperated[i * 3 + 1].to_string()));
+        }
+
+        let answer = messager::send_selection_from_list(ctx, "Search", &l).await;
+        if answer == "success" {
+            let mut return_vec = VecDeque::with_capacity(search_count);
+            for i in 0 .. search_count {
+                return_vec.push_back(Self {
+                    title:     list_seperated[i * 3].to_string(),
+                    id:        list_seperated[i * 3].to_string(),
+                    duration:  list_seperated[i * 3].to_string(),
+                    user_name: user_name.to_string(),
+                });
             }
-        })
-        .collect())
+            Ok(return_vec)
+        } else if answer != "danger" {
+            let mut return_vec = VecDeque::with_capacity(1);
+            for i in 0 .. search_count {
+                if *list_seperated[i * 3 + 1] == answer {
+                    return_vec.push_back(Self {
+                        title:     list_seperated[i * 3].to_string(),
+                        id:        list_seperated[i * 3 + 1].to_string(),
+                        duration:  list_seperated[i * 3 + 2].to_string(),
+                        user_name: user_name.to_string(),
+                    });
+                    break;
+                }
+            }
+            Ok(return_vec)
+        } else {
+            Err(anyhow!("Selection failed/canceled"))
+        }
     }
 
     // TODO: youtube-dl is slow sometimes
     // TODO: cannot open age restricted videos
     #[inline(always)]
-    async fn yt_url(url: String) -> Result<(String, String, String)> {
+    async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Song>> {
         if let Ok(res) = Command::new("youtube-dl")
-            .args(["--get-title", "--get-id", "--get-duration", &url])
+            .args(["--get-title", "--get-id", "--get-duration", &song])
             .output().await
             {
                 if !res.status.success() {
@@ -92,9 +122,14 @@ impl Song {
                     return Err(anyhow!("youtube-dl failed"));
                 }
 
-                Ok((title.unwrap().to_string(),
-                    format!("https://youtube.com/watch?v={}", id.unwrap()),
-                    duration.unwrap().to_string()))
+                let mut return_vec = VecDeque::with_capacity(1);
+                return_vec.push_back(Song {
+                    title:    title.unwrap().to_string(),
+                    id:       id.unwrap().to_string(),
+                    duration: duration.unwrap().to_string(),
+                    user_name,
+                });
+                Ok(return_vec)
             } else {
                 logger::error("Command creation for youtube-dl failed");
                 Err(anyhow!("youtube-dl failed"))
@@ -102,9 +137,9 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn yt_playlist(url: String) -> Result<Vec<(String, String, String)>> {
+    async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Song>> {
         if let Ok(res) = Command::new("youtube-dl")
-            .args(["--flat-playlist","--get-title", "--get-id", "--get-duration", &url])
+            .args(["--flat-playlist","--get-title", "--get-id", "--get-duration", &song])
             .output().await
             {
                 if !res.status.success() {
@@ -125,15 +160,18 @@ impl Song {
                     return Err(anyhow!("Output must be dividable by 3"))
                 }
 
-                let mut list: Vec<(String, String, String)> = Vec::with_capacity(splited_res.len() / 3);
+                let mut return_vec: VecDeque<Song> = VecDeque::with_capacity(splited_res.len() / 3);
 
                 for i in 0 .. splited_res.len() / 3 {
-                    list.push((splited_res.get(i * 3 + 0).unwrap().to_string(),
-                               splited_res.get(i * 3 + 1).unwrap().to_string(),
-                               splited_res.get(i * 3 + 2).unwrap().to_string()))
+                    return_vec.push_back(Song {
+                        title:     splited_res.get(i * 3).unwrap().to_string(),
+                        id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
+                        duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
+                        user_name: user_name.clone(),
+                    })
                 }
 
-                Ok(list)
+                Ok(return_vec)
             } else {
                 logger::error("Command creation for youtube-dl failed");
                 Err(anyhow!("youtube-dl failed"))
@@ -141,9 +179,9 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_url(url: String) -> Result<(String, String, String)> {
+    async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Song>> {
         let base_url = "https://api.spotify.com/v1";
-        let track_id = url.split("/track/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
+        let track_id = song.split("/track/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
         let token = get_config().spotify_token().await.expect("Token should be initialized");
 
         let res = reqwest::Client::new()
@@ -162,14 +200,21 @@ impl Song {
                     .output().await?;
 
                 let out_str = String::from_utf8(out.stdout)?;
-                let mut song = out_str.split("\n");
+                let mut song = out_str.split('\n');
 
                 let title = song.next();
                 let id = song.next();
                 let duration = song.next();
 
                 if title.is_some() && id.is_some() && duration.is_some() {
-                    Ok((title.unwrap().to_string(), id.unwrap().to_string(), duration.unwrap().to_string()))
+                    let mut return_vec = VecDeque::with_capacity(1);
+                    return_vec.push_back(Song {
+                        title:    title.unwrap().to_string(),
+                        id:       id.unwrap().to_string(),
+                        duration: duration.unwrap().to_string(),
+                        user_name
+                    });
+                    Ok(return_vec)
                 } else {
                     Err(anyhow!("coudn't find the song on youtube"))
                 }
@@ -184,7 +229,12 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_playlist(url: String) -> Result<Vec<(String, String, String)>> {
+    async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Song>> {
+        todo!("Handle Spotify playlist")
+    }
+
+    #[inline(always)]
+    async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Song>> {
         todo!("Handle Spotify playlist")
     }
 
@@ -195,12 +245,12 @@ impl Song {
 
     #[inline(always)]
     pub fn url(&self) -> String {
-        self.url.clone()
+        self.id.clone()
     }
 
     #[inline(always)]
-    pub fn length(&self) -> String {
-        self.length.clone()
+    pub fn duration(&self) -> String {
+        self.duration.clone()
     }
 
     #[inline(always)]
@@ -211,7 +261,7 @@ impl Song {
 
 impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}] {}", self.title(), self.length(), messager::highlight(format!("requested by {}", self.user_name())))
+        write!(f, "{} [{}] {}", self.title(), self.duration(), messager::highlight(format!("requested by {}", self.user_name())))
     }
 }
 

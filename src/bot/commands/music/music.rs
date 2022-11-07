@@ -1,4 +1,4 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}};
+use crate::{get_config, messager, bot::commands::{Context, Error}, player::Song};
 use std::collections::HashMap;
 
 /// Adds song to queue
@@ -33,7 +33,7 @@ pub async fn music(
 
     // TODO: help for available keywords
     if let Some(url) = data.get(keyword.as_str()) {
-        server.player.play(&ctx, url.to_string()).await;
+        server.player.play(&ctx, &mut Song::new(&ctx, url).await?).await;
     } else {
         messager::send_error(&ctx, "Invalid keyword", true).await;
     }

@@ -1,7 +1,8 @@
 mod event;
 mod song;
 
-use crate::{bot::Context, get_config, logger, messager, player::{event::SongEnd, song::Song}};
+pub use crate::player::song::Song;
+use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
 use std::{collections::VecDeque, slice::Iter, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
@@ -18,16 +19,7 @@ fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
 }
 
 #[inline(always)]
-async fn is_in_vc(guild_id: GuildId) -> bool {
-    if let Some(call_mutex) = get_call_mutex(guild_id) {
-        call_mutex.lock().await.current_channel().is_some()
-    } else {
-        false
-    }
-}
-
-#[inline(always)]
-fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
+pub fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
     ctx.guild().expect("Guild should be Some")
                 .voice_states.get(&ctx.author().id)
                 .and_then(|voice_state| voice_state.channel_id)
@@ -70,7 +62,7 @@ impl Player {
     }
 
     pub async fn leave_voice_channel(&self, ctx: &Context<'_>) {
-        if !is_in_vc(self.guild_id).await {
+        if !self.is_in_vc().await {
             messager::send_error(ctx, "Not in a voice channel", true).await;
             return;
         }
@@ -82,32 +74,8 @@ impl Player {
         }
     }
 
-    pub async fn play(&self, ctx: &Context<'_>, url: String) {
-        if !is_in_vc(self.guild_id).await {
-            if let Some(channel_id) = context_to_voice_channel_id(ctx) {
-                self.connect_to_voice_channel(&channel_id).await;
-            } else {
-                messager::send_error(ctx, "You are not in the voice channel", true).await;
-                return;
-            }
-        }
-
-        if url.contains("list=") || url.contains("/playlist/") {
-            if let Ok(list) = Song::from_playlist(url, &ctx.author().name).await {
-                // CHECK: if "Vec -> VecDeque" reallocates the memmory
-                messager::send_sucsess(ctx, format!("{} songs added to the list", list.len()), true).await;
-                self.song_queue.lock().await.append(&mut VecDeque::from(list));
-            } else {
-                messager::send_error(ctx, "Error happened while fetching data about playlist. Please try again later.", true).await;
-                return;
-            }
-        } else if let Ok(s) = Song::new(url, &ctx.author().name).await {
-            messager::send_sucsess(ctx, format!("{} is added to the list", s.title()), true).await;
-            self.song_queue.lock().await.push_back(s);
-        } else {
-            messager::send_error(ctx, "Error happened while fetching data about song. Please try again later.", true).await;
-            return;
-        }
+    pub async fn play(&self, ctx: &Context<'_>, songs: &mut VecDeque<Song>) {
+        self.song_queue.lock().await.append(songs);
 
         if self.now_playing.lock().await.is_none() {
             self.start_stream().await
@@ -241,6 +209,15 @@ impl Player {
 
     pub async fn get_repeat_mode(&self) -> Repeat {
         *self.repeat_mode.lock().await
+    }
+
+    #[inline(always)]
+    pub async fn is_in_vc(&self) -> bool {
+        if let Some(call_mutex) = get_call_mutex(self.guild_id) {
+            call_mutex.lock().await.current_channel().is_some()
+        } else {
+            false
+        }
     }
 }
 
