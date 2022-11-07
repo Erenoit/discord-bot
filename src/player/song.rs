@@ -1,4 +1,4 @@
-use crate::{logger, messager};
+use crate::{get_config, logger, messager};
 use std::fmt::Display;
 use anyhow::{anyhow, Result};
 use tokio::process::Command;
@@ -142,7 +142,45 @@ impl Song {
 
     #[inline(always)]
     async fn sp_url(url: String) -> Result<(String, String, String)> {
-        todo!("Handle Spotify URL")
+        let base_url = "https://api.spotify.com/v1";
+        let track_id = url.split("/track/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
+        let token = get_config().spotify_token().await.expect("Token should be initialized");
+
+        let res = reqwest::Client::new()
+            .get(format!("{}/tracks/{}", base_url, track_id))
+            .bearer_auth(token)
+            .send()
+            .await;
+
+        match res {
+            Ok(r) => {
+                let j = json::parse(&r.text().await?)?;
+                let title = &j["name"];
+
+                let out = Command::new("youtube-dl")
+                    .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{} lyrics", title)])
+                    .output().await?;
+
+                let out_str = String::from_utf8(out.stdout)?;
+                let mut song = out_str.split("\n");
+
+                let title = song.next();
+                let id = song.next();
+                let duration = song.next();
+
+                if title.is_some() && id.is_some() && duration.is_some() {
+                    Ok((title.unwrap().to_string(), id.unwrap().to_string(), duration.unwrap().to_string()))
+                } else {
+                    Err(anyhow!("coudn't find the song on youtube"))
+                }
+            }
+            Err(why) => {
+                logger::error("Spotify request failed");
+                logger::secondary_error(format!("{}", why));
+
+                Err(anyhow!("Spotify request failed"))
+            }
+        }
     }
 
     #[inline(always)]
