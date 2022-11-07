@@ -44,9 +44,10 @@ impl Config {
     pub fn token(&self) -> &String {
         &self.token
     }
-     pub fn prefix(&self) -> &String {
+
+    pub fn prefix(&self) -> &String {
         &self.prefix
-     }
+    }
 
     pub fn is_spotify_initialized(&self) -> bool {
         self.spotify.is_some()
@@ -66,9 +67,9 @@ impl Config {
         &self.servers
     }
 
-     pub fn songbird(&self) -> Arc<Songbird> {
-         Arc::clone(&self.songbird)
-     }
+    pub fn songbird(&self) -> Arc<Songbird> {
+        Arc::clone(&self.songbird)
+    }
 }
 
 struct SpotifyConfig {
