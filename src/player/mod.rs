@@ -1,5 +1,6 @@
 mod event;
 mod song;
+mod sp_structs;
 
 pub use crate::player::song::Song;
 use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
