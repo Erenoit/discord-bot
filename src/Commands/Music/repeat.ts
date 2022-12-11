@@ -15,7 +15,7 @@ export const command: Command = {
       {name: "None", value: "none"},
       {name: "One", value: "one"},
       {name: "All", value: "all"},
-    ] as ApplicationCommandOptionChoiceData[],
+    ] as ApplicationCommandOptionChoiceData<string>[],
     //autocomplete: true,
   }],
   aliases: ["r"],

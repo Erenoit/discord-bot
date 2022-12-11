@@ -1,7 +1,7 @@
 import { ActionRowData, ActionRowComponentData, APIActionRowComponentTypes,
          APIEmbed, ButtonComponentData, ButtonInteraction, ButtonStyle,
          Interaction, InteractionReplyOptions, Message,
-         MessageComponentInteraction, MessageOptions, TextBasedChannel,
+         MessageComponentInteraction, BaseMessageOptions, TextBasedChannel,
          ComponentType, JSONEncodable} from "discord.js"
 import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
@@ -33,7 +33,7 @@ class Messager {
 
   public async send_message(variables: Variables, title: string,
                       content: string, color: number): Promise<Message> {
-    const msg: MessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
+    const msg: BaseMessageOptions  = this.use_embed ? { embeds: [this.basic_embed(title, content, color)] }
                                                 : { content };
 
     return this.send(variables, msg);
@@ -56,7 +56,7 @@ class Messager {
       this.create_button("confirm_no", "No", ButtonStyle.Danger)
     ]);
                                
-    const msg: MessageOptions = {
+    const msg: BaseMessageOptions = {
       content: additional_text ? additional_text + " " + default_message
                                : default_message,
       components: [row]
@@ -95,7 +95,7 @@ class Messager {
         return this.create_button(id, name, ButtonStyle.Primary, disabled);
       })
     ]);
-    let msg: MessageOptions = {
+    let msg: BaseMessageOptions = {
       components: [main_row]
     };
 
@@ -155,7 +155,7 @@ class Messager {
       this.create_button("all", "All", ButtonStyle.Success),
       this.create_button("none", "None", ButtonStyle.Danger)
     ]);
-    let msg: MessageOptions = {
+    let msg: BaseMessageOptions = {
       components: use_second_row ? [main_row, secondary_row] : [main_row]
     };
 
@@ -195,7 +195,7 @@ class Messager {
   public async send_list(variables: Variables, title: string, content: string, list: string[],
                          use_nums: boolean = false, start_number: number = 1,
                          select?: number): Promise<Message> {
-    const msg: MessageOptions = this.use_embed
+    const msg: BaseMessageOptions = this.use_embed
                               ? { embeds: [this.embed_list(title, content, list,
                                                            use_nums, start_number,
                                                            select)] }
@@ -206,7 +206,7 @@ class Messager {
   }
 
   public async send_files(variables: Variables, content: string, files: string[]): Promise<Message> {
-    const msg: MessageOptions = {
+    const msg: BaseMessageOptions = {
       content,
       files
     };
@@ -218,7 +218,7 @@ class Messager {
     return this.send(variables, {embeds: [embed]});
   }
 
-  private async send(variables: Variables, msg: MessageOptions): Promise<Message> {
+  private async send(variables: Variables, msg: BaseMessageOptions): Promise<Message> {
     if (variables.type === "New") {
       if (variables.interaction.replied) {
         return await variables.interaction.followUp({...(msg as InteractionReplyOptions),
@@ -297,7 +297,7 @@ class Messager {
   }
 
   private async handle_collector(variables: Variables,
-                                 message: MessageOptions, channel: TextBasedChannel,
+                                 message: BaseMessageOptions, channel: TextBasedChannel,
                                  collector_func: ((interaction: Interaction) => void)
                                                | ((interction: ButtonInteraction) => void),
                                  filter?: (interaction: MessageComponentInteraction) => boolean,
