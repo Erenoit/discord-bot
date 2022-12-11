@@ -1,6 +1,8 @@
 # The Bot
 **The Bot** is a basic music bot for [Discord](https://discord.com/).
 
+**WARNING:** This is the old typescript version of the bot. Sometimes I may update some dependencies to keep it usable but do not expect any active development or major bugfix.
+
 ## Quick Start
 1. Clone this repository:
 ```shell
