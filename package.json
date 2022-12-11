@@ -1,6 +1,6 @@
 {
   "name": "Discord_Bot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "My Discord Bot",
   "main": "./src/index.ts",
   "repository": "https://gitlab.com/Erenoit/discord-bot.git",
