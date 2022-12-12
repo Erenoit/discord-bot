@@ -1,5 +1,6 @@
 use crate::{get_config, logger, server::Server};
-use std::{collections::HashMap, env, sync::Arc};
+use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
+use directories::ProjectDirs;
 use dotenv;
 use serenity::model::id::GuildId;
 use songbird::Songbird;
@@ -9,6 +10,7 @@ use tokio::sync::RwLock;
 pub struct Config {
     token: String,
     prefix: String,
+    project_dirs: ProjectDirs,
     spotify: Option<SpotifyConfig>,
     servers: RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
@@ -16,6 +18,24 @@ pub struct Config {
 
 impl Config {
     pub fn generate() -> Self {
+        logger::info("Generating Project Directories");
+        let project_dirs = if let Some(p) = ProjectDirs::from("com", "Erenoit", "The Bot") { p }
+            else {
+                logger::error("Couldn't find config location");
+                process::exit(1);
+            };
+        let config_file_path = project_dirs.config_dir().join("config.toml");
+        if !config_file_path.exists() {
+            fs::create_dir_all(config_file_path.parent()
+                               .expect("it is safe to assume that this will always have a parent because we used join"))
+                .expect("directory creation should not fail in normal circumstances");
+
+            let mut config_file = fs::File::create(&config_file_path)
+                .expect("file creation should not fail");
+            config_file.write(include_str!("../examples/config.toml").as_bytes())
+                .expect("file is created just one line before this should not fail");
+        }
+
         logger::info("Registering Configs");
         _ = dotenv::dotenv();
 
@@ -38,7 +58,7 @@ impl Config {
             logger::warn("No Spotify config found");
         }
 
-        Self { token, prefix, spotify, servers, songbird }
+        Self { token, prefix, project_dirs, spotify, servers, songbird }
     }
 
     pub fn token(&self) -> &String {
