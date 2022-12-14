@@ -28,7 +28,7 @@ pub async fn play(
         1 => messager::send_sucsess(&ctx, format!("{} has been added to the queue.", messager::bold(songs[0].title())), false).await,
         _ => messager::send_sucsess(&ctx, format!("{} songs added to the queue.", messager::bold(songs.len())), false).await
     }
-    server.player.play(&ctx, &mut songs).await;
+    server.player.play(&mut songs).await;
 
     Ok(())
 }

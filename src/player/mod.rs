@@ -75,7 +75,7 @@ impl Player {
         }
     }
 
-    pub async fn play(&self, ctx: &Context<'_>, songs: &mut VecDeque<Song>) {
+    pub async fn play(&self, songs: &mut VecDeque<Song>) {
         self.song_queue.lock().await.append(songs);
 
         if self.now_playing.lock().await.is_none() {
