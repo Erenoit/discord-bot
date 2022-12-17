@@ -84,10 +84,28 @@ impl Player {
     }
 
     pub async fn start_stream(&self) {
-        if self.song_queue.lock().await.is_empty() { self.stop_stream().await; return; }
+        match self.get_repeat_mode().await {
+            Repeat::Off => {
+                if self.song_queue.lock().await.is_empty() { self.stop_stream().await; return; }
+            },
+            Repeat::One => {},
+            Repeat::All => {
+                if self.song_queue.lock().await.is_empty() { self.song_queue.lock().await.append(&mut *self.repeat_queue.lock().await); }
+            }
+        }
+
 
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
-            let next_song = self.song_queue.lock().await.pop_front().expect("Queue cannot be empty at this point");
+            let next_song = match self.get_repeat_mode().await {
+                Repeat::Off | Repeat::All => {
+                    self.song_queue.lock().await.pop_front().expect("Queue cannot be empty at this point")
+                },
+                Repeat::One => {
+                    // TODO: fix this .clone()
+                    if let Some(now_playing) = &*self.now_playing.lock().await { now_playing.clone() }
+                    else { self.stop_stream().await; return; }
+                }
+            };
 
             let source = match songbird::ytdl(next_song.url()).await {
                 Ok(source) => source,
@@ -118,7 +136,13 @@ impl Player {
     pub async fn skip_song(&self) {
         self.move_to_repeat_queue().await;
         self.stop_stream().await;
-        self.start_stream().await;
+        if self.get_repeat_mode().await == Repeat::One {
+            *self.repeat_mode.lock().await = Repeat::Off;
+            self.start_stream().await;
+            *self.repeat_mode.lock().await = Repeat::One;
+        } else {
+            self.start_stream().await;
+        }
     }
 
     pub async fn move_to_repeat_queue(&self) {
