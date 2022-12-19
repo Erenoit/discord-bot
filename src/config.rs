@@ -4,8 +4,38 @@ use directories::ProjectDirs;
 use dotenv;
 use serenity::model::id::GuildId;
 use songbird::Songbird;
+use taplo::parser::Parse;
 
 use tokio::sync::RwLock;
+
+// Defaults
+const PREFIX: &str = "-";
+const ENABLE_SPOTIFY: bool = false;
+// TODO: remove repeated code
+macro_rules! get_value {
+    ($config_file: ident, bool, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
+        if let Ok(value) = env::var($env_name) { value.to_lowercase() == "true" }
+        else if let Some(value) = $config_file.$(get($p)).+.as_bool() { value.value() }
+        else { $default_value as bool }
+    };
+    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
+        get_value_common!($config_file, $type, $env_name, $($p)=>+, { <$type>::from($default_value) })
+    };
+    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $err_message: literal) => {
+        get_value_common!($config_file, $type, $env_name, $($p)=>+, {
+            logger::error($err_message);
+            process::exit(1);
+        })
+    }
+}
+
+macro_rules! get_value_common {
+    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $else: block) => (
+        if let Ok(value) = env::var($env_name) { <$type>::from(value) }
+        else if let Some(value) = $config_file.$(get($p)).+.as_str() { <$type>::from(value.value()) }
+        else { $else }
+    )
+}
 
 pub struct Config {
     token: String,
@@ -37,16 +67,28 @@ impl Config {
         }
 
         logger::info("Registering Configs");
-        _ = dotenv::dotenv();
+        _ = dotenv::dotenv(); // It doesn't matter even if it fails
+        let config_file = taplo::parser::parse(
+            fs::read_to_string(config_file_path)
+                .expect("config not found/cannot read")
+                .as_str()).into_dom();
 
         logger::secondary_info("Token");
-        let token = env::var("BOT_TOKEN").expect("Couldn't find the token");
+        let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
 
         logger::secondary_info("Prefix");
-        let prefix = env::var("BOT_PREFIX").expect("Couldn't find the prefix");
+        let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
 
         logger::secondary_info("Spotify");
-        let spotify = SpotifyConfig::generate();
+        let spotify = if get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY) {
+            let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
+                                       "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
+            let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
+                                       "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
+            Some(SpotifyConfig::generate(client_id, client_secret))
+        } else {
+            None
+        };
 
         logger::secondary_info("Servers HashMap");
         let servers = RwLock::new(HashMap::new());
@@ -99,11 +141,9 @@ struct SpotifyConfig {
 }
 
 impl SpotifyConfig {
-    fn generate() -> Option<Self> {
-        let client_id = if let Ok(id) = env::var("BOT_SP_CLIENT_ID") { id } else { return None; };
-        let client_secret = if let Ok(secret) = env::var("BOT_SP_CLIENT_SECRET") { secret } else { return None; };
+    fn generate(client_id: String, client_secret: String) -> Self {
         let token = RwLock::new(None);
-        Some(Self { client_id, client_secret, token })
+        Self { client_id, client_secret, token }
     }
 
     pub fn client(&self) -> (&String, &String) {
@@ -144,3 +184,4 @@ impl SpotifyConfig {
         }
     }
 }
+
