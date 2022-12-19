@@ -91,13 +91,11 @@ impl Config {
     }
 
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
-        if self.spotify.is_none() { return None; }
-        Some(self.spotify.as_ref().unwrap().client())
+        Some(self.spotify.as_ref()?.client())
     }
 
     pub async fn spotify_token(&self) -> Option<String> {
-        if self.spotify.is_none() { return None; }
-        Some(self.spotify.as_ref().unwrap().token().await)
+        Some(self.spotify.as_ref()?.token().await)
     }
 
     pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
