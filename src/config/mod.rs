@@ -1,41 +1,16 @@
-use crate::{get_config, logger, server::Server};
+mod defaults;
+#[macro_use]
+mod macros;
+mod spotify;
+
+use crate::{config::{defaults::*, spotify::SpotifyConfig}, logger, server::Server};
 use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
 use directories::ProjectDirs;
 use dotenv;
 use serenity::model::id::GuildId;
 use songbird::Songbird;
-use taplo::parser::Parse;
 
 use tokio::sync::RwLock;
-
-// Defaults
-const PREFIX: &str = "-";
-const ENABLE_SPOTIFY: bool = false;
-// TODO: remove repeated code
-macro_rules! get_value {
-    ($config_file: ident, bool, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
-        if let Ok(value) = env::var($env_name) { value.to_lowercase() == "true" }
-        else if let Some(value) = $config_file.$(get($p)).+.as_bool() { value.value() }
-        else { $default_value as bool }
-    };
-    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
-        get_value_common!($config_file, $type, $env_name, $($p)=>+, { <$type>::from($default_value) })
-    };
-    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $err_message: literal) => {
-        get_value_common!($config_file, $type, $env_name, $($p)=>+, {
-            logger::error($err_message);
-            process::exit(1);
-        })
-    }
-}
-
-macro_rules! get_value_common {
-    ($config_file: ident, $type: ty, $env_name: literal, $($p: expr)=>+, $else: block) => (
-        if let Ok(value) = env::var($env_name) { <$type>::from(value) }
-        else if let Some(value) = $config_file.$(get($p)).+.as_str() { <$type>::from(value.value()) }
-        else { $else }
-    )
-}
 
 pub struct Config {
     token: String,
@@ -62,7 +37,7 @@ impl Config {
 
             let mut config_file = fs::File::create(&config_file_path)
                 .expect("file creation should not fail");
-            config_file.write(include_str!("../examples/config.toml").as_bytes())
+            config_file.write_all(include_str!("../../examples/config.toml").as_bytes())
                 .expect("file is created just one line before this should not fail");
         }
 
@@ -131,57 +106,6 @@ impl Config {
 
     pub fn songbird(&self) -> Arc<Songbird> {
         Arc::clone(&self.songbird)
-    }
-}
-
-struct SpotifyConfig {
-    client_id: String,
-    client_secret: String,
-    token: RwLock<Option<String>>,
-}
-
-impl SpotifyConfig {
-    fn generate(client_id: String, client_secret: String) -> Self {
-        let token = RwLock::new(None);
-        Self { client_id, client_secret, token }
-    }
-
-    pub fn client(&self) -> (&String, &String) {
-        (&self.client_id, &self.client_secret)
-    }
-
-    pub async fn token(&self) -> String {
-        if self.token.read().await.is_none() {
-            self.refresh_token().await
-        }
-
-        self.token.read().await.as_ref().unwrap().to_string()
-    }
-
-    async fn refresh_token(&self) {
-        let mut write_lock = self.token.write().await;
-
-        let (client_id, client_secret) = get_config().spotify_client().unwrap();
-        let form = std::collections::HashMap::from([("grant_type", "client_credentials")]);
-
-        let res = reqwest::Client::new()
-            .post("https://accounts.spotify.com/api/token")
-            .basic_auth(client_id, Some(client_secret))
-            .form(&form)
-            .send()
-            .await;
-
-        match res {
-            Ok(r) => {
-                if let Ok(j) = json::parse(&r.text().await.unwrap()) {
-                    *write_lock = Some(j["access_token"].to_string());
-                }
-            }
-            Err(why) => {
-                logger::error("Couldn't get spotify token");
-                logger::secondary_error(format!("{}", why));
-            }
-        }
     }
 }
 
