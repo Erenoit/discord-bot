@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 colored = "2.0"
+directories = "4.0"
 dotenv = "0.15"
 reqwest = "0.11"
 json = "0.12"
@@ -16,6 +17,7 @@ songbird = "0.3"
 poise = "0.4"
 rand = "0.8"
 serenity = { version = "0.11", default-features = false, features = ["client", "collector", "gateway", "rustls_backend", "model", "voice"] }
+taplo = "0.12"
 tokio = { version = "1.21", features = ["macros", "rt-multi-thread", "parking_lot"] }
 
 [profile.release]
