@@ -88,38 +88,47 @@ impl Config {
         Self { token, prefix, project_dirs, youtube, spotify, servers, songbird }
     }
 
+    #[inline(always)]
     pub fn token(&self) -> &String {
         &self.token
     }
 
+    #[inline(always)]
     pub fn prefix(&self) -> &String {
         &self.prefix
     }
 
+    #[inline(always)]
     pub fn youtube_search_count(&self) -> u8 {
         self.youtube.search_count()
     }
 
+    #[inline(always)]
     pub fn youtube_age_restricted(&self) -> bool {
         self.youtube.age_restricted()
     }
 
+    #[inline(always)]
     pub fn is_spotify_initialized(&self) -> bool {
         self.spotify.is_some()
     }
 
+    #[inline(always)]
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
         Some(self.spotify.as_ref()?.client())
     }
 
+    #[inline(always)]
     pub async fn spotify_token(&self) -> Option<String> {
         Some(self.spotify.as_ref()?.token().await)
     }
 
+    #[inline(always)]
     pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
         &self.servers
     }
 
+    #[inline(always)]
     pub fn songbird(&self) -> Arc<Songbird> {
         Arc::clone(&self.songbird)
     }

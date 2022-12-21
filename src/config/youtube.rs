@@ -10,10 +10,12 @@ impl YouTubeConfig {
         Self { search_count, age_restricted }
     }
 
+    #[inline(always)]
     pub fn search_count(&self) -> u8 {
         self.search_count
     }
 
+    #[inline(always)]
     pub fn age_restricted(&self) -> bool {
         self.age_restricted
     }

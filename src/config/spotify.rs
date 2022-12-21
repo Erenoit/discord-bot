@@ -13,10 +13,12 @@ impl SpotifyConfig {
         Self { client_id, client_secret, token }
     }
 
+    #[inline(always)]
     pub fn client(&self) -> (&String, &String) {
         (&self.client_id, &self.client_secret)
     }
 
+    #[inline(always)]
     pub async fn token(&self) -> String {
         if self.token.read().await.is_none() {
             self.refresh_token().await
