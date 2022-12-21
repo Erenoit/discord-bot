@@ -2,6 +2,10 @@
 token = "YOUR_BOT_TOKEN"
 prefix = "-"
 
+[youtube]
+search_count = 5
+age_restricted = false
+
 [spotify]
 enable = true
 client_id = "SPOTIFY_CLIENT_ID"

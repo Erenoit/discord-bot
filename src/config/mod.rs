@@ -2,20 +2,21 @@ mod defaults;
 #[macro_use]
 mod macros;
 mod spotify;
+mod youtube;
 
-use crate::{config::{defaults::*, spotify::SpotifyConfig}, logger, server::Server};
+use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig}, logger, server::Server};
 use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
 use directories::ProjectDirs;
 use dotenv;
 use serenity::model::id::GuildId;
 use songbird::Songbird;
-
 use tokio::sync::RwLock;
 
 pub struct Config {
     token: String,
     prefix: String,
     project_dirs: ProjectDirs,
+    youtube: YouTubeConfig,
     spotify: Option<SpotifyConfig>,
     servers: RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
@@ -54,12 +55,21 @@ impl Config {
         logger::secondary_info("Prefix");
         let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
 
+        logger::secondary_info("YouTube");
+        let youtube = {
+            let search_count = get_value!(config_file, u8, "BOT_YT_SEARCH_COUNT", "youtube"=>"search_count", YT_SEARCH_COUNT);
+            let age_restricted = get_value!(config_file, bool, "BOT_YT_AGE_RESTRICTED", "youtube"=>"age_restricted", YT_AGE_RESTRICTED);
+
+            YouTubeConfig::generate(search_count, age_restricted)
+        };
+
         logger::secondary_info("Spotify");
         let spotify = if get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY) {
             let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
                                        "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
             let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
                                        "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
+
             Some(SpotifyConfig::generate(client_id, client_secret))
         } else {
             None
@@ -75,7 +85,7 @@ impl Config {
             logger::warn("No Spotify config found");
         }
 
-        Self { token, prefix, project_dirs, spotify, servers, songbird }
+        Self { token, prefix, project_dirs, youtube, spotify, servers, songbird }
     }
 
     pub fn token(&self) -> &String {
@@ -84,6 +94,14 @@ impl Config {
 
     pub fn prefix(&self) -> &String {
         &self.prefix
+    }
+
+    pub fn youtube_search_count(&self) -> u8 {
+        self.youtube.search_count()
+    }
+
+    pub fn youtube_age_restricted(&self) -> bool {
+        self.youtube.age_restricted()
     }
 
     pub fn is_spotify_initialized(&self) -> bool {
