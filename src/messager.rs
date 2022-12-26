@@ -116,7 +116,7 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
+    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.serenity_context()).timeout(Duration::from_secs(TIME_LIMIT)).await {
         Some(x) => x,
         None => {
             _ = handle.edit(*ctx, |m| {
@@ -128,7 +128,7 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
         }
     };
 
-    _ = interaction.create_interaction_response(ctx.discord(), |r| {
+    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
         r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
             d.content("An action has already been taken.").set_components(CreateComponents::default())
         })
@@ -187,7 +187,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
+    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.serenity_context()).timeout(Duration::from_secs(TIME_LIMIT)).await {
         Some(x) => x,
         None => {
             _ = handle.edit(*ctx, |m| {
@@ -199,7 +199,7 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
         }
     };
 
-    _ = interaction.create_interaction_response(ctx.discord(), |r| {
+    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
         r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
             d.content("An action has already been taken.").set_components(CreateComponents::default())
         })
@@ -261,19 +261,21 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.discord()).timeout(Duration::from_secs(TIME_LIMIT)).await {
-        Some(x) => x,
-        None => {
-            _ = handle.edit(*ctx, |m| {
-                m.content("Interaction timed out.").components(|c| {
-                    c.create_action_row(|row| row)
-                })
-            }).await;
-            return BUTTON_ID_DANGER.to_string();
-        }
+    let interaction = match handle.message().await.unwrap()
+        .await_component_interaction(ctx.serenity_context())
+        .timeout(Duration::from_secs(TIME_LIMIT)).await {
+            Some(x) => x,
+            None => {
+                _ = handle.edit(*ctx, |m| {
+                    m.content("Interaction timed out.").components(|c| {
+                        c.create_action_row(|row| row)
+                    })
+                }).await;
+                return BUTTON_ID_DANGER.to_string();
+            }
     };
 
-    _ = interaction.create_interaction_response(ctx.discord(), |r| {
+    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
         r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
             d.content("An action has already been taken.").set_components(CreateComponents::default())
         })

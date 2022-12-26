@@ -68,7 +68,7 @@ impl Bot {
             c.event_handler(Handler::new())
                 .register_songbird_with(get_config().songbird())
         })
-        .user_data_setup(|_ctx, _data_about_bot, _framework| {
+        .setup(|_ctx, _data_about_bot, _framework| {
             Box::pin(async move {
                 Ok(commands::Data)
             })
