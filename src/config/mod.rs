@@ -5,9 +5,10 @@ mod spotify;
 mod youtube;
 
 use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig}, logger, server::Server};
-use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
+use std::{collections::HashMap, env, fs, io::Write, path::PathBuf, process, sync::Arc};
 use directories::ProjectDirs;
 use dotenv;
+use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use serenity::model::id::GuildId;
 use songbird::Songbird;
 use tokio::sync::RwLock;
@@ -18,6 +19,7 @@ pub struct Config {
     project_dirs: ProjectDirs,
     youtube: YouTubeConfig,
     spotify: Option<SpotifyConfig>,
+    database: Option<DBWithThreadMode<MultiThreaded>>,
     servers: RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
 }
@@ -75,6 +77,32 @@ impl Config {
             None
         };
 
+        logger:: secondary_info("Database");
+        let database: Option<DBWithThreadMode<MultiThreaded>> =
+            if get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE) {
+                let default_path = project_dirs.data_dir().join("database");
+                let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path);
+
+                if !path.exists() {
+                    fs::create_dir_all(path.parent()
+                                       .expect("it is safe to assume that this will always have a parent because we used join"))
+                        .expect("directory creation should not fail in normal circumstances");
+                }
+
+                let mut options = Options::default();
+                options.create_if_missing(true);
+                options.create_missing_column_families(true);
+
+                match DBWithThreadMode::open(&options, path) {
+                    Ok(db) => Some(db),
+                    Err(why) => {
+                        logger::error("Couldn't open database.");
+                        logger::secondary_error(why);
+                        process::exit(1);
+                    }
+                }
+            } else { None };
+
         logger::secondary_info("Servers HashMap");
         let servers = RwLock::new(HashMap::new());
 
@@ -85,7 +113,11 @@ impl Config {
             logger::warn("No Spotify config found");
         }
 
-        Self { token, prefix, project_dirs, youtube, spotify, servers, songbird }
+        if database.is_none() {
+            logger::warn("Database is unavailable");
+        }
+
+        Self { token, prefix, project_dirs, youtube, spotify, database, servers, songbird }
     }
 
     #[inline(always)]
@@ -121,6 +153,11 @@ impl Config {
     #[inline(always)]
     pub async fn spotify_token(&self) -> Option<String> {
         Some(self.spotify.as_ref()?.token().await)
+    }
+
+    #[inline(always)]
+    pub fn database(&self) -> &Option<DBWithThreadMode<MultiThreaded>> {
+        &self.database
     }
 
     #[inline(always)]
