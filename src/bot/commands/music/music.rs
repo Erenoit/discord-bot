@@ -100,29 +100,19 @@ pub async fn list(
 
     msg += "General:\n";
 
-    for entry in db.prefix_iterator("general-".as_bytes()) {
-        if let Ok(entry) = entry {
+    for group in 0..2 {
+        msg += if group == 0 { "General:\n" }
+           else { "This server special:\n" };
+
+        let prefix = if group == 0 { "general-".to_string() }
+            else { guild.id.to_string() + "-" };
+
+        for entry in db.prefix_iterator(prefix.as_bytes()).flatten() {
             msg += &format!(
                 "{}: {}\n",
                 messager::bold(
                     String::from_utf8_lossy(&entry.0)
-                        .split_once("-")
-                        .expect("There is a `-` in prefix. This cannot fail.")
-                        .1
-                ),
-                String::from_utf8_lossy(&entry.1));
-        }
-    }
-
-    msg += "This server special:\n";
-
-    for entry in db.prefix_iterator((guild.id.to_string() + "-").as_bytes()) {
-        if let Ok(entry) = entry {
-            msg += &format!(
-                "{}: {}\n",
-                messager::bold(
-                    String::from_utf8_lossy(&entry.0)
-                        .split_once("-")
+                        .split_once('-')
                         .expect("There is a `-` in prefix. This cannot fail.")
                         .1
                 ),
