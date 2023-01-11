@@ -1,7 +1,7 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}, player::Song};
+use crate::{get_config, messager, logger, bot::commands::{Context, Error}, player::Song};
 
 /// Adds song to queue
-#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only)]
+#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add"))]
 pub async fn music(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String
@@ -26,3 +26,30 @@ pub async fn music(
 
     Ok(())
 }
+
+#[poise::command(slash_command, prefix_command)]
+pub async fn add(
+    ctx: Context<'_>,
+    #[description = "Keyword for video/playlist"] keyword: String,
+    #[description = "URL for video/playlist"] url: String
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    // TODO: Check for url validity
+    // TODO: Check for overwrite
+    if let Err(why) = db.put((guild.id.to_string() + "-" + &keyword).as_bytes(), url.as_bytes()) {
+        messager::send_error(&ctx, "Couldn't add new item to the database. Please try again later.", true).await;
+        logger::error("Database Error");
+        logger::secondary_error(why);
+    } else {
+        messager::send_sucsess(&ctx, format!("{} is successfully added to the database.", messager::highlight(keyword)), true).await;
+    }
+
+    Ok(())
+}
+
