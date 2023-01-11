@@ -16,7 +16,6 @@ use tokio::sync::RwLock;
 pub struct Config {
     token: String,
     prefix: String,
-    project_dirs: ProjectDirs,
     youtube: YouTubeConfig,
     spotify: Option<SpotifyConfig>,
     database: Option<DBWithThreadMode<MultiThreaded>>,
@@ -117,7 +116,7 @@ impl Config {
             logger::warn("Database is unavailable");
         }
 
-        Self { token, prefix, project_dirs, youtube, spotify, database, servers, songbird }
+        Self { token, prefix, youtube, spotify, database, servers, songbird }
     }
 
     #[inline(always)]
