@@ -15,7 +15,6 @@ pub async fn music(
         return Ok(());
     };
 
-    // TODO: help for available keywords
     if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
         server.player.play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?).await;
     } else if let Ok(Some(url)) = db.get((guild.id.to_string() + "-" + &keyword).as_bytes()) {
@@ -41,9 +40,23 @@ pub async fn add(
         return Ok(());
     };
 
-    // TODO: Check for url validity
-    // TODO: Check for overwrite
-    if let Err(why) = db.put((guild.id.to_string() + "-" + &keyword).as_bytes(), url.as_bytes()) {
+    let key = guild.id.to_string() + "-" + &keyword;
+
+    if !url.starts_with("https://www.youtube.com")
+    || !url.starts_with("https://open.spotify.com")
+    || !url.starts_with("http://www.youtube.com")
+    || !url.starts_with("http://open.spotify.com")
+    {
+        messager::send_error(&ctx, "Invalid URL", true).await;
+        return Ok(());
+    }
+
+    if db.key_may_exist(&key)
+    && !messager::send_confirm(&ctx, Some(format!("{} already exists. Do you want to overwrite it?", messager::highlight(&keyword)))).await {
+        return Ok(());
+    }
+
+    if let Err(why) = db.put(key.as_bytes(), url.as_bytes()) {
         messager::send_error(&ctx, "Couldn't add new item to the database. Please try again later.", true).await;
         logger::error("Database Error");
         logger::secondary_error(why);
@@ -97,8 +110,6 @@ pub async fn list(
     };
 
     let mut msg = String::with_capacity(1024);
-
-    msg += "General:\n";
 
     for group in 0..2 {
         msg += if group == 0 { "General:\n" }
