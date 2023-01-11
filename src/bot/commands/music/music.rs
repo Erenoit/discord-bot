@@ -1,7 +1,7 @@
 use crate::{get_config, messager, logger, bot::commands::{Context, Error}, player::Song};
 
 /// Adds song to queue
-#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add"))]
+#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add", "remove"))]
 pub async fn music(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String
@@ -48,6 +48,35 @@ pub async fn add(
         logger::secondary_error(why);
     } else {
         messager::send_sucsess(&ctx, format!("{} is successfully added to the database.", messager::highlight(keyword)), true).await;
+    }
+
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command)]
+pub async fn remove(
+    ctx: Context<'_>,
+    #[description = "Keyword to be deleted"] keyword: String,
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    // TODO: check for if key is exists
+
+    if !messager::send_confirm(&ctx, Some("You cannot revert this action. Are you sure?")).await {
+        return Ok(());
+    }
+
+    if let Err(why) = db.delete((guild.id.to_string() + "-" + &keyword).as_bytes()) {
+        messager::send_error(&ctx, "Couldn't remove new item to the database. Please try again later..", true).await;
+        logger::error("Database Error");
+        logger::secondary_error(why);
+    } else {
+        messager::send_sucsess(&ctx, format!("{} is successfully removed from the database.", messager::highlight(keyword)), true).await;
     }
 
     Ok(())
