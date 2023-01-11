@@ -1,7 +1,7 @@
 use crate::{get_config, messager, logger, bot::commands::{Context, Error}, player::Song};
 
 /// Adds song to queue
-#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add", "remove"))]
+#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add", "remove", "list"))]
 pub async fn music(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String
@@ -78,6 +78,56 @@ pub async fn remove(
     } else {
         messager::send_sucsess(&ctx, format!("{} is successfully removed from the database.", messager::highlight(keyword)), true).await;
     }
+
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command)]
+pub async fn list(
+    ctx: Context<'_>
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    let mut msg = String::with_capacity(1024);
+
+    msg += "General:\n";
+
+    for entry in db.prefix_iterator("general-".as_bytes()) {
+        if let Ok(entry) = entry {
+            msg += &format!(
+                "{}: {}\n",
+                messager::bold(
+                    String::from_utf8_lossy(&entry.0)
+                        .split_once("-")
+                        .expect("There is a `-` in prefix. This cannot fail.")
+                        .1
+                ),
+                String::from_utf8_lossy(&entry.1));
+        }
+    }
+
+    msg += "This server special:\n";
+
+    for entry in db.prefix_iterator((guild.id.to_string() + "-").as_bytes()) {
+        if let Ok(entry) = entry {
+            msg += &format!(
+                "{}: {}\n",
+                messager::bold(
+                    String::from_utf8_lossy(&entry.0)
+                        .split_once("-")
+                        .expect("There is a `-` in prefix. This cannot fail.")
+                        .1
+                ),
+                String::from_utf8_lossy(&entry.1));
+        }
+    }
+
+    messager::send_normal(&ctx, "Avavable Keywords", msg, true).await;
 
     Ok(())
 }
