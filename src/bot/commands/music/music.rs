@@ -80,13 +80,18 @@ pub async fn remove(
         return Ok(());
     };
 
-    // TODO: check for if key is exists
+    let key = guild.id.to_string() + "-" + &keyword;
+
+    if !db.key_may_exist(key) {
+        messager::send_error(&ctx, format!("{} is already doesn't exist", messager::highlight(keyword)), true).await;
+        return Ok(());
+    }
 
     if !messager::send_confirm(&ctx, Some("You cannot revert this action. Are you sure?")).await {
         return Ok(());
     }
 
-    if let Err(why) = db.delete((guild.id.to_string() + "-" + &keyword).as_bytes()) {
+    if let Err(why) = db.delete(keyword.as_bytes()) {
         messager::send_error(&ctx, "Couldn't remove new item to the database. Please try again later..", true).await;
         logger::error("Database Error");
         logger::secondary_error(why);
