@@ -35,6 +35,9 @@ macro_rules! get_as {
     (u8, $node: expr) => (
         $node.as_integer()
     );
+    (PathBuf, $node: expr) => (
+        $node.as_str()
+    );
 }
 
 macro_rules! convert_value {
@@ -48,6 +51,9 @@ macro_rules! convert_value {
             logger::error(format!("{} should be positive integer", $value.as_negative().unwrap()));
             process::exit(1);
         }
+    );
+    (PathBuf, $value: expr) => (
+        PathBuf::from($value)
     );
     ($any: tt, $value: expr) => (
         $value

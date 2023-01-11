@@ -1,8 +1,7 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}, player::Song};
-use std::collections::HashMap;
+use crate::{get_config, messager, logger, bot::commands::{Context, Error}, player::Song};
 
 /// Adds song to queue
-#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only)]
+#[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add", "remove", "list"))]
 pub async fn music(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String
@@ -11,32 +10,134 @@ pub async fn music(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    // TODO: use proper database
-    let data = HashMap::from([
-      ("gachi",      "https://www.youtube.com/watch?v=vysM33WCieE"),
-      ("trump",      "https://www.youtube.com/watch?v=y5ki_VGlmiM"),
-      ("pirate",     "https://www.youtube.com/watch?v=iKJlhhf_lhs"),
-      ("chillexy",   "https://open.spotify.com/playlist/7sTDKMewsaANlRSGUQVzPU?si=TeOQQjUeTimMw6Jd9mVEFQ"),
-      ("can_fav",    "https://www.youtube.com/playlist?list=PLqbnwol7YwR4SKldGdb1-43rZB6PljLe7"),
-      ("svetlana",   "https://open.spotify.com/playlist/6gHJvb4rlKdUNW4Q9DjXRw?si=DWU8slGTQ9yeyr0uDmu0RA"),
-      ("kpop1",      "https://www.youtube.com/watch?v=citgluw97m8"),
-      ("kpop2",      "https://www.youtube.com/watch?v=18nDrsoii5M&list=RDCLAK5uy_mHW5bcduhjB-PkTePAe6EoRMj1xNT8gzY&start_radio=1"),
-      ("pentakill3", "https://www.youtube.com/watch?v=VXtaMAN9zX4"),
-      ("songul",     "https://www.youtube.com/watch?v=hIiAJ69o3Zw"),
-      ("anime1",     "https://www.youtube.com/playlist?list=PLqbnwol7YwR7WGvjEDjjd9GeLx-KRmipa"),
-      ("anime2",     "https://open.spotify.com/playlist/49ZreaOgQ0dMirgecTPh0n?si=8f88241e9a7b4a01"),
-      ("anime3",     "https://www.youtube.com/watch?v=Mn7Bv8rGRzg"),
-      ("anime4",     "https://www.youtube.com/watch?v=J0S6tc6dIK8"),
-      ("yuki",       "https://www.youtube.com/watch?v=KO-G5DVNlw4"),
-      ("ayaya",      "https://www.youtube.com/watch?v=9wnNW4HyDtg"),
-    ]);
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
 
-    // TODO: help for available keywords
-    if let Some(url) = data.get(keyword.as_str()) {
-        server.player.play(&mut Song::new(&ctx, url).await?).await;
+    if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
+        server.player.play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?).await;
+    } else if let Ok(Some(url)) = db.get((guild.id.to_string() + "-" + &keyword).as_bytes()) {
+        server.player.play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?).await;
     } else {
         messager::send_error(&ctx, "Invalid keyword", true).await;
     }
 
     Ok(())
 }
+
+/// Adds new keyword to music
+#[poise::command(slash_command, prefix_command)]
+pub async fn add(
+    ctx: Context<'_>,
+    #[description = "Keyword for video/playlist"] keyword: String,
+    #[description = "URL for video/playlist"] url: String
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    let key = guild.id.to_string() + "-" + &keyword;
+
+    if !url.starts_with("https://www.youtube.com")
+    || !url.starts_with("https://open.spotify.com")
+    || !url.starts_with("http://www.youtube.com")
+    || !url.starts_with("http://open.spotify.com")
+    {
+        messager::send_error(&ctx, "Invalid URL", true).await;
+        return Ok(());
+    }
+
+    if db.key_may_exist(&key)
+    && !messager::send_confirm(&ctx, Some(format!("{} already exists. Do you want to overwrite it?", messager::highlight(&keyword)))).await {
+        return Ok(());
+    }
+
+    if let Err(why) = db.put(key.as_bytes(), url.as_bytes()) {
+        messager::send_error(&ctx, "Couldn't add new item to the database. Please try again later.", true).await;
+        logger::error("Database Error");
+        logger::secondary_error(why);
+    } else {
+        messager::send_sucsess(&ctx, format!("{} is successfully added to the database.", messager::highlight(keyword)), true).await;
+    }
+
+    Ok(())
+}
+
+/// Removes a keyword from music
+#[poise::command(slash_command, prefix_command)]
+pub async fn remove(
+    ctx: Context<'_>,
+    #[description = "Keyword to be deleted"] keyword: String,
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    let key = guild.id.to_string() + "-" + &keyword;
+
+    if !db.key_may_exist(key) {
+        messager::send_error(&ctx, format!("{} is already doesn't exist", messager::highlight(keyword)), true).await;
+        return Ok(());
+    }
+
+    if !messager::send_confirm(&ctx, Some("You cannot revert this action. Are you sure?")).await {
+        return Ok(());
+    }
+
+    if let Err(why) = db.delete(keyword.as_bytes()) {
+        messager::send_error(&ctx, "Couldn't remove new item to the database. Please try again later..", true).await;
+        logger::error("Database Error");
+        logger::secondary_error(why);
+    } else {
+        messager::send_sucsess(&ctx, format!("{} is successfully removed from the database.", messager::highlight(keyword)), true).await;
+    }
+
+    Ok(())
+}
+
+/// Lists all available keyword-URL pairs
+#[poise::command(slash_command, prefix_command)]
+pub async fn list(
+    ctx: Context<'_>
+) -> Result<(), Error> {
+    let guild = ctx.guild().expect("Guild should be Some");
+
+    let Some(db) = get_config().database() else {
+        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        return Ok(());
+    };
+
+    let mut msg = String::with_capacity(1024);
+
+    for group in 0..2 {
+        msg += if group == 0 { "General:\n" }
+           else { "This server special:\n" };
+
+        let prefix = if group == 0 { "general-".to_string() }
+            else { guild.id.to_string() + "-" };
+
+        for entry in db.prefix_iterator(prefix.as_bytes()).flatten() {
+            msg += &format!(
+                "{}: {}\n",
+                messager::bold(
+                    String::from_utf8_lossy(&entry.0)
+                        .split_once('-')
+                        .expect("There is a `-` in prefix. This cannot fail.")
+                        .1
+                ),
+                String::from_utf8_lossy(&entry.1));
+        }
+    }
+
+    messager::send_normal(&ctx, "Avavable Keywords", msg, true).await;
+
+    Ok(())
+}
+
