@@ -27,6 +27,7 @@ pub async fn music(
     Ok(())
 }
 
+/// Adds new keyword to music
 #[poise::command(slash_command, prefix_command)]
 pub async fn add(
     ctx: Context<'_>,
@@ -53,6 +54,7 @@ pub async fn add(
     Ok(())
 }
 
+/// Removes a keyword from music
 #[poise::command(slash_command, prefix_command)]
 pub async fn remove(
     ctx: Context<'_>,
@@ -82,6 +84,7 @@ pub async fn remove(
     Ok(())
 }
 
+/// Lists all available keyword-URL pairs
 #[poise::command(slash_command, prefix_command)]
 pub async fn list(
     ctx: Context<'_>
