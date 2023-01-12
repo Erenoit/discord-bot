@@ -9,7 +9,14 @@ pub mod shuffle;
 pub mod skip;
 pub mod stop;
 
-use crate::{bot::commands::Context, messager, player::context_to_voice_channel_id, server::Server};
+use crate::{bot::commands::Context, messager, server::Server};
+
+#[inline(always)]
+fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id::ChannelId> {
+    ctx.guild().expect("Guild should be Some")
+                .voice_states.get(&ctx.author().id)
+                .and_then(|voice_state| voice_state.channel_id)
+}
 
 #[inline(always)]
 async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Result<()> {

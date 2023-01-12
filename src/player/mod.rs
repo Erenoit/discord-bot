@@ -19,13 +19,6 @@ fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
     get_songbird_manager().get(guild_id)
 }
 
-#[inline(always)]
-pub fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
-    ctx.guild().expect("Guild should be Some")
-                .voice_states.get(&ctx.author().id)
-                .and_then(|voice_state| voice_state.channel_id)
-}
-
 pub struct Player {
     guild_id: GuildId,
     now_playing:  Mutex<Option<Song>>,
