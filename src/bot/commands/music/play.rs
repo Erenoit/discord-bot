@@ -10,7 +10,7 @@ pub async fn play(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    if !server.player.is_in_vc().await {
+    if server.player.connected_vc().await.is_none() {
         if let Some(channel_id) = context_to_voice_channel_id(&ctx) {
             server.player.connect_to_voice_channel(&channel_id).await;
         } else {
