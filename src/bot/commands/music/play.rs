@@ -1,4 +1,4 @@
-use crate::{get_config, bot::commands::{Context, Error}, messager, player::{context_to_voice_channel_id, Song}};
+use crate::{get_config, bot::commands::{Context, Error, music::handle_vc_connection}, messager, player::Song};
 
 /// Adds song to queue 
 #[poise::command(slash_command, prefix_command, aliases("p"), category="Music", guild_only)]
@@ -10,14 +10,7 @@ pub async fn play(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    if server.player.connected_vc().await.is_none() {
-        if let Some(channel_id) = context_to_voice_channel_id(&ctx) {
-            server.player.connect_to_voice_channel(&channel_id).await;
-        } else {
-            messager::send_error(&ctx, "You are not in the voice channel", true).await;
-            return Ok(());
-        }
-    }
+    handle_vc_connection(&ctx, &server).await?;
 
     let mut songs = Song::new(&ctx, song).await?;
     match songs.len() {
