@@ -100,7 +100,7 @@ impl Song {
     // TODO: youtube-dl is slow sometimes
     // TODO: cannot open age restricted videos
     #[inline(always)]
-    async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("youtube-dl")
             .args(["--get-title", "--get-id", "--get-duration", &song])
             .output().await
@@ -127,7 +127,7 @@ impl Song {
                 }
 
                 let mut return_vec = VecDeque::with_capacity(1);
-                return_vec.push_back(Song {
+                return_vec.push_back(Self {
                     title:    title.unwrap().to_string(),
                     id:       id.unwrap().to_string(),
                     duration: duration.unwrap().to_string(),
@@ -141,7 +141,7 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("youtube-dl")
             .args(["--flat-playlist","--get-title", "--get-id", "--get-duration", &song])
             .output().await
@@ -164,10 +164,10 @@ impl Song {
                     return Err(anyhow!("Output must be dividable by 3"))
                 }
 
-                let mut return_vec: VecDeque<Song> = VecDeque::with_capacity(splited_res.len() / 3);
+                let mut return_vec: VecDeque<Self> = VecDeque::with_capacity(splited_res.len() / 3);
 
                 for i in 0 .. splited_res.len() / 3 {
-                    return_vec.push_back(Song {
+                    return_vec.push_back(Self {
                         title:     splited_res.get(i * 3).unwrap().to_string(),
                         id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
                         duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
@@ -183,7 +183,7 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/track/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
         let token = get_config().spotify_token().await.expect("Token should be initialized");
@@ -212,7 +212,7 @@ impl Song {
 
                 if title.is_some() && id.is_some() && duration.is_some() {
                     let mut return_vec = VecDeque::with_capacity(1);
-                    return_vec.push_back(Song {
+                    return_vec.push_back(Self {
                         title:    title.unwrap().to_string(),
                         id:       id.unwrap().to_string(),
                         duration: duration.unwrap().to_string(),
@@ -233,7 +233,7 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/playlist/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
         let token = get_config().spotify_token().await.expect("Token should be initialized");
@@ -265,7 +265,7 @@ impl Song {
                     let res = String::from_utf8(track.stdout).unwrap();
                     let mut res_split = res.split('\n');
 
-                    tracklist.push_back(Song {
+                    tracklist.push_back(Self {
                         title: res_split.next().unwrap().to_string(),
                         id: res_split.next().unwrap().to_string(),
                         duration: res_split.next().unwrap().to_string(),
@@ -285,7 +285,7 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/artist/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
         let token = get_config().spotify_token().await.expect("Token should be initialized");
@@ -318,7 +318,7 @@ impl Song {
                     let res = String::from_utf8(track.stdout).unwrap();
                     let mut res_split = res.split('\n');
 
-                    tracklist.push_back(Song {
+                    tracklist.push_back(Self {
                         title: res_split.next().unwrap().to_string(),
                         id: res_split.next().unwrap().to_string(),
                         duration: res_split.next().unwrap().to_string(),
@@ -338,7 +338,7 @@ impl Song {
     }
 
     #[inline(always)]
-    async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Song>> {
+    async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/album/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
         let token = get_config().spotify_token().await.expect("Token should be initialized");
@@ -370,7 +370,7 @@ impl Song {
                     let res = String::from_utf8(track.stdout).unwrap();
                     let mut res_split = res.split('\n');
 
-                    tracklist.push_back(Song {
+                    tracklist.push_back(Self {
                         title: res_split.next().unwrap().to_string(),
                         id: res_split.next().unwrap().to_string(),
                         duration: res_split.next().unwrap().to_string(),
