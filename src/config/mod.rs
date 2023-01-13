@@ -54,8 +54,9 @@ impl Config {
         let general = {
             let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
             let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
+            let vc_auto_change = get_value!(config_file, bool, "BOT_VC_AUTO_CHANGE", "general"=>"vc_auto_change", VC_AUTO_CHANGE);
 
-            GeneralConfig::generate(token, prefix)
+            GeneralConfig::generate(token, prefix, vc_auto_change)
         };
 
         logger::secondary_info("YouTube");
@@ -129,6 +130,11 @@ impl Config {
     #[inline(always)]
     pub fn prefix(&self) -> &String {
         self.general.prefix()
+    }
+
+    #[inline(always)]
+    pub fn vc_auto_change(&self) -> bool {
+        self.general.vc_auto_change()
     }
 
     #[inline(always)]

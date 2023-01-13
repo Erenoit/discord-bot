@@ -5,8 +5,8 @@ pub(super) struct GeneralConfig {
 }
 
 impl GeneralConfig {
-    pub fn generate(token: String, prefix: String) -> Self {
-        Self { token, prefix }
+    pub fn generate(token: String, prefix: String, vc_auto_change: bool) -> Self {
+        Self { token, prefix, vc_auto_change }
     }
 
     #[inline(always)]
@@ -19,5 +19,9 @@ impl GeneralConfig {
         &self.prefix
     }
 
+    #[inline(always)]
+    pub fn vc_auto_change(&self) -> bool {
+        self.vc_auto_change
+    }
 }
 

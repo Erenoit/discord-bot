@@ -1,6 +1,7 @@
 [general]
 token = "YOUR_BOT_TOKEN"
 prefix = "-"
+vc_auto_change = false
 
 [youtube]
 search_count = 5
