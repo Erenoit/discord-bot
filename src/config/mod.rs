@@ -2,14 +2,25 @@ mod defaults;
 #[macro_use]
 mod macros;
 
+mod database;
 mod general;
 mod spotify;
 mod youtube;
 
-use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig, general::GeneralConfig}, logger, server::Server};
-use std::{collections::HashMap, env, fs, io::Write, path::PathBuf, process, sync::Arc};
+use crate::{
+    config::{
+        defaults::*,
+        database::DatabaseConfig,
+        general::GeneralConfig,
+        spotify::SpotifyConfig,
+        youtube::YouTubeConfig
+    },
+    logger,
+    server::Server
+};
+use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
 use directories::ProjectDirs;
-use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
+use rocksdb::{DBWithThreadMode, MultiThreaded};
 use serenity::model::id::GuildId;
 use songbird::Songbird;
 use tokio::sync::RwLock;
@@ -18,7 +29,7 @@ pub struct Config {
     general: GeneralConfig,
     youtube: YouTubeConfig,
     spotify: Option<SpotifyConfig>,
-    database: Option<DBWithThreadMode<MultiThreaded>>,
+    database: Option<DatabaseConfig>,
     servers: RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
 }
@@ -64,30 +75,11 @@ impl Config {
         };
 
         logger:: secondary_info("Database");
-        let database: Option<DBWithThreadMode<MultiThreaded>> =
-            if get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE) {
-                let default_path = project_dirs.data_dir().join("database");
-                let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path);
-
-                if !path.exists() {
-                    fs::create_dir_all(path.parent()
-                                       .expect("it is safe to assume that this will always have a parent because we used join"))
-                        .expect("directory creation should not fail in normal circumstances");
-                }
-
-                let mut options = Options::default();
-                options.create_if_missing(true);
-                options.create_missing_column_families(true);
-
-                match DBWithThreadMode::open(&options, path) {
-                    Ok(db) => Some(db),
-                    Err(why) => {
-                        logger::error("Couldn't open database.");
-                        logger::secondary_error(why);
-                        process::exit(1);
-                    }
-                }
-            } else { None };
+        let database = if get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE) {
+            Some(DatabaseConfig::generate(&config_file, &project_dirs))
+        } else {
+            None
+        };
 
         logger::secondary_info("Servers HashMap");
         let servers = RwLock::new(HashMap::new());
@@ -147,8 +139,12 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn database(&self) -> &Option<DBWithThreadMode<MultiThreaded>> {
-        &self.database
+    pub fn database(&self) -> Option<&DBWithThreadMode<MultiThreaded>> {
+        if let Some(db) = &self.database {
+            Some(db.connection())
+        } else {
+            None
+        }
     }
 
     #[inline(always)]
