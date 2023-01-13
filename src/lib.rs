@@ -1,12 +1,17 @@
 #![warn(clippy::cargo)]
-    #![allow(clippy::cargo_common_metadata)]
+    #![allow(clippy::cargo_common_metadata)] // Not going tp release on crates.io
 #![warn(clippy::complexity)]
 #![deny(clippy::correctness)]
 #![warn(clippy::nursery)]
 #![warn(clippy::pedantic)]
-    #![allow(clippy::inline_always)]
-    #![allow(clippy::missing_panics_doc)]
+    #![allow(clippy::inline_always)]       // Should learn more about inline
+    #![allow(clippy::missing_panics_doc)]  // Not documenting
+    #![allow(clippy::must_use_candidate)]  // No idea what it means
+    #![allow(clippy::unreadable_literal)]  // Only used for colors
+    #![allow(clippy::let_underscore_drop)] // Not understand why shouldn't I drop immediately
 #![warn(clippy::perf)]
+#![allow(clippy::restriction)]
+    #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::style)]
 #![warn(clippy::suspicious)]
 
