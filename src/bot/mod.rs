@@ -8,6 +8,7 @@ use crate::get_config;
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
 
+#[non_exhaustive]
 pub struct Bot;
 
 impl Bot {

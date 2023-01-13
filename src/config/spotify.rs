@@ -3,6 +3,7 @@ use std::{env, process};
 use taplo::dom::Node;
 use tokio::sync::RwLock;
 
+#[non_exhaustive]
 pub(super) struct SpotifyConfig {
     client_id: String,
     client_secret: String,

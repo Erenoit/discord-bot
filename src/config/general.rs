@@ -2,6 +2,7 @@ use crate::{config::defaults::{PREFIX, VC_AUTO_CHANGE}, logger};
 use std::{env, process};
 use taplo::dom::Node;
 
+#[non_exhaustive]
 pub(super) struct GeneralConfig {
     token: String,
     prefix: String,

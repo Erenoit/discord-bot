@@ -4,6 +4,7 @@ use taplo::dom::Node;
 
 // TODO add more options
 // TODO: implement this configs
+#[non_exhaustive]
 pub(super) struct YouTubeConfig {
     search_count: u8,
     age_restricted: bool

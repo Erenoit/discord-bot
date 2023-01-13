@@ -4,6 +4,7 @@ use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use taplo::dom::Node;
 
+#[non_exhaustive]
 pub(super) struct DatabaseConfig {
     connection: DBWithThreadMode<MultiThreaded>,
     options: Options,

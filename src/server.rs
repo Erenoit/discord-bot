@@ -1,6 +1,7 @@
 use crate::player::Player;
 use serenity::model::id::GuildId;
 
+#[non_exhaustive]
 pub struct Server {
     pub player: Player
 }

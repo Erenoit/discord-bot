@@ -14,6 +14,7 @@ use tokio::{process::Command, task::JoinSet};
 const SP_MARKET: &str = "US";
 
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct Song {
     title: String,
     id: String,

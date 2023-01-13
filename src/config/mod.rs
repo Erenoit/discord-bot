@@ -25,6 +25,7 @@ use serenity::model::id::GuildId;
 use songbird::Songbird;
 use tokio::sync::RwLock;
 
+#[non_exhaustive]
 pub struct Config {
     general: GeneralConfig,
     youtube: YouTubeConfig,
