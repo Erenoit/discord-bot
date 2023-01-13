@@ -172,7 +172,7 @@ impl Song {
                         id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
                         duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
                         user_name: user_name.clone(),
-                    })
+                    });
                 }
 
                 Ok(return_vec)

@@ -27,7 +27,7 @@ impl SpotifyConfig {
     #[inline(always)]
     pub async fn token(&self) -> String {
         if self.token.read().await.is_none() {
-            self.refresh_token().await
+            self.refresh_token().await;
         }
 
         self.token.read().await.as_ref().unwrap().to_string()

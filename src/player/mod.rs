@@ -72,7 +72,7 @@ impl Player {
         self.song_queue.lock().await.append(songs);
 
         if self.now_playing.lock().await.is_none() {
-            self.start_stream().await
+            self.start_stream().await;
         }
     }
 

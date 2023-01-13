@@ -98,7 +98,7 @@ where
         let mut last = m.content(content.to_string());
 
         for f in files {
-            last = last.attachment(AttachmentType::Path(f))
+            last = last.attachment(AttachmentType::Path(f));
         }
 
         last.ephemeral = ephemeral;
