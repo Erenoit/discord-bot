@@ -68,18 +68,14 @@ impl Config {
         let youtube = YouTubeConfig::generate(&config_file);
 
         logger::secondary_info("Spotify");
-        let spotify = if get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY) {
-            Some(SpotifyConfig::generate(&config_file))
-        } else {
-            None
-        };
+        let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY).then(|| {
+            SpotifyConfig::generate(&config_file)
+        });
 
         logger:: secondary_info("Database");
-        let database = if get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE) {
-            Some(DatabaseConfig::generate(&config_file, &project_dirs))
-        } else {
-            None
-        };
+        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
+            DatabaseConfig::generate(&config_file, &project_dirs)
+        });
 
         logger::secondary_info("Servers HashMap");
         let servers = RwLock::new(HashMap::new());
