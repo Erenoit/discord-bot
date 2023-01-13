@@ -1,3 +1,9 @@
+#![warn(clippy::complexity)]
+#![deny(clippy::correctness)]
+#![warn(clippy::perf)]
+#![warn(clippy::style)]
+#![warn(clippy::suspicious)]
+
 mod bot;
 mod config;
 mod player;
