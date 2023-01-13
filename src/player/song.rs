@@ -122,7 +122,7 @@ impl Song {
                 let splited_res: Vec<String> = String::from_utf8(res.stdout)
                     .expect("Output must be valid UTF-8")
                     .split('\n')
-                    .map(|e| e.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect();
 
                 let title    = splited_res.get(0);
@@ -164,7 +164,7 @@ impl Song {
                     .expect("Output must be valid UTF-8")
                     .split('\n')
                     .filter(|e| !e.is_empty())
-                    .map(|e| e.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect();
 
                 if splited_res.len() % 3 != 0 {
