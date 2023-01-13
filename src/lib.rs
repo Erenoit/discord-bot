@@ -1,3 +1,5 @@
+#![warn(clippy::cargo)]
+    #![allow(clippy::cargo_common_metadata)]
 #![warn(clippy::complexity)]
 #![deny(clippy::correctness)]
 #![warn(clippy::perf)]
