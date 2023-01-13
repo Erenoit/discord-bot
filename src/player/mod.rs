@@ -19,13 +19,6 @@ fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
     get_songbird_manager().get(guild_id)
 }
 
-#[inline(always)]
-pub fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<ChannelId> {
-    ctx.guild().expect("Guild should be Some")
-                .voice_states.get(&ctx.author().id)
-                .and_then(|voice_state| voice_state.channel_id)
-}
-
 pub struct Player {
     guild_id: GuildId,
     now_playing:  Mutex<Option<Song>>,
@@ -63,7 +56,7 @@ impl Player {
     }
 
     pub async fn leave_voice_channel(&self, ctx: &Context<'_>) {
-        if !self.is_in_vc().await {
+        if self.connected_vc().await.is_none() {
             messager::send_error(ctx, "Not in a voice channel", true).await;
             return;
         }
@@ -237,11 +230,11 @@ impl Player {
     }
 
     #[inline(always)]
-    pub async fn is_in_vc(&self) -> bool {
+    pub async fn connected_vc(&self) -> Option<songbird::id::ChannelId> {
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
-            call_mutex.lock().await.current_channel().is_some()
+            call_mutex.lock().await.current_channel()
         } else {
-            false
+            None
         }
     }
 }

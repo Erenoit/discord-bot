@@ -1,10 +1,11 @@
 mod defaults;
+mod general;
 #[macro_use]
 mod macros;
 mod spotify;
 mod youtube;
 
-use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig}, logger, server::Server};
+use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig, general::GeneralConfig}, logger, server::Server};
 use std::{collections::HashMap, env, fs, io::Write, path::PathBuf, process, sync::Arc};
 use directories::ProjectDirs;
 use dotenv;
@@ -14,8 +15,7 @@ use songbird::Songbird;
 use tokio::sync::RwLock;
 
 pub struct Config {
-    token: String,
-    prefix: String,
+    general: GeneralConfig,
     youtube: YouTubeConfig,
     spotify: Option<SpotifyConfig>,
     database: Option<DBWithThreadMode<MultiThreaded>>,
@@ -50,11 +50,14 @@ impl Config {
                 .expect("config not found/cannot read")
                 .as_str()).into_dom();
 
-        logger::secondary_info("Token");
-        let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
+        logger::secondary_info("General");
+        let general = {
+            let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
+            let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
+            let vc_auto_change = get_value!(config_file, bool, "BOT_VC_AUTO_CHANGE", "general"=>"vc_auto_change", VC_AUTO_CHANGE);
 
-        logger::secondary_info("Prefix");
-        let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
+            GeneralConfig::generate(token, prefix, vc_auto_change)
+        };
 
         logger::secondary_info("YouTube");
         let youtube = {
@@ -116,17 +119,22 @@ impl Config {
             logger::warn("Database is unavailable");
         }
 
-        Self { token, prefix, youtube, spotify, database, servers, songbird }
+        Self { general, youtube, spotify, database, servers, songbird }
     }
 
     #[inline(always)]
     pub fn token(&self) -> &String {
-        &self.token
+        self.general.token()
     }
 
     #[inline(always)]
     pub fn prefix(&self) -> &String {
-        &self.prefix
+        self.general.prefix()
+    }
+
+    #[inline(always)]
+    pub fn vc_auto_change(&self) -> bool {
+        self.general.vc_auto_change()
     }
 
     #[inline(always)]
