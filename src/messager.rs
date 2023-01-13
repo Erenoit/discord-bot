@@ -21,7 +21,11 @@ const BUTTON_ID_SUCCESS: &str = "success";
 const BUTTON_ID_DANGER:  &str = "danger";
 
 #[inline(always)]
-async fn send_message<S: Display, T: Display>(ctx: &Context<'_>, title: T, content: S, color: u32, ephemeral: bool) {
+async fn send_message<S, T>(ctx: &Context<'_>, title: T, content: S, color: u32, ephemeral: bool)
+where
+    S: Display + Send,
+    T: Display + Send
+{
     let res = ctx.send(|m| {
         if USE_EMBED {
             m.embed(|e| {
@@ -43,24 +47,34 @@ async fn send_message<S: Display, T: Display>(ctx: &Context<'_>, title: T, conte
 }
 
 #[inline(always)]
-pub async fn send_normal<S: Display, T: Display>(ctx: &Context<'_>, title: T, content: S, ephemeral: bool) {
+pub async fn send_normal<S, T>(ctx: &Context<'_>, title: T, content: S, ephemeral: bool)
+where
+    S: Display + Send,
+    T: Display + Send
+{
     send_message(ctx, title, content, NORMAL_COLOR, ephemeral).await;
 }
 
 #[inline(always)]
-pub async fn send_sucsess<S: Display>(ctx: &Context<'_>, content: S, ephemeral: bool) {
+pub async fn send_sucsess<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
+where
+    S: Display + Send
+{
     const TITLE: &str = "Success";
     send_message(ctx, TITLE, content, SUCSESS_COLOR, ephemeral).await;
 }
 
 #[inline(always)]
-pub async fn send_error<S: Display>(ctx: &Context<'_>, content: S, ephemeral: bool) {
+pub async fn send_error<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
+where
+    S: Display + Send
+{
     const TITLE: &str = "Error";
     send_message(ctx, TITLE, content, ERROR_COLOR, ephemeral).await;
 }
 
 #[inline(always)]
-pub async fn send_embed(ctx: &Context<'_>, embed_func: impl FnOnce(&mut CreateEmbed) -> &mut CreateEmbed, ephemeral: bool) {
+pub async fn send_embed(ctx: &Context<'_>, embed_func: impl FnOnce(&mut CreateEmbed) -> &mut CreateEmbed + Send, ephemeral: bool) {
     let res = ctx.send(|m| {
         m.embed(|e| {
             embed_func(e)
@@ -75,7 +89,11 @@ pub async fn send_embed(ctx: &Context<'_>, embed_func: impl FnOnce(&mut CreateEm
 }
 
 #[inline(always)]
-pub async fn send_files<S: Display>(ctx: &Context<'_>, content: S, files: Vec<&Path>, ephemeral: bool) {
+#[allow(clippy::future_not_send)] // Framework cause
+pub async fn send_files<S>(ctx: &Context<'_>, content: S, files: Vec<&Path>, ephemeral: bool)
+where
+    S: Display + Send
+{
     let res = ctx.send(|m| {
         let mut last = m.content(format!("{}", content));
 
@@ -94,7 +112,10 @@ pub async fn send_files<S: Display>(ctx: &Context<'_>, content: S, files: Vec<&P
     }
 }
 
-pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool {
+pub async fn send_confirm<S>(ctx: &Context<'_>, msg: Option<S>) -> bool
+where
+    S: Display + Send
+{
     let msg_str = if msg.is_some() { msg.unwrap().to_string() } else { "Are you sure?".to_string() };
 
     let res = ctx.send(|m| {
@@ -135,7 +156,11 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
     interaction.data.custom_id == BUTTON_ID_SUCCESS
 }
 
-pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(String, String, bool)>) -> String {
+#[allow(clippy::future_not_send)] // Framework couse
+pub async fn send_selection<S>(ctx: &Context<'_>, msg: S, list: Vec<(String, String, bool)>) -> String
+where
+    S: Display + Send
+{
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot contain more than 10 elements");
@@ -195,7 +220,10 @@ pub async fn send_selection<S: Display>(ctx: &Context<'_>, msg: S, list: Vec<(St
     interaction.data.custom_id.clone()
 }
 
-pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, list: &Vec<(String, String)>) -> String {
+pub async fn send_selection_from_list<T>(ctx: &Context<'_>, title: T, list: &Vec<(String, String)>) -> String
+where
+    T: Display + Send
+{
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
         logger::error("List cannot contain more than 10 elements");
@@ -272,27 +300,43 @@ pub async fn send_selection_from_list<T: Display>(ctx: &Context<'_>, title: T, l
 }
 
 #[inline(always)]
-pub fn bold<S: Display>(message: S) -> String {
+pub fn bold<S>(message: S) -> String
+where
+    S: Display + Send
+{
     format!("**{message}**")
 }
 
 #[inline(always)]
-pub fn italic<S: Display>(message: S) -> String {
+pub fn italic<S>(message: S) -> String
+where
+    S: Display + Send
+{
     format!("*{message}*")
 }
 
 #[inline(always)]
-pub fn bold_italic<S: Display>(message: S) -> String {
+pub fn bold_italic<S>(message: S) -> String
+where
+    S: Display + Send
+{
     format!("***{message}***")
 }
 
 #[inline(always)]
-pub fn highlight<S: Display>(message: S) -> String {
+pub fn highlight<S>(message: S) -> String
+where
+    S: Display + Send
+{
     format!("`{message}`")
 }
 
 #[inline(always)]
-pub fn block<S: Display, T: Display>(block_type: T, message: S) -> String {
+pub fn block<S, T>(block_type: T, message: S) -> String
+where
+    S: Display + Send,
+    T: Display + Send
+{
     format!("```{block_type}\n{message}\n```")
 }
 

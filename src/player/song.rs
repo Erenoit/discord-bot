@@ -14,7 +14,7 @@ pub struct Song {
 }
 
 impl Song {
-    pub async fn new<S: Display>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
+    pub async fn new<S: Display + Send>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
         let song = song.to_string();
         let user_name = ctx.author().name.to_string();
 
