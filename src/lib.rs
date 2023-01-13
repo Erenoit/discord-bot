@@ -1,11 +1,13 @@
-pub mod bot;
-pub mod config;
-pub mod player;
-pub mod server;
+mod bot;
+mod config;
+mod player;
+mod server;
 #[allow(dead_code)]
 pub mod logger;
 #[allow(dead_code)]
 pub mod messager;
+
+pub use bot::Bot;
 
 use config::Config;
 use tokio::sync::OnceCell;
