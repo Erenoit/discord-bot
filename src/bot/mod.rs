@@ -34,26 +34,13 @@ impl Bot {
                 commands::music::clear::clear(),
                 commands::music::shuffle::shuffle(),
             ],
-            //listener: |ctx, event, framework, user_data| {
-            //    Box::pin(event_listener(ctx, event, framework, user_data))
-            //},
-            //on_error: |error| Box::pin(on_error(error)),
-            //// Set a function to be called prior to each command execution. This
-            //// provides all context of the command that would also be passed to the actual command code
-            //pre_command: |ctx| Box::pin(pre_command(ctx)),
-            //// Similar to `pre_command`, except will be called directly _after_
-            //// command execution.
-            //post_command: |ctx| Box::pin(post_command(ctx)),
 
-            // Options specific to prefix commands, i.e. commands invoked via chat messages
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some(get_config().prefix().to_string()),
                 mention_as_prefix: false,
+                execute_self_messages: false,
+                ignore_bots: true,
 
-                //// An edit tracker needs to be supplied here to make edit tracking in commands work
-                //edit_tracker: Some(poise::EditTracker::for_timespan(
-                //    std::time::Duration::from_secs(3600 * 3),
-                //)),
                 ..Default::default()
             },
 
