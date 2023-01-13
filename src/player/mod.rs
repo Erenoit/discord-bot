@@ -239,7 +239,6 @@ impl Player {
     }
 }
 
-// TODO: add repeat algorithm
 #[derive(poise::ChoiceParameter, Copy, Clone, Eq, PartialEq)]
 pub enum Repeat {
     Off,

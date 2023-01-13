@@ -94,8 +94,6 @@ pub async fn send_files<S: Display>(ctx: &Context<'_>, content: S, files: Vec<&P
     }
 }
 
-// TODO: use async closures when it becomes stable
-//pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>, action: impl AsyncFnOnce(&Context<'_>, &ReplyHandle)) {
 pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool {
     let msg_str = if msg.is_some() { msg.unwrap().to_string() } else { "Are you sure?".to_string() };
 
@@ -133,17 +131,6 @@ pub async fn send_confirm<S: Display>(ctx: &Context<'_>, msg: Option<S>) -> bool
             d.content("An action has already been taken.").set_components(CreateComponents::default())
         })
     }).await;
-
-    //if interaction.data.custom_id == BUTTON_ID_SUCCESS {
-    //    _ = handle.edit(ctx.clone(), |m| {
-    //        m.content("An action has already been taken.")
-    //    }).await;
-    //    action(ctx, &handle).await;
-    //} else {
-    //    _ = handle.edit(ctx.clone(), |m| {
-    //        m.content("Action canceled.")
-    //    }).await;
-    //}
 
     interaction.data.custom_id == BUTTON_ID_SUCCESS
 }
