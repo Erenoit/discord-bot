@@ -9,7 +9,7 @@ mod youtube;
 
 use crate::{
     config::{
-        defaults::*,
+        defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
         database::DatabaseConfig,
         general::GeneralConfig,
         spotify::SpotifyConfig,

@@ -1,4 +1,12 @@
-use crate::{bot::Context, get_config, logger, messager, player::sp_structs::*};
+use crate::{
+    bot::Context,
+    get_config, logger, messager,
+    player::sp_structs::{
+        SpotifyAlbumResponse,
+        SpotifyArtistTopTracksResponse,
+        SpotifyPlaylistResponse
+    }
+};
 use std::{collections::VecDeque, fmt::Display};
 use anyhow::{anyhow, Result};
 use tokio::{process::Command, task::JoinSet};

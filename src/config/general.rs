@@ -1,4 +1,4 @@
-use crate::{config::defaults::*, logger};
+use crate::{config::defaults::{PREFIX, VC_AUTO_CHANGE}, logger};
 use std::{env, process};
 use taplo::dom::Node;
 

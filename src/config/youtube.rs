@@ -1,4 +1,4 @@
-use crate::{config::defaults::*, logger};
+use crate::{config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT}, logger};
 use std::{env, process};
 use taplo::dom::Node;
 
