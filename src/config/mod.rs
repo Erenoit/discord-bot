@@ -1,7 +1,8 @@
 mod defaults;
-mod general;
 #[macro_use]
 mod macros;
+
+mod general;
 mod spotify;
 mod youtube;
 
@@ -50,30 +51,14 @@ impl Config {
                 .as_str()).into_dom();
 
         logger::secondary_info("General");
-        let general = {
-            let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
-            let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
-            let vc_auto_change = get_value!(config_file, bool, "BOT_VC_AUTO_CHANGE", "general"=>"vc_auto_change", VC_AUTO_CHANGE);
-
-            GeneralConfig::generate(token, prefix, vc_auto_change)
-        };
+        let general = GeneralConfig::generate(&config_file);
 
         logger::secondary_info("YouTube");
-        let youtube = {
-            let search_count = get_value!(config_file, u8, "BOT_YT_SEARCH_COUNT", "youtube"=>"search_count", YT_SEARCH_COUNT);
-            let age_restricted = get_value!(config_file, bool, "BOT_YT_AGE_RESTRICTED", "youtube"=>"age_restricted", YT_AGE_RESTRICTED);
-
-            YouTubeConfig::generate(search_count, age_restricted)
-        };
+        let youtube = YouTubeConfig::generate(&config_file);
 
         logger::secondary_info("Spotify");
         let spotify = if get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY) {
-            let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
-                                       "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
-            let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
-                                       "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
-
-            Some(SpotifyConfig::generate(client_id, client_secret))
+            Some(SpotifyConfig::generate(&config_file))
         } else {
             None
         };

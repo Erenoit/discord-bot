@@ -1,4 +1,6 @@
 use crate::{get_config, logger};
+use std::{env, process};
+use taplo::dom::Node;
 use tokio::sync::RwLock;
 
 pub(super) struct SpotifyConfig {
@@ -8,7 +10,11 @@ pub(super) struct SpotifyConfig {
 }
 
 impl SpotifyConfig {
-    pub fn generate(client_id: String, client_secret: String) -> Self {
+    pub fn generate(config_file: &Node) -> Self {
+        let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
+                                   "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
+        let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
+                                   "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
         let token = RwLock::new(None);
         Self { client_id, client_secret, token }
     }
