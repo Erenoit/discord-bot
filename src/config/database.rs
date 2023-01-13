@@ -36,7 +36,7 @@ impl DatabaseConfig {
     }
 
     #[inline(always)]
-    pub fn connection(&self) -> &DBWithThreadMode<MultiThreaded> {
+    pub const fn connection(&self) -> &DBWithThreadMode<MultiThreaded> {
         &self.connection
     }
 

@@ -11,7 +11,7 @@ use songbird::SerenityInit;
 pub struct Bot;
 
 impl Bot {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 

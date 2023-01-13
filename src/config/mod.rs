@@ -99,32 +99,32 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn token(&self) -> &String {
+    pub const fn token(&self) -> &String {
         self.general.token()
     }
 
     #[inline(always)]
-    pub fn prefix(&self) -> &String {
+    pub const fn prefix(&self) -> &String {
         self.general.prefix()
     }
 
     #[inline(always)]
-    pub fn vc_auto_change(&self) -> bool {
+    pub const fn vc_auto_change(&self) -> bool {
         self.general.vc_auto_change()
     }
 
     #[inline(always)]
-    pub fn youtube_search_count(&self) -> u8 {
+    pub const fn youtube_search_count(&self) -> u8 {
         self.youtube.search_count()
     }
 
     #[inline(always)]
-    pub fn youtube_age_restricted(&self) -> bool {
+    pub const fn youtube_age_restricted(&self) -> bool {
         self.youtube.age_restricted()
     }
 
     #[inline(always)]
-    pub fn is_spotify_initialized(&self) -> bool {
+    pub const fn is_spotify_initialized(&self) -> bool {
         self.spotify.is_some()
     }
 
@@ -139,7 +139,7 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn database(&self) -> Option<&DBWithThreadMode<MultiThreaded>> {
+    pub const fn database(&self) -> Option<&DBWithThreadMode<MultiThreaded>> {
         if let Some(db) = &self.database {
             Some(db.connection())
         } else {
@@ -148,7 +148,7 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
+    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
         &self.servers
     }
 

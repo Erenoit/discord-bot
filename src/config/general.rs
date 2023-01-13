@@ -18,17 +18,17 @@ impl GeneralConfig {
     }
 
     #[inline(always)]
-    pub fn token(&self) -> &String {
+    pub const fn token(&self) -> &String {
         &self.token
     }
 
     #[inline(always)]
-    pub fn prefix(&self) -> &String {
+    pub const fn prefix(&self) -> &String {
         &self.prefix
     }
 
     #[inline(always)]
-    pub fn vc_auto_change(&self) -> bool {
+    pub const fn vc_auto_change(&self) -> bool {
         self.vc_auto_change
     }
 }

@@ -20,7 +20,7 @@ impl SpotifyConfig {
     }
 
     #[inline(always)]
-    pub fn client(&self) -> (&String, &String) {
+    pub const fn client(&self) -> (&String, &String) {
         (&self.client_id, &self.client_secret)
     }
 

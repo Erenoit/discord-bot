@@ -18,12 +18,12 @@ impl YouTubeConfig {
     }
 
     #[inline(always)]
-    pub fn search_count(&self) -> u8 {
+    pub const fn search_count(&self) -> u8 {
         self.search_count
     }
 
     #[inline(always)]
-    pub fn age_restricted(&self) -> bool {
+    pub const fn age_restricted(&self) -> bool {
         self.age_restricted
     }
 }
