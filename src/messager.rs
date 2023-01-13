@@ -35,7 +35,7 @@ where
             })
             .ephemeral(ephemeral)
         } else {
-            m.content(format!("{}", content))
+            m.content(content.to_string())
             .ephemeral(ephemeral)
         }
     }).await;
@@ -95,7 +95,7 @@ where
     S: Display + Send
 {
     let res = ctx.send(|m| {
-        let mut last = m.content(format!("{}", content));
+        let mut last = m.content(content.to_string());
 
         for f in files {
             last = last.attachment(AttachmentType::Path(f))

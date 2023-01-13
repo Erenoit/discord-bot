@@ -26,7 +26,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             messager::send_embed(&ctx, |e| {
                 e.color(0xe0af68)
                     .title(&post["title"])
-                    .url(format!("{}{}", link, post["permalink"]))
+                    .url(format!("{link}{}", post["permalink"]))
                     .image(&post["url_overridden_by_dest"])
                     .footer(|f| {
                         f.text(format!("👍 {} | 💬 {}", &post["ups"], &post["num_comments"]))
@@ -37,14 +37,14 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         }
 
         logger::error("Couldn't serialize the data.");
-        logger::secondary_error(format!("Link: {}", link));
+        logger::secondary_error(format!("Link: {link}"));
         messager::send_error(&ctx, "An error occured, please try again later.", false).await;
 
         return Ok(());
     }
 
     logger::error("Couldn't fetch from.");
-    logger::secondary_error(format!("Link: {}", link));
+    logger::secondary_error(format!("Link: {link}"));
     messager::send_error(&ctx, "An error occured, please try again later.", false).await;
 
     Ok(())

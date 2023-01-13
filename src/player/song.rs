@@ -54,7 +54,7 @@ impl Song {
         // TODO: clean this code
         let search_count = 5;
         let out = Command::new("youtube-dl")
-            .args(["--no-playlist", "--get-title", "--get-id", "--get-duration", &format!("ytsearch{}:{}", search_count, song)])
+            .args(["--no-playlist", "--get-title", "--get-id", "--get-duration", &format!("ytsearch{search_count}:{song}")])
             .output().await?;
 
 
@@ -189,7 +189,7 @@ impl Song {
         let token = get_config().spotify_token().await.expect("Token should be initialized");
 
         let res = reqwest::Client::new()
-            .get(format!("{}/tracks/{}", base_url, track_id))
+            .get(format!("{base_url}/tracks/{track_id}"))
             .bearer_auth(token)
             .send()
             .await;
@@ -200,7 +200,7 @@ impl Song {
                 let title = &j["name"];
 
                 let out = Command::new("youtube-dl")
-                    .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{} lyrics", title)])
+                    .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
                     .output().await?;
 
                 let out_str = String::from_utf8(out.stdout)?;
@@ -225,7 +225,7 @@ impl Song {
             }
             Err(why) => {
                 logger::error("Spotify request failed");
-                logger::secondary_error(format!("{}", why));
+                logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
             }
@@ -239,7 +239,7 @@ impl Song {
         let token = get_config().spotify_token().await.expect("Token should be initialized");
 
         let res = reqwest::Client::new()
-            .get(format!("{}/playlists/{}", base_url, track_id))
+            .get(format!("{base_url}/playlists/{track_id}"))
             .bearer_auth(token)
             .send()
             .await;
@@ -255,7 +255,7 @@ impl Song {
                         let title = track.track.name.clone();
 
                         join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{} lyrics", title)])
+                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
                             .output().await});
                     });
 
@@ -277,7 +277,7 @@ impl Song {
             }
             Err(why) => {
                 logger::error("Spotify request failed");
-                logger::secondary_error(format!("{}", why));
+                logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
             }
@@ -291,7 +291,7 @@ impl Song {
         let token = get_config().spotify_token().await.expect("Token should be initialized");
 
         let res = reqwest::Client::new()
-            .get(format!("{}/artists/{}/top-tracks", base_url, track_id))
+            .get(format!("{base_url}/artists/{track_id}/top-tracks"))
             .bearer_auth(token)
             .query(&[("market", SP_MARKET)])
             .send()
@@ -308,7 +308,7 @@ impl Song {
                         let title = track.name.clone();
 
                         join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{} lyrics", title)])
+                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
                             .output().await});
                     });
 
@@ -330,7 +330,7 @@ impl Song {
             }
             Err(why) => {
                 logger::error("Spotify request failed");
-                logger::secondary_error(format!("{}", why));
+                logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
             }
@@ -344,7 +344,7 @@ impl Song {
         let token = get_config().spotify_token().await.expect("Token should be initialized");
 
         let res = reqwest::Client::new()
-            .get(format!("{}/albums/{}", base_url, track_id))
+            .get(format!("{base_url}/albums/{track_id}"))
             .bearer_auth(token)
             .send()
             .await;
@@ -360,7 +360,7 @@ impl Song {
                         let title = track.name.clone();
 
                         join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{} lyrics", title)])
+                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
                             .output().await});
                     });
 
@@ -382,7 +382,7 @@ impl Song {
             }
             Err(why) => {
                 logger::error("Spotify request failed");
-                logger::secondary_error(format!("{}", why));
+                logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
             }

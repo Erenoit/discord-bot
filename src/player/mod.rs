@@ -209,9 +209,9 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            s.push_str(&messager::bold(format!("{}{}{}{}\n", selected_char, selected_whitespace, number_style, song_str)));
+            s.push_str(&messager::bold(format!("{selected_char}{selected_whitespace}{number_style}{song_str}\n")));
         } else {
-            s.push_str(&format!("{}{}{}\n", normal_whitespace, number_style, song_str));
+            s.push_str(&format!("{normal_whitespace}{number_style}{song_str}\n"));
         }
 
     }
@@ -222,7 +222,7 @@ impl Player {
 
     pub async fn change_repeat_mode(&self, ctx: &Context<'_>, new_mode: &Repeat) {
         *self.repeat_mode.lock().await = *new_mode;
-        messager::send_sucsess(ctx, format!("Repeat mode changed to {}", new_mode), false).await;
+        messager::send_sucsess(ctx, format!("Repeat mode changed to {new_mode}"), false).await;
     }
 
     pub async fn get_repeat_mode(&self) -> Repeat {

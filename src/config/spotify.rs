@@ -54,7 +54,7 @@ impl SpotifyConfig {
             }
             Err(why) => {
                 logger::error("Couldn't get spotify token");
-                logger::secondary_error(format!("{}", why));
+                logger::secondary_error(why);
             }
         }
     }

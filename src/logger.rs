@@ -40,23 +40,23 @@ fn main_print<S: Display>(main_str: S, log_type: LogType) {
     };
 
     let m_str = match log_type {
-        LogType::Info  => format!("{}", main_str).green(),
-        LogType::Warn  => format!("{}", main_str).yellow(),
-        LogType::Error => format!("{}", main_str).red(),
+        LogType::Info  => main_str.to_string().green(),
+        LogType::Warn  => main_str.to_string().yellow(),
+        LogType::Error => main_str.to_string().red(),
     };
 
-    println!("{} {}", chr, m_str);
+    println!("{chr} {m_str}");
 }
 
 #[inline(always)]
 fn secondary_print<S: Display>(secondary_str: S, log_type: LogType) {
     let s_str = match log_type {
-        LogType::Info  => format!("{}", secondary_str).blue(),
-        LogType::Warn  => format!("{}", secondary_str).cyan(),
-        LogType::Error => format!("{}", secondary_str).magenta(),
+        LogType::Info  => secondary_str.to_string().blue(),
+        LogType::Warn  => secondary_str.to_string().cyan(),
+        LogType::Error => secondary_str.to_string().magenta(),
     };
 
-    println!("\t{}", s_str);
+    println!("\t{s_str}");
 }
 
 enum LogType {

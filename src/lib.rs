@@ -29,7 +29,7 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 #[inline(always)]
 pub fn init_config() {
     if let Err(why) = CONFIG.set(Config::generate()) {
-        panic!("Config could not be created: {}", why);
+        panic!("Config could not be created: {why}");
     }
 }
 
