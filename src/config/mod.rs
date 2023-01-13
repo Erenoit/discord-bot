@@ -37,11 +37,10 @@ pub struct Config {
 impl Config {
     pub fn generate() -> Self {
         logger::info("Generating Project Directories");
-        let project_dirs = if let Some(p) = ProjectDirs::from("com", "Erenoit", "The Bot") { p }
-            else {
-                logger::error("Couldn't find config location");
-                process::exit(1);
-            };
+        let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(|| {
+            logger::error("Couldn't find config location");
+            process::exit(1);
+        }, |p| p);
         let config_file_path = project_dirs.config_dir().join("config.toml");
         if !config_file_path.exists() {
             fs::create_dir_all(config_file_path.parent()
@@ -50,7 +49,7 @@ impl Config {
 
             let mut config_file = fs::File::create(&config_file_path)
                 .expect("file creation should not fail");
-            config_file.write_all(include_str!("../../examples/config.toml").as_bytes())
+            config_file.write_all(include_bytes!("../../examples/config.toml"))
                 .expect("file is created just one line before this should not fail");
         }
 
