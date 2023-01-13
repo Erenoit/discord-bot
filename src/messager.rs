@@ -135,16 +135,15 @@ where
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.serenity_context()).timeout(Duration::from_secs(TIME_LIMIT)).await {
-        Some(x) => x,
-        None => {
+    let Some(interaction) = handle.message().await.unwrap()
+        .await_component_interaction(ctx.serenity_context())
+        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
             _ = handle.edit(*ctx, |m| {
                 m.content("Interaction timed out.").components(|c| {
                     c.create_action_row(|row| row)
                 })
             }).await;
             return false;
-        }
     };
 
     _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
@@ -199,16 +198,15 @@ where
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap().await_component_interaction(ctx.serenity_context()).timeout(Duration::from_secs(TIME_LIMIT)).await {
-        Some(x) => x,
-        None => {
+    let Some(interaction) = handle.message().await.unwrap()
+        .await_component_interaction(ctx.serenity_context())
+        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
             _ = handle.edit(*ctx, |m| {
                 m.content("Interaction timed out.").components(|c| {
                     c.create_action_row(|row| row)
                 })
             }).await;
             return BUTTON_ID_DANGER.to_string();
-        }
     };
 
     _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
@@ -276,18 +274,15 @@ where
 
     let handle = res.unwrap();
 
-    let interaction = match handle.message().await.unwrap()
+    let Some(interaction) = handle.message().await.unwrap()
         .await_component_interaction(ctx.serenity_context())
-        .timeout(Duration::from_secs(TIME_LIMIT)).await {
-            Some(x) => x,
-            None => {
-                _ = handle.edit(*ctx, |m| {
-                    m.content("Interaction timed out.").components(|c| {
-                        c.create_action_row(|row| row)
-                    })
-                }).await;
-                return BUTTON_ID_DANGER.to_string();
-            }
+        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
+            _ = handle.edit(*ctx, |m| {
+                m.content("Interaction timed out.").components(|c| {
+                    c.create_action_row(|row| row)
+                })
+            }).await;
+            return BUTTON_ID_DANGER.to_string();
     };
 
     _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
