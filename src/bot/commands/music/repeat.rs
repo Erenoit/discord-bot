@@ -17,7 +17,7 @@ pub async fn repeat(
     } else {
         let current_mode = server.player.get_repeat_mode().await;
         let msg = format!("Current repeat option is {}. Select one to change:",
-                          messager::highlight(current_mode.to_string()));
+                          messager::highlight(&current_mode));
         let mut list = Vec::new();
 
         for e in Repeat::variants() {

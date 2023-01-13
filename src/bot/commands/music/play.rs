@@ -18,8 +18,8 @@ pub async fn play(
             messager::send_error(&ctx, "An error happened please try again later", false).await;
             return Ok(());
         }
-        1 => messager::send_sucsess(&ctx, format!("{} has been added to the queue.", messager::bold(songs[0].title())), false).await,
-        _ => messager::send_sucsess(&ctx, format!("{} songs added to the queue.", messager::bold(songs.len())), false).await
+        1 => messager::send_sucsess(&ctx, format!("{} has been added to the queue.", messager::bold(&songs[0].title())), false).await,
+        _ => messager::send_sucsess(&ctx, format!("{} songs added to the queue.", messager::bold(&songs.len())), false).await
     }
     server.player.play(&mut songs).await;
 

@@ -209,7 +209,7 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            s.push_str(&messager::bold(format!("{selected_char}{selected_whitespace}{number_style}{song_str}\n")));
+            s.push_str(&messager::bold(&format!("{selected_char}{selected_whitespace}{number_style}{song_str}\n")));
         } else {
             s.push_str(&format!("{normal_whitespace}{number_style}{song_str}\n"));
         }

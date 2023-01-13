@@ -63,7 +63,7 @@ pub async fn add(
         logger::error("Database Error");
         logger::secondary_error(why);
     } else {
-        messager::send_sucsess(&ctx, format!("{} is successfully added to the database.", messager::highlight(keyword)), true).await;
+        messager::send_sucsess(&ctx, format!("{} is successfully added to the database.", messager::highlight(&keyword)), true).await;
     }
 
     Ok(())
@@ -85,7 +85,7 @@ pub async fn remove(
     let key = guild.id.to_string() + "-" + &keyword;
 
     if !db.key_may_exist(key) {
-        messager::send_error(&ctx, format!("{} is already doesn't exist", messager::highlight(keyword)), true).await;
+        messager::send_error(&ctx, format!("{} is already doesn't exist", messager::highlight(&keyword)), true).await;
         return Ok(());
     }
 
@@ -98,7 +98,7 @@ pub async fn remove(
         logger::error("Database Error");
         logger::secondary_error(why);
     } else {
-        messager::send_sucsess(&ctx, format!("{} is successfully removed from the database.", messager::highlight(keyword)), true).await;
+        messager::send_sucsess(&ctx, format!("{} is successfully removed from the database.", messager::highlight(&keyword)), true).await;
     }
 
     Ok(())
@@ -129,7 +129,7 @@ pub async fn list(
             msg += &format!(
                 "{}: {}\n",
                 messager::bold(
-                    String::from_utf8_lossy(&entry.0)
+                    &String::from_utf8_lossy(&entry.0)
                         .split_once('-')
                         .expect("There is a `-` in prefix. This cannot fail.")
                         .1
