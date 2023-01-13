@@ -15,7 +15,7 @@ pub async fn music(
         return Ok(());
     };
 
-    handle_vc_connection(&ctx, &server).await?;
+    handle_vc_connection(&ctx, server).await?;
 
     if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
         server.player.play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?).await;

@@ -10,7 +10,7 @@ pub async fn play(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    handle_vc_connection(&ctx, &server).await?;
+    handle_vc_connection(&ctx, server).await?;
 
     let mut songs = Song::new(&ctx, song).await?;
     match songs.len() {

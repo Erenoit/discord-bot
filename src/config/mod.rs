@@ -8,7 +8,6 @@ mod youtube;
 use crate::{config::{defaults::*, spotify::SpotifyConfig, youtube::YouTubeConfig, general::GeneralConfig}, logger, server::Server};
 use std::{collections::HashMap, env, fs, io::Write, path::PathBuf, process, sync::Arc};
 use directories::ProjectDirs;
-use dotenv;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use serenity::model::id::GuildId;
 use songbird::Songbird;
