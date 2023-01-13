@@ -4,7 +4,7 @@ mod sp_structs;
 
 pub use crate::player::song::Song;
 use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
-use std::{collections::VecDeque, slice::Iter, sync::Arc};
+use std::{collections::VecDeque, fmt::Write, slice::Iter, sync::Arc};
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
 use tokio::sync::Mutex;
@@ -210,9 +210,10 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
+            // TODO: write!() macro can be used as wel (?)
             s.push_str(&messager::bold(&format!("{selected_char}{selected_whitespace}{number_style}{song_str}\n")));
         } else {
-            s.push_str(&format!("{normal_whitespace}{number_style}{song_str}\n"));
+            _ = writeln!(s, "{normal_whitespace}{number_style}{song_str}");
         }
 
     }

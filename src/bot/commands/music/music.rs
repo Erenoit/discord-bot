@@ -1,4 +1,5 @@
 use crate::{get_config, messager, logger, bot::commands::{Context, Error, music::handle_vc_connection}, player::Song};
+use std::fmt::Write;
 
 /// Adds song to queue
 #[poise::command(slash_command, prefix_command, aliases("m"), category="Music", guild_only, subcommands("add", "remove", "list"))]
@@ -126,8 +127,8 @@ pub async fn list(
             else { guild.id.to_string() + "-" };
 
         for entry in db.prefix_iterator(prefix.as_bytes()).flatten() {
-            msg += &format!(
-                "{}: {}\n",
+            _ = writeln!(msg,
+                "{}: {}",
                 messager::bold(
                     &String::from_utf8_lossy(&entry.0)
                         .split_once('-')

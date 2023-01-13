@@ -1,5 +1,5 @@
 use crate::{bot::Context, logger};
-use std::{cmp::min, fmt::Display, path::Path, time::Duration};
+use std::{cmp::min, fmt::{Display, Write}, path::Path, time::Duration};
 use serenity::{
     builder::{CreateButton, CreateComponents, CreateEmbed},
     model::{
@@ -236,7 +236,7 @@ where
     msg.push('\n');
 
     for (i, element) in list.iter().enumerate() {
-        msg.push_str(&format!("{}) ", i + 1));
+        _ = write!(msg, "{}) ", i + 1);
         msg.push_str(&element.0);
         msg.push('\n');
     }
