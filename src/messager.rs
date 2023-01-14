@@ -1,44 +1,45 @@
-use crate::{bot::Context, logger};
-use std::{cmp::min, fmt::{Display, Write}, path::Path, time::Duration};
+use std::{
+    cmp::min,
+    fmt::{Display, Write},
+    path::Path,
+    time::Duration,
+};
+
 use serenity::{
     builder::{CreateButton, CreateComponents, CreateEmbed},
     model::{
-        application::{
-            component::ButtonStyle,
-            interaction::InteractionResponseType,
-        },
+        application::{component::ButtonStyle, interaction::InteractionResponseType},
         channel::AttachmentType,
-    }
+    },
 };
 
-const USE_EMBED:     bool = false;
-const TIME_LIMIT:    u64  = 30;
-const SUCSESS_COLOR: u32  = 0x00ff00;
-const NORMAL_COLOR:  u32  = 0x0000ff;
-const ERROR_COLOR:   u32  = 0xff0000;
+use crate::{bot::Context, logger};
+
+const USE_EMBED: bool = false;
+const TIME_LIMIT: u64 = 30;
+const SUCSESS_COLOR: u32 = 0x00FF00;
+const NORMAL_COLOR: u32 = 0x0000FF;
+const ERROR_COLOR: u32 = 0xFF0000;
 
 const BUTTON_ID_SUCCESS: &str = "success";
-const BUTTON_ID_DANGER:  &str = "danger";
+const BUTTON_ID_DANGER: &str = "danger";
 
 #[inline(always)]
 async fn send_message<S, T>(ctx: &Context<'_>, title: T, content: S, color: u32, ephemeral: bool)
 where
     S: Display + Send,
-    T: Display + Send
+    T: Display + Send,
 {
-    let res = ctx.send(|m| {
-        if USE_EMBED {
-            m.embed(|e| {
-                e.color(color)
-                    .title(title)
-                    .description(content)
-            })
-            .ephemeral(ephemeral)
-        } else {
-            m.content(content.to_string())
-            .ephemeral(ephemeral)
-        }
-    }).await;
+    let res = ctx
+        .send(|m| {
+            if USE_EMBED {
+                m.embed(|e| e.color(color).title(title).description(content))
+                    .ephemeral(ephemeral)
+            } else {
+                m.content(content.to_string()).ephemeral(ephemeral)
+            }
+        })
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send message.");
@@ -50,7 +51,7 @@ where
 pub async fn send_normal<S, T>(ctx: &Context<'_>, title: T, content: S, ephemeral: bool)
 where
     S: Display + Send,
-    T: Display + Send
+    T: Display + Send,
 {
     send_message(ctx, title, content, NORMAL_COLOR, ephemeral).await;
 }
@@ -58,7 +59,7 @@ where
 #[inline(always)]
 pub async fn send_sucsess<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
 where
-    S: Display + Send
+    S: Display + Send,
 {
     const TITLE: &str = "Success";
     send_message(ctx, TITLE, content, SUCSESS_COLOR, ephemeral).await;
@@ -67,20 +68,21 @@ where
 #[inline(always)]
 pub async fn send_error<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
 where
-    S: Display + Send
+    S: Display + Send,
 {
     const TITLE: &str = "Error";
     send_message(ctx, TITLE, content, ERROR_COLOR, ephemeral).await;
 }
 
 #[inline(always)]
-pub async fn send_embed(ctx: &Context<'_>, embed_func: impl FnOnce(&mut CreateEmbed) -> &mut CreateEmbed + Send, ephemeral: bool) {
-    let res = ctx.send(|m| {
-        m.embed(|e| {
-            embed_func(e)
-        })
-        .ephemeral(ephemeral)
-    }).await;
+pub async fn send_embed(
+    ctx: &Context<'_>,
+    embed_func: impl FnOnce(&mut CreateEmbed) -> &mut CreateEmbed + Send,
+    ephemeral: bool,
+) {
+    let res = ctx
+        .send(|m| m.embed(|e| embed_func(e)).ephemeral(ephemeral))
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send embed.");
@@ -92,19 +94,21 @@ pub async fn send_embed(ctx: &Context<'_>, embed_func: impl FnOnce(&mut CreateEm
 #[allow(clippy::future_not_send)] // Framework cause
 pub async fn send_files<S>(ctx: &Context<'_>, content: S, files: Vec<&Path>, ephemeral: bool)
 where
-    S: Display + Send
+    S: Display + Send,
 {
-    let res = ctx.send(|m| {
-        let mut last = m.content(content.to_string());
+    let res = ctx
+        .send(|m| {
+            let mut last = m.content(content.to_string());
 
-        for f in files {
-            last = last.attachment(AttachmentType::Path(f));
-        }
+            for f in files {
+                last = last.attachment(AttachmentType::Path(f));
+            }
 
-        last.ephemeral = ephemeral;
+            last.ephemeral = ephemeral;
 
-        last
-    }).await;
+            last
+        })
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send message with file(s).");
@@ -114,18 +118,24 @@ where
 
 pub async fn send_confirm<S>(ctx: &Context<'_>, msg: Option<S>) -> bool
 where
-    S: Display + Send
+    S: Display + Send,
 {
-    let msg_str = if msg.is_some() { msg.unwrap().to_string() } else { "Are you sure?".to_owned() };
+    let msg_str = if msg.is_some() {
+        msg.unwrap().to_string()
+    } else {
+        "Are you sure?".to_owned()
+    };
 
-    let res = ctx.send(|m| {
-        m.content(msg_str).components(|c| {
-            c.create_action_row(|row| {
-                row.add_button(success_button("Yes".to_owned()));
-                row.add_button(danger_button("No".to_owned()))
+    let res = ctx
+        .send(|m| {
+            m.content(msg_str).components(|c| {
+                c.create_action_row(|row| {
+                    row.add_button(success_button("Yes".to_owned()));
+                    row.add_button(danger_button("No".to_owned()))
+                })
             })
         })
-    }).await;
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send confirm message.");
@@ -146,19 +156,27 @@ where
             return false;
     };
 
-    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
-        r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
-            d.content("An action has already been taken.").set_components(CreateComponents::default())
+    _ = interaction
+        .create_interaction_response(ctx.serenity_context(), |r| {
+            r.kind(InteractionResponseType::UpdateMessage)
+                .interaction_response_data(|d| {
+                    d.content("An action has already been taken.")
+                        .set_components(CreateComponents::default())
+                })
         })
-    }).await;
+        .await;
 
     interaction.data.custom_id == BUTTON_ID_SUCCESS
 }
 
 #[allow(clippy::future_not_send)] // Framework couse
-pub async fn send_selection<S>(ctx: &Context<'_>, msg: S, list: Vec<(String, String, bool)>) -> String
+pub async fn send_selection<S>(
+    ctx: &Context<'_>,
+    msg: S,
+    list: Vec<(String, String, bool)>,
+) -> String
 where
-    S: Display + Send
+    S: Display + Send,
 {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
@@ -168,27 +186,29 @@ where
         logger::error("List cannot be empty");
     }
 
-    let res = ctx.send(|m| {
-        m.content(msg.to_string()).components(|c| {
-            c.create_action_row(|row| {
-                for e in list.iter().take(min(5, list.len())) {
-                    row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
-                }
-                row
-            });
-
-            if list.len() > 5 {
+    let res = ctx
+        .send(|m| {
+            m.content(msg.to_string()).components(|c| {
                 c.create_action_row(|row| {
-                    for e in list.iter().skip(5) {
+                    for e in list.iter().take(min(5, list.len())) {
                         row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
                     }
                     row
                 });
-            }
 
-            c
+                if list.len() > 5 {
+                    c.create_action_row(|row| {
+                        for e in list.iter().skip(5) {
+                            row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
+                        }
+                        row
+                    });
+                }
+
+                c
+            })
         })
-    }).await;
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send confirm message.");
@@ -209,18 +229,26 @@ where
             return BUTTON_ID_DANGER.to_owned();
     };
 
-    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
-        r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
-            d.content("An action has already been taken.").set_components(CreateComponents::default())
+    _ = interaction
+        .create_interaction_response(ctx.serenity_context(), |r| {
+            r.kind(InteractionResponseType::UpdateMessage)
+                .interaction_response_data(|d| {
+                    d.content("An action has already been taken.")
+                        .set_components(CreateComponents::default())
+                })
         })
-    }).await;
+        .await;
 
     interaction.data.custom_id.clone()
 }
 
-pub async fn send_selection_from_list<T>(ctx: &Context<'_>, title: T, list: &Vec<(String, String)>) -> String
+pub async fn send_selection_from_list<T>(
+    ctx: &Context<'_>,
+    title: T,
+    list: &Vec<(String, String)>,
+) -> String
 where
-    T: Display + Send
+    T: Display + Send,
 {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
@@ -241,30 +269,40 @@ where
         msg.push('\n');
     }
 
-    let res = ctx.send(|m| {
-        m.content(msg).components(|c| {
-            c.create_action_row(|row| {
-                for (i, e) in list.iter().enumerate().take(min(5, list.len())) {
-                    row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
-                }
-                row
-            });
-
-            if list.len() > 5 {
+    let res = ctx
+        .send(|m| {
+            m.content(msg).components(|c| {
                 c.create_action_row(|row| {
-                    for (i, e) in list.iter().enumerate().skip(5) {
-                        row.add_button(normal_button((i + 1).to_string(), e.1.clone(), false));
+                    for (i, e) in list.iter().enumerate().take(min(5, list.len())) {
+                        row.add_button(normal_button(
+                            (i + 1).to_string(),
+                            e.1.clone(),
+                            false,
+                        ));
                     }
                     row
                 });
-            }
 
-            c.create_action_row(|row| {
-                row.add_button(success_button("All".to_owned()));
-                row.add_button(danger_button("None".to_owned()))
+                if list.len() > 5 {
+                    c.create_action_row(|row| {
+                        for (i, e) in list.iter().enumerate().skip(5) {
+                            row.add_button(normal_button(
+                                (i + 1).to_string(),
+                                e.1.clone(),
+                                false,
+                            ));
+                        }
+                        row
+                    });
+                }
+
+                c.create_action_row(|row| {
+                    row.add_button(success_button("All".to_owned()));
+                    row.add_button(danger_button("None".to_owned()))
+                })
             })
         })
-    }).await;
+        .await;
 
     if let Err(why) = res {
         logger::error("Couldn't send confirm message.");
@@ -285,11 +323,15 @@ where
             return BUTTON_ID_DANGER.to_owned();
     };
 
-    _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
-        r.kind(InteractionResponseType::UpdateMessage).interaction_response_data(|d| {
-            d.content("An action has already been taken.").set_components(CreateComponents::default())
+    _ = interaction
+        .create_interaction_response(ctx.serenity_context(), |r| {
+            r.kind(InteractionResponseType::UpdateMessage)
+                .interaction_response_data(|d| {
+                    d.content("An action has already been taken.")
+                        .set_components(CreateComponents::default())
+                })
         })
-    }).await;
+        .await;
 
     interaction.data.custom_id.clone()
 }
@@ -297,7 +339,7 @@ where
 #[inline(always)]
 pub fn bold<S>(message: &S) -> String
 where
-    S: Display + Send
+    S: Display + Send,
 {
     format!("**{message}**")
 }
@@ -305,7 +347,7 @@ where
 #[inline(always)]
 pub fn italic<S>(message: &S) -> String
 where
-    S: Display + Send
+    S: Display + Send,
 {
     format!("*{message}*")
 }
@@ -313,7 +355,7 @@ where
 #[inline(always)]
 pub fn bold_italic<S>(message: &S) -> String
 where
-    S: Display + Send
+    S: Display + Send,
 {
     format!("***{message}***")
 }
@@ -321,7 +363,7 @@ where
 #[inline(always)]
 pub fn highlight<S>(message: &S) -> String
 where
-    S: Display + Send
+    S: Display + Send,
 {
     format!("`{message}`")
 }
@@ -330,7 +372,7 @@ where
 pub fn block<S, T>(block_type: &T, message: &S) -> String
 where
     S: Display + Send,
-    T: Display + Send
+    T: Display + Send,
 {
     format!("```{block_type}\n{message}\n```")
 }
@@ -365,4 +407,3 @@ fn danger_button(name: String) -> CreateButton {
 
     button
 }
-

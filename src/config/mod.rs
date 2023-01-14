@@ -7,50 +7,57 @@ mod general;
 mod spotify;
 mod youtube;
 
-use crate::{
-    config::{
-        defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
-        database::DatabaseConfig,
-        general::GeneralConfig,
-        spotify::SpotifyConfig,
-        youtube::YouTubeConfig
-    },
-    logger,
-    server::Server
-};
 use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
+
 use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use serenity::model::id::GuildId;
 use songbird::Songbird;
 use tokio::sync::RwLock;
 
+use crate::{
+    config::{
+        database::DatabaseConfig,
+        defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
+        general::GeneralConfig,
+        spotify::SpotifyConfig,
+        youtube::YouTubeConfig,
+    },
+    logger,
+    server::Server,
+};
+
 #[non_exhaustive]
 pub struct Config {
-    general: GeneralConfig,
-    youtube: YouTubeConfig,
-    spotify: Option<SpotifyConfig>,
+    general:  GeneralConfig,
+    youtube:  YouTubeConfig,
+    spotify:  Option<SpotifyConfig>,
     database: Option<DatabaseConfig>,
-    servers: RwLock<HashMap<GuildId, Server>>,
+    servers:  RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
 }
 
 impl Config {
     pub fn generate() -> Self {
         logger::info("Generating Project Directories");
-        let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(|| {
-            logger::error("Couldn't find config location");
-            process::exit(1);
-        }, |p| p);
+        let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(
+            || {
+                logger::error("Couldn't find config location");
+                process::exit(1);
+            },
+            |p| p,
+        );
         let config_file_path = project_dirs.config_dir().join("config.toml");
         if !config_file_path.exists() {
-            fs::create_dir_all(config_file_path.parent()
-                               .expect("it is safe to assume that this will always have a parent because we used join"))
-                .expect("directory creation should not fail in normal circumstances");
+            fs::create_dir_all(config_file_path.parent().expect(
+                "it is safe to assume that this will always have a parent because we used join",
+            ))
+            .expect("directory creation should not fail in normal circumstances");
 
-            let mut config_file = fs::File::create(&config_file_path)
-                .expect("file creation should not fail");
-            config_file.write_all(include_bytes!("../../examples/config.toml"))
+            let mut config_file =
+                fs::File::create(&config_file_path).expect("file creation should not fail");
+            config_file
+                .write_all(include_bytes!("../../examples/config.toml"))
                 .expect("file is created just one line before this should not fail");
         }
 
@@ -59,7 +66,9 @@ impl Config {
         let config_file = taplo::parser::parse(
             fs::read_to_string(config_file_path)
                 .expect("config not found/cannot read")
-                .as_str()).into_dom();
+                .as_str(),
+        )
+        .into_dom();
 
         logger::secondary_info("General");
         let general = GeneralConfig::generate(&config_file);
@@ -72,7 +81,7 @@ impl Config {
             SpotifyConfig::generate(&config_file)
         });
 
-        logger:: secondary_info("Database");
+        logger::secondary_info("Database");
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
             DatabaseConfig::generate(&config_file, &project_dirs)
         });
@@ -91,38 +100,33 @@ impl Config {
             logger::warn("Database is unavailable");
         }
 
-        Self { general, youtube, spotify, database, servers, songbird }
+        Self {
+            general,
+            youtube,
+            spotify,
+            database,
+            servers,
+            songbird,
+        }
     }
 
     #[inline(always)]
-    pub const fn token(&self) -> &String {
-        self.general.token()
-    }
+    pub const fn token(&self) -> &String { self.general.token() }
 
     #[inline(always)]
-    pub const fn prefix(&self) -> &String {
-        self.general.prefix()
-    }
+    pub const fn prefix(&self) -> &String { self.general.prefix() }
 
     #[inline(always)]
-    pub const fn vc_auto_change(&self) -> bool {
-        self.general.vc_auto_change()
-    }
+    pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
 
     #[inline(always)]
-    pub const fn youtube_search_count(&self) -> u8 {
-        self.youtube.search_count()
-    }
+    pub const fn youtube_search_count(&self) -> u8 { self.youtube.search_count() }
 
     #[inline(always)]
-    pub const fn youtube_age_restricted(&self) -> bool {
-        self.youtube.age_restricted()
-    }
+    pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
     #[inline(always)]
-    pub const fn is_spotify_initialized(&self) -> bool {
-        self.spotify.is_some()
-    }
+    pub const fn is_spotify_initialized(&self) -> bool { self.spotify.is_some() }
 
     #[inline(always)]
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
@@ -144,13 +148,8 @@ impl Config {
     }
 
     #[inline(always)]
-    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> {
-        &self.servers
-    }
+    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> { &self.servers }
 
     #[inline(always)]
-    pub fn songbird(&self) -> Arc<Songbird> {
-        Arc::clone(&self.songbird)
-    }
+    pub fn songbird(&self) -> Arc<Songbird> { Arc::clone(&self.songbird) }
 }
-

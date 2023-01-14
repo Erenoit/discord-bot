@@ -1,10 +1,12 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}};
+use crate::{
+    bot::commands::{Context, Error},
+    get_config,
+    messager,
+};
 
 /// Shuffles the queue
-#[poise::command(slash_command, prefix_command, category="Music", guild_only)]
-pub async fn shuffle(
-    ctx: Context<'_>,
-) -> Result<(), Error> {
+#[poise::command(slash_command, prefix_command, category = "Music", guild_only)]
+pub async fn shuffle(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
@@ -12,7 +14,11 @@ pub async fn shuffle(
     if server.player.is_queues_empty().await {
         messager::send_error(&ctx, "Queue is empty", true).await;
     } else {
-        let answer = messager::send_confirm(&ctx, Some("You cannot unshuffle the queue. Are you sure?")).await;
+        let answer = messager::send_confirm(
+            &ctx,
+            Some("You cannot unshuffle the queue. Are you sure?"),
+        )
+        .await;
 
         if answer {
             server.player.shuffle_song_queue().await;

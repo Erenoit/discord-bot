@@ -1,14 +1,16 @@
-use crate::logger;
-use std::{env, fs, process, path::PathBuf};
+use std::{env, fs, path::PathBuf, process};
+
 use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use taplo::dom::Node;
 
+use crate::logger;
+
 #[non_exhaustive]
 pub(super) struct DatabaseConfig {
     connection: DBWithThreadMode<MultiThreaded>,
-    options: Options,
-    path: PathBuf
+    options:    Options,
+    path:       PathBuf,
 }
 
 impl DatabaseConfig {
@@ -17,9 +19,10 @@ impl DatabaseConfig {
         let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path);
 
         if !path.exists() {
-            fs::create_dir_all(path.parent()
-                               .expect("it is safe to assume that this will always have a parent because we used join"))
-                .expect("directory creation should not fail in normal circumstances");
+            fs::create_dir_all(path.parent().expect(
+                "it is safe to assume that this will always have a parent because we used join",
+            ))
+            .expect("directory creation should not fail in normal circumstances");
         }
 
         let mut options = Options::default();
@@ -32,14 +35,12 @@ impl DatabaseConfig {
                 logger::error("Couldn't open database.");
                 logger::secondary_error(why);
                 process::exit(1);
-            }
+            },
         }
     }
 
     #[inline(always)]
-    pub const fn connection(&self) -> &DBWithThreadMode<MultiThreaded> {
-        &self.connection
-    }
+    pub const fn connection(&self) -> &DBWithThreadMode<MultiThreaded> { &self.connection }
 
     // TODO: use this fuction somewhere makes sense
     #[allow(dead_code)]

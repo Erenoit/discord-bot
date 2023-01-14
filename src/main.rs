@@ -1,4 +1,4 @@
-use discord_bot::{Bot, init_config};
+use discord_bot::{init_config, Bot};
 
 #[tokio::main]
 async fn main() {

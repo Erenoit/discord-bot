@@ -1,13 +1,18 @@
-use crate::{config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT}, logger};
 use std::{env, process};
+
 use taplo::dom::Node;
+
+use crate::{
+    config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT},
+    logger,
+};
 
 // TODO add more options
 // TODO: implement this configs
 #[non_exhaustive]
 pub(super) struct YouTubeConfig {
-    search_count: u8,
-    age_restricted: bool
+    search_count:   u8,
+    age_restricted: bool,
 }
 
 impl YouTubeConfig {
@@ -19,12 +24,8 @@ impl YouTubeConfig {
     }
 
     #[inline(always)]
-    pub const fn search_count(&self) -> u8 {
-        self.search_count
-    }
+    pub const fn search_count(&self) -> u8 { self.search_count }
 
     #[inline(always)]
-    pub const fn age_restricted(&self) -> bool {
-        self.age_restricted
-    }
+    pub const fn age_restricted(&self) -> bool { self.age_restricted }
 }

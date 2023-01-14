@@ -1,10 +1,12 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}};
+use crate::{
+    bot::commands::{Context, Error},
+    get_config,
+    messager,
+};
 
 /// Clears the queue but do not stop current playing song
-#[poise::command(slash_command, prefix_command, category="Music", guild_only)]
-pub async fn clear(
-    ctx: Context<'_>,
-) -> Result<(), Error> {
+#[poise::command(slash_command, prefix_command, category = "Music", guild_only)]
+pub async fn clear(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();

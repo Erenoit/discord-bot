@@ -1,20 +1,18 @@
 mod commands;
 mod event;
 
-pub use commands::Context;
-
 use event::Handler;
-use crate::get_config;
 use serenity::prelude::GatewayIntents;
 use songbird::SerenityInit;
+
+pub use crate::bot::commands::Context;
+use crate::get_config;
 
 #[non_exhaustive]
 pub struct Bot;
 
 impl Bot {
-    pub const fn new() -> Self {
-        Self
-    }
+    pub const fn new() -> Self { Self }
 
     pub async fn run(&mut self) {
         let options = poise::FrameworkOptions {
@@ -49,26 +47,20 @@ impl Bot {
         };
 
         poise::Framework::builder()
-        .token(get_config().token())
-        .intents(GatewayIntents::all())
-        .options(options)
-        .client_settings(move |c| {
-            c.event_handler(Handler::new())
-                .register_songbird_with(get_config().songbird())
-        })
-        .setup(|_ctx, _data_about_bot, _framework| {
-            Box::pin(async move {
-                Ok(commands::Data)
+            .token(get_config().token())
+            .intents(GatewayIntents::all())
+            .options(options)
+            .client_settings(move |c| {
+                c.event_handler(Handler::new())
+                    .register_songbird_with(get_config().songbird())
             })
-        })
-        .run_autosharded()
-        .await
-        .expect("Client error");
+            .setup(|_ctx, _data_about_bot, _framework| Box::pin(async move { Ok(commands::Data) }))
+            .run_autosharded()
+            .await
+            .expect("Client error");
     }
 }
 
 impl Default for Bot {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }

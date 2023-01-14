@@ -1,11 +1,16 @@
-use crate::{config::defaults::{PREFIX, VC_AUTO_CHANGE}, logger};
 use std::{env, process};
+
 use taplo::dom::Node;
+
+use crate::{
+    config::defaults::{PREFIX, VC_AUTO_CHANGE},
+    logger,
+};
 
 #[non_exhaustive]
 pub(super) struct GeneralConfig {
-    token: String,
-    prefix: String,
+    token:          String,
+    prefix:         String,
     vc_auto_change: bool,
 }
 
@@ -19,18 +24,11 @@ impl GeneralConfig {
     }
 
     #[inline(always)]
-    pub const fn token(&self) -> &String {
-        &self.token
-    }
+    pub const fn token(&self) -> &String { &self.token }
 
     #[inline(always)]
-    pub const fn prefix(&self) -> &String {
-        &self.prefix
-    }
+    pub const fn prefix(&self) -> &String { &self.prefix }
 
     #[inline(always)]
-    pub const fn vc_auto_change(&self) -> bool {
-        self.vc_auto_change
-    }
+    pub const fn vc_auto_change(&self) -> bool { self.vc_auto_change }
 }
-

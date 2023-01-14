@@ -1,13 +1,15 @@
-use crate::{get_config, logger};
 use std::{env, process};
+
 use taplo::dom::Node;
 use tokio::sync::RwLock;
 
+use crate::{get_config, logger};
+
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {
-    client_id: String,
+    client_id:     String,
     client_secret: String,
-    token: RwLock<Option<String>>,
+    token:         RwLock<Option<String>>,
 }
 
 impl SpotifyConfig {
@@ -17,13 +19,15 @@ impl SpotifyConfig {
         let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
                                    "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
         let token = RwLock::new(None);
-        Self { client_id, client_secret, token }
+        Self {
+            client_id,
+            client_secret,
+            token,
+        }
     }
 
     #[inline(always)]
-    pub const fn client(&self) -> (&String, &String) {
-        (&self.client_id, &self.client_secret)
-    }
+    pub const fn client(&self) -> (&String, &String) { (&self.client_id, &self.client_secret) }
 
     #[inline(always)]
     pub async fn token(&self) -> String {
@@ -48,16 +52,14 @@ impl SpotifyConfig {
             .await;
 
         match res {
-            Ok(r) => {
+            Ok(r) =>
                 if let Ok(j) = json::parse(&r.text().await.unwrap()) {
                     *write_lock = Some(j["access_token"].to_string());
-                }
-            }
+                },
             Err(why) => {
                 logger::error("Couldn't get spotify token");
                 logger::secondary_error(why);
-            }
+            },
         }
     }
 }
-

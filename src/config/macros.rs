@@ -26,37 +26,39 @@ macro_rules! get_value_common {
 }
 
 macro_rules! get_as {
-    (String, $node: expr) => (
+    (String, $node:expr) => {
         $node.as_str()
-    );
-    (bool, $node: expr) => (
+    };
+    (bool, $node:expr) => {
         $node.as_bool()
-    );
-    (u8, $node: expr) => (
+    };
+    (u8, $node:expr) => {
         $node.as_integer()
-    );
-    (PathBuf, $node: expr) => (
+    };
+    (PathBuf, $node:expr) => {
         $node.as_str()
-    );
+    };
 }
 
 macro_rules! convert_value {
-    (String, $value: expr) => (
+    (String, $value:expr) => {
         $value.to_owned()
-    );
-    (u8, $value: expr) => (
+    };
+    (u8, $value:expr) => {
         if let Some(v) = $value.as_positive() {
             v as u8
         } else {
-            logger::error(format!("{} should be positive integer", $value.as_negative().unwrap()));
+            logger::error(format!(
+                "{} should be positive integer",
+                $value.as_negative().unwrap()
+            ));
             process::exit(1);
         }
-    );
-    (PathBuf, $value: expr) => (
+    };
+    (PathBuf, $value:expr) => {
         PathBuf::from($value)
-    );
-    ($any: tt, $value: expr) => (
+    };
+    ($any:tt, $value:expr) => {
         $value
-    )
+    };
 }
-

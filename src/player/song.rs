@@ -1,24 +1,28 @@
+use std::{collections::VecDeque, fmt::Display};
+
+use anyhow::{anyhow, Result};
+use tokio::{process::Command, task::JoinSet};
+
 use crate::{
     bot::Context,
-    get_config, logger, messager,
+    get_config,
+    logger,
+    messager,
     player::sp_structs::{
         SpotifyAlbumResponse,
         SpotifyArtistTopTracksResponse,
-        SpotifyPlaylistResponse
-    }
+        SpotifyPlaylistResponse,
+    },
 };
-use std::{collections::VecDeque, fmt::Display};
-use anyhow::{anyhow, Result};
-use tokio::{process::Command, task::JoinSet};
 
 const SP_MARKET: &str = "US";
 
 #[derive(Clone)]
 #[non_exhaustive]
 pub struct Song {
-    title: String,
-    id: String,
-    duration: String,
+    title:     String,
+    id:        String,
+    duration:  String,
     user_name: String,
 }
 
@@ -57,22 +61,34 @@ impl Song {
     }
 
     #[inline(always)]
-    pub async fn yt_search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>>
-    {
+    pub async fn yt_search(
+        ctx: &Context<'_>,
+        song: String,
+        user_name: String,
+    ) -> Result<VecDeque<Self>> {
         // TODO: change something faster than youtube-dl
         // TODO: clean this code
         let search_count = 5;
         let out = Command::new("youtube-dl")
-            .args(["--no-playlist", "--get-title", "--get-id", "--get-duration", &format!("ytsearch{search_count}:{song}")])
-            .output().await?;
-
+            .args([
+                "--no-playlist",
+                "--get-title",
+                "--get-id",
+                "--get-duration",
+                &format!("ytsearch{search_count}:{song}"),
+            ])
+            .output()
+            .await?;
 
         let list = String::from_utf8(out.stdout).unwrap();
         let list_seperated = list.split('\n').collect::<Vec<_>>();
 
         let mut l: Vec<(String, String)> = Vec::with_capacity(search_count);
         for i in 0 .. search_count {
-            l.push((list_seperated[i * 3].to_owned(), list_seperated[i * 3 + 1].to_owned()));
+            l.push((
+                list_seperated[i * 3].to_owned(),
+                list_seperated[i * 3 + 1].to_owned(),
+            ));
         }
 
         let answer = messager::send_selection_from_list(ctx, "Search", &l).await;
@@ -92,9 +108,9 @@ impl Song {
             for i in 0 .. search_count {
                 if *list_seperated[i * 3 + 1] == answer {
                     return_vec.push_back(Self {
-                        title:     list_seperated[i * 3].to_owned(),
-                        id:        list_seperated[i * 3 + 1].to_owned(),
-                        duration:  list_seperated[i * 3 + 2].to_owned(),
+                        title: list_seperated[i * 3].to_owned(),
+                        id: list_seperated[i * 3 + 1].to_owned(),
+                        duration: list_seperated[i * 3 + 2].to_owned(),
                         user_name,
                     });
                     break;
@@ -112,90 +128,107 @@ impl Song {
     async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("youtube-dl")
             .args(["--get-title", "--get-id", "--get-duration", &song])
-            .output().await
-            {
-                if !res.status.success() {
-                    logger::error("YouTube data fetch with youtube-dl failed:");
-                    logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
-                    return Err(anyhow!("youtube-dl failed"));
-                }
-
-                let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                    .expect("Output must be valid UTF-8")
-                    .split('\n')
-                    .map(std::string::ToString::to_string)
-                    .collect();
-
-                let title    = splited_res.get(0);
-                let id       = splited_res.get(1);
-                let duration = splited_res.get(2);
-
-                if title.is_none() || id.is_none() || duration.is_none() {
-                    logger::error("Somehow youtube-dl returned less data");
-                    return Err(anyhow!("youtube-dl failed"));
-                }
-
-                let mut return_vec = VecDeque::with_capacity(1);
-                return_vec.push_back(Self {
-                    title:    title.unwrap().clone(),
-                    id:       id.unwrap().clone(),
-                    duration: duration.unwrap().clone(),
-                    user_name,
-                });
-                Ok(return_vec)
-            } else {
-                logger::error("Command creation for youtube-dl failed");
-                Err(anyhow!("youtube-dl failed"))
+            .output()
+            .await
+        {
+            if !res.status.success() {
+                logger::error("YouTube data fetch with youtube-dl failed:");
+                logger::secondary_error(
+                    String::from_utf8(res.stderr).expect("Output must be valid UTF-8"),
+                );
+                return Err(anyhow!("youtube-dl failed"));
             }
+
+            let splited_res: Vec<String> = String::from_utf8(res.stdout)
+                .expect("Output must be valid UTF-8")
+                .split('\n')
+                .map(std::string::ToString::to_string)
+                .collect();
+
+            let title = splited_res.get(0);
+            let id = splited_res.get(1);
+            let duration = splited_res.get(2);
+
+            if title.is_none() || id.is_none() || duration.is_none() {
+                logger::error("Somehow youtube-dl returned less data");
+                return Err(anyhow!("youtube-dl failed"));
+            }
+
+            let mut return_vec = VecDeque::with_capacity(1);
+            return_vec.push_back(Self {
+                title: title.unwrap().clone(),
+                id: id.unwrap().clone(),
+                duration: duration.unwrap().clone(),
+                user_name,
+            });
+            Ok(return_vec)
+        } else {
+            logger::error("Command creation for youtube-dl failed");
+            Err(anyhow!("youtube-dl failed"))
+        }
     }
 
     #[inline(always)]
     async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("youtube-dl")
-            .args(["--flat-playlist","--get-title", "--get-id", "--get-duration", &song])
-            .output().await
-            {
-                if !res.status.success() {
-                    logger::error("YouTube data fetch with youtube-dl failed:");
-                    logger::secondary_error(String::from_utf8(res.stderr).expect("Output must be valid UTF-8"));
-                    return Err(anyhow!("youtube-dl failed"));
-                }
-
-                let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                    .expect("Output must be valid UTF-8")
-                    .split('\n')
-                    .filter(|e| !e.is_empty())
-                    .map(std::string::ToString::to_string)
-                    .collect();
-
-                if splited_res.len() % 3 != 0 {
-                    logger::error("youtube-dl returned wrong number of arguments");
-                    return Err(anyhow!("Output must be dividable by 3"))
-                }
-
-                let mut return_vec: VecDeque<Self> = VecDeque::with_capacity(splited_res.len() / 3);
-
-                for i in 0 .. splited_res.len() / 3 {
-                    return_vec.push_back(Self {
-                        title:     splited_res.get(i * 3).unwrap().to_string(),
-                        id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
-                        duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
-                        user_name: user_name.clone(),
-                    });
-                }
-
-                Ok(return_vec)
-            } else {
-                logger::error("Command creation for youtube-dl failed");
-                Err(anyhow!("youtube-dl failed"))
+            .args([
+                "--flat-playlist",
+                "--get-title",
+                "--get-id",
+                "--get-duration",
+                &song,
+            ])
+            .output()
+            .await
+        {
+            if !res.status.success() {
+                logger::error("YouTube data fetch with youtube-dl failed:");
+                logger::secondary_error(
+                    String::from_utf8(res.stderr).expect("Output must be valid UTF-8"),
+                );
+                return Err(anyhow!("youtube-dl failed"));
             }
+
+            let splited_res: Vec<String> = String::from_utf8(res.stdout)
+                .expect("Output must be valid UTF-8")
+                .split('\n')
+                .filter(|e| !e.is_empty())
+                .map(std::string::ToString::to_string)
+                .collect();
+
+            if splited_res.len() % 3 != 0 {
+                logger::error("youtube-dl returned wrong number of arguments");
+                return Err(anyhow!("Output must be dividable by 3"));
+            }
+
+            let mut return_vec: VecDeque<Self> = VecDeque::with_capacity(splited_res.len() / 3);
+
+            for i in 0 .. splited_res.len() / 3 {
+                return_vec.push_back(Self {
+                    title:     splited_res.get(i * 3).unwrap().to_string(),
+                    id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
+                    duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
+                    user_name: user_name.clone(),
+                });
+            }
+
+            Ok(return_vec)
+        } else {
+            logger::error("Command creation for youtube-dl failed");
+            Err(anyhow!("youtube-dl failed"))
+        }
     }
 
     #[inline(always)]
     async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/track/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
-        let token = get_config().spotify_token().await.expect("Token should be initialized");
+        let track_id = song.split("/track/").collect::<Vec<_>>()[1]
+            .split('?')
+            .collect::<Vec<_>>()[0];
+        let token = get_config()
+            .spotify_token()
+            .await
+            .expect("Token should be initialized");
 
         let res = reqwest::Client::new()
             .get(format!("{base_url}/tracks/{track_id}"))
@@ -209,8 +242,14 @@ impl Song {
                 let title = &j["name"];
 
                 let out = Command::new("youtube-dl")
-                    .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
-                    .output().await?;
+                    .args([
+                        "--no-playlist",
+                        "--get-title",
+                        "--get-id",
+                        &format!("ytsearch:{title} lyrics"),
+                    ])
+                    .output()
+                    .await?;
 
                 let out_str = String::from_utf8(out.stdout)?;
                 let mut song = out_str.split('\n');
@@ -222,30 +261,35 @@ impl Song {
                 if title.is_some() && id.is_some() && duration.is_some() {
                     let mut return_vec = VecDeque::with_capacity(1);
                     return_vec.push_back(Self {
-                        title:    title.unwrap().to_owned(),
-                        id:       id.unwrap().to_owned(),
+                        title: title.unwrap().to_owned(),
+                        id: id.unwrap().to_owned(),
                         duration: duration.unwrap().to_owned(),
-                        user_name
+                        user_name,
                     });
                     Ok(return_vec)
                 } else {
                     Err(anyhow!("coudn't find the song on youtube"))
                 }
-            }
+            },
             Err(why) => {
                 logger::error("Spotify request failed");
                 logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
-            }
+            },
         }
     }
 
     #[inline(always)]
     async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/playlist/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
-        let token = get_config().spotify_token().await.expect("Token should be initialized");
+        let track_id = song.split("/playlist/").collect::<Vec<_>>()[1]
+            .split('?')
+            .collect::<Vec<_>>()[0];
+        let token = get_config()
+            .spotify_token()
+            .await
+            .expect("Token should be initialized");
 
         let res = reqwest::Client::new()
             .get(format!("{base_url}/playlists/{track_id}"))
@@ -259,14 +303,21 @@ impl Song {
 
                 let mut join_set = JoinSet::new();
 
-                j.tracks.items.iter()
-                    .for_each(|track| {
-                        let title = track.track.name.clone();
+                j.tracks.items.iter().for_each(|track| {
+                    let title = track.track.name.clone();
 
-                        join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
-                            .output().await});
+                    join_set.spawn(async move {
+                        Command::new("youtube-dl")
+                            .args([
+                                "--no-playlist",
+                                "--get-title",
+                                "--get-id",
+                                &format!("ytsearch:{title} lyrics"),
+                            ])
+                            .output()
+                            .await
                     });
+                });
 
                 let mut tracklist = VecDeque::with_capacity(j.tracks.items.len());
 
@@ -275,32 +326,39 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_owned(),
-                        id: res_split.next().unwrap().to_owned(),
-                        duration: res_split.next().unwrap().to_owned(),
+                        title:     res_split.next().unwrap().to_owned(),
+                        id:        res_split.next().unwrap().to_owned(),
+                        duration:  res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }
 
                 Ok(tracklist)
-            }
+            },
             Err(why) => {
                 logger::error("Spotify request failed");
                 logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
-            }
+            },
         }
     }
 
     #[inline(always)]
     async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/artist/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
-        let token = get_config().spotify_token().await.expect("Token should be initialized");
+        let track_id = song.split("/artist/").collect::<Vec<_>>()[1]
+            .split('?')
+            .collect::<Vec<_>>()[0];
+        let token = get_config()
+            .spotify_token()
+            .await
+            .expect("Token should be initialized");
 
         let res = reqwest::Client::new()
-            .get(format!("{base_url}/artists/{track_id}/top-tracks"))
+            .get(format!(
+                "{base_url}/artists/{track_id}/top-tracks"
+            ))
             .bearer_auth(token)
             .query(&[("market", SP_MARKET)])
             .send()
@@ -312,14 +370,21 @@ impl Song {
 
                 let mut join_set = JoinSet::new();
 
-                j.tracks.iter()
-                    .for_each(|track| {
-                        let title = track.name.clone();
+                j.tracks.iter().for_each(|track| {
+                    let title = track.name.clone();
 
-                        join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
-                            .output().await});
+                    join_set.spawn(async move {
+                        Command::new("youtube-dl")
+                            .args([
+                                "--no-playlist",
+                                "--get-title",
+                                "--get-id",
+                                &format!("ytsearch:{title} lyrics"),
+                            ])
+                            .output()
+                            .await
                     });
+                });
 
                 let mut tracklist = VecDeque::with_capacity(j.tracks.len());
 
@@ -328,29 +393,34 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_owned(),
-                        id: res_split.next().unwrap().to_owned(),
-                        duration: res_split.next().unwrap().to_owned(),
+                        title:     res_split.next().unwrap().to_owned(),
+                        id:        res_split.next().unwrap().to_owned(),
+                        duration:  res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }
 
                 Ok(tracklist)
-            }
+            },
             Err(why) => {
                 logger::error("Spotify request failed");
                 logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
-            }
+            },
         }
     }
 
     #[inline(always)]
     async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/album/").collect::<Vec<_>>()[1].split('?').collect::<Vec<_>>()[0];
-        let token = get_config().spotify_token().await.expect("Token should be initialized");
+        let track_id = song.split("/album/").collect::<Vec<_>>()[1]
+            .split('?')
+            .collect::<Vec<_>>()[0];
+        let token = get_config()
+            .spotify_token()
+            .await
+            .expect("Token should be initialized");
 
         let res = reqwest::Client::new()
             .get(format!("{base_url}/albums/{track_id}"))
@@ -364,14 +434,21 @@ impl Song {
 
                 let mut join_set = JoinSet::new();
 
-                j.tracks.items.iter()
-                    .for_each(|track| {
-                        let title = track.name.clone();
+                j.tracks.items.iter().for_each(|track| {
+                    let title = track.name.clone();
 
-                        join_set.spawn(async move {Command::new("youtube-dl")
-                            .args(["--no-playlist", "--get-title", "--get-id", &format!("ytsearch:{title} lyrics")])
-                            .output().await});
+                    join_set.spawn(async move {
+                        Command::new("youtube-dl")
+                            .args([
+                                "--no-playlist",
+                                "--get-title",
+                                "--get-id",
+                                &format!("ytsearch:{title} lyrics"),
+                            ])
+                            .output()
+                            .await
                     });
+                });
 
                 let mut tracklist = VecDeque::with_capacity(j.tracks.items.len());
 
@@ -380,48 +457,45 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_owned(),
-                        id: res_split.next().unwrap().to_owned(),
-                        duration: res_split.next().unwrap().to_owned(),
+                        title:     res_split.next().unwrap().to_owned(),
+                        id:        res_split.next().unwrap().to_owned(),
+                        duration:  res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }
 
                 Ok(tracklist)
-            }
+            },
             Err(why) => {
                 logger::error("Spotify request failed");
                 logger::secondary_error(why);
 
                 Err(anyhow!("Spotify request failed"))
-            }
+            },
         }
     }
 
     #[inline(always)]
-    pub fn title(&self) -> String {
-        self.title.clone()
-    }
+    pub fn title(&self) -> String { self.title.clone() }
 
     #[inline(always)]
-    pub fn url(&self) -> String {
-        self.id.clone()
-    }
+    pub fn url(&self) -> String { self.id.clone() }
 
     #[inline(always)]
-    pub fn duration(&self) -> String {
-        self.duration.clone()
-    }
+    pub fn duration(&self) -> String { self.duration.clone() }
 
     #[inline(always)]
-    pub fn user_name(&self) -> String {
-        self.user_name.clone()
-    }
+    pub fn user_name(&self) -> String { self.user_name.clone() }
 }
 
 impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}] {}", self.title(), self.duration(), messager::highlight(&format!("requested by {}", self.user_name())))
+        write!(
+            f,
+            "{} [{}] {}",
+            self.title(),
+            self.duration(),
+            messager::highlight(&format!("requested by {}", self.user_name()))
+        )
     }
 }
-
