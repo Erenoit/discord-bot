@@ -63,12 +63,23 @@ pub async fn add(
         return Ok(());
     };
 
+    if keyword.contains(' ') {
+        messager::send_error(
+            &ctx,
+            "Keywords cannot contain space. Use '-' or '_' instead.",
+            true,
+        )
+        .await;
+        return Ok(());
+    }
+
     let key = guild.id.to_string() + "-" + &keyword;
 
     if !url.starts_with("https://www.youtube.com")
         || !url.starts_with("https://open.spotify.com")
         || !url.starts_with("http://www.youtube.com")
         || !url.starts_with("http://open.spotify.com")
+        || url.contains(' ')
     {
         messager::send_error(&ctx, "Invalid URL", true).await;
         return Ok(());
