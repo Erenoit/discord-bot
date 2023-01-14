@@ -32,12 +32,12 @@ pub async fn music(
 
     handle_vc_connection(&ctx, server).await?;
 
-    if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
+    if let Ok(Some(url)) = db.get((guild.id.to_string() + "-" + &keyword).as_bytes()) {
         server
             .player
             .play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?)
             .await;
-    } else if let Ok(Some(url)) = db.get((guild.id.to_string() + "-" + &keyword).as_bytes()) {
+    } else if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
         server
             .player
             .play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?)
