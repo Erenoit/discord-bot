@@ -42,7 +42,7 @@ macro_rules! get_as {
 
 macro_rules! convert_value {
     (String, $value: expr) => (
-        $value.to_string()
+        $value.to_owned()
     );
     (u8, $value: expr) => (
         if let Some(v) = $value.as_positive() {

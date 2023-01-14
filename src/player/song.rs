@@ -72,7 +72,7 @@ impl Song {
 
         let mut l: Vec<(String, String)> = Vec::with_capacity(search_count);
         for i in 0 .. search_count {
-            l.push((list_seperated[i * 3].to_string(), list_seperated[i * 3 + 1].to_string()));
+            l.push((list_seperated[i * 3].to_owned(), list_seperated[i * 3 + 1].to_owned()));
         }
 
         let answer = messager::send_selection_from_list(ctx, "Search", &l).await;
@@ -80,9 +80,9 @@ impl Song {
             let mut return_vec = VecDeque::with_capacity(search_count);
             for i in 0 .. search_count {
                 return_vec.push_back(Self {
-                    title:     list_seperated[i * 3].to_string(),
-                    id:        list_seperated[i * 3].to_string(),
-                    duration:  list_seperated[i * 3].to_string(),
+                    title:     list_seperated[i * 3].to_owned(),
+                    id:        list_seperated[i * 3].to_owned(),
+                    duration:  list_seperated[i * 3].to_owned(),
                     user_name: user_name.clone(),
                 });
             }
@@ -92,9 +92,9 @@ impl Song {
             for i in 0 .. search_count {
                 if *list_seperated[i * 3 + 1] == answer {
                     return_vec.push_back(Self {
-                        title:     list_seperated[i * 3].to_string(),
-                        id:        list_seperated[i * 3 + 1].to_string(),
-                        duration:  list_seperated[i * 3 + 2].to_string(),
+                        title:     list_seperated[i * 3].to_owned(),
+                        id:        list_seperated[i * 3 + 1].to_owned(),
+                        duration:  list_seperated[i * 3 + 2].to_owned(),
                         user_name,
                     });
                     break;
@@ -137,9 +137,9 @@ impl Song {
 
                 let mut return_vec = VecDeque::with_capacity(1);
                 return_vec.push_back(Self {
-                    title:    title.unwrap().to_string(),
-                    id:       id.unwrap().to_string(),
-                    duration: duration.unwrap().to_string(),
+                    title:    title.unwrap().clone(),
+                    id:       id.unwrap().clone(),
+                    duration: duration.unwrap().clone(),
                     user_name,
                 });
                 Ok(return_vec)
@@ -222,9 +222,9 @@ impl Song {
                 if title.is_some() && id.is_some() && duration.is_some() {
                     let mut return_vec = VecDeque::with_capacity(1);
                     return_vec.push_back(Self {
-                        title:    title.unwrap().to_string(),
-                        id:       id.unwrap().to_string(),
-                        duration: duration.unwrap().to_string(),
+                        title:    title.unwrap().to_owned(),
+                        id:       id.unwrap().to_owned(),
+                        duration: duration.unwrap().to_owned(),
                         user_name
                     });
                     Ok(return_vec)
@@ -275,9 +275,9 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_string(),
-                        id: res_split.next().unwrap().to_string(),
-                        duration: res_split.next().unwrap().to_string(),
+                        title: res_split.next().unwrap().to_owned(),
+                        id: res_split.next().unwrap().to_owned(),
+                        duration: res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }
@@ -328,9 +328,9 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_string(),
-                        id: res_split.next().unwrap().to_string(),
-                        duration: res_split.next().unwrap().to_string(),
+                        title: res_split.next().unwrap().to_owned(),
+                        id: res_split.next().unwrap().to_owned(),
+                        duration: res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }
@@ -380,9 +380,9 @@ impl Song {
                     let mut res_split = res.split('\n');
 
                     tracklist.push_back(Self {
-                        title: res_split.next().unwrap().to_string(),
-                        id: res_split.next().unwrap().to_string(),
-                        duration: res_split.next().unwrap().to_string(),
+                        title: res_split.next().unwrap().to_owned(),
+                        id: res_split.next().unwrap().to_owned(),
+                        duration: res_split.next().unwrap().to_owned(),
                         user_name: user_name.clone(),
                     });
                 }

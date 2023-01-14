@@ -116,13 +116,13 @@ pub async fn send_confirm<S>(ctx: &Context<'_>, msg: Option<S>) -> bool
 where
     S: Display + Send
 {
-    let msg_str = if msg.is_some() { msg.unwrap().to_string() } else { "Are you sure?".to_string() };
+    let msg_str = if msg.is_some() { msg.unwrap().to_string() } else { "Are you sure?".to_owned() };
 
     let res = ctx.send(|m| {
         m.content(msg_str).components(|c| {
             c.create_action_row(|row| {
-                row.add_button(success_button("Yes".to_string()));
-                row.add_button(danger_button("No".to_string()))
+                row.add_button(success_button("Yes".to_owned()));
+                row.add_button(danger_button("No".to_owned()))
             })
         })
     }).await;
@@ -193,7 +193,7 @@ where
     if let Err(why) = res {
         logger::error("Couldn't send confirm message.");
         logger::secondary_error(why);
-        return BUTTON_ID_DANGER.to_string();
+        return BUTTON_ID_DANGER.to_owned();
     }
 
     let handle = res.unwrap();
@@ -206,7 +206,7 @@ where
                     c.create_action_row(|row| row)
                 })
             }).await;
-            return BUTTON_ID_DANGER.to_string();
+            return BUTTON_ID_DANGER.to_owned();
     };
 
     _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
@@ -260,8 +260,8 @@ where
             }
 
             c.create_action_row(|row| {
-                row.add_button(success_button("All".to_string()));
-                row.add_button(danger_button("None".to_string()))
+                row.add_button(success_button("All".to_owned()));
+                row.add_button(danger_button("None".to_owned()))
             })
         })
     }).await;
@@ -269,7 +269,7 @@ where
     if let Err(why) = res {
         logger::error("Couldn't send confirm message.");
         logger::secondary_error(why);
-        return BUTTON_ID_DANGER.to_string();
+        return BUTTON_ID_DANGER.to_owned();
     }
 
     let handle = res.unwrap();
@@ -282,7 +282,7 @@ where
                     c.create_action_row(|row| row)
                 })
             }).await;
-            return BUTTON_ID_DANGER.to_string();
+            return BUTTON_ID_DANGER.to_owned();
     };
 
     _ = interaction.create_interaction_response(ctx.serenity_context(), |r| {
