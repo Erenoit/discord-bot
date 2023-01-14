@@ -25,6 +25,8 @@ pub async fn play(
 
     handle_vc_connection(&ctx, server).await?;
 
+    ctx.defer().await?;
+
     let mut songs = Song::new(&ctx, song).await?;
     match songs.len() {
         0 => {
