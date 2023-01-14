@@ -25,7 +25,7 @@ pub struct Song {
 impl Song {
     pub async fn new<S: Display + Send>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
         let song = song.to_string();
-        let user_name = ctx.author().name.to_string();
+        let user_name = ctx.author().name.clone();
 
         if song.starts_with("http://") || song.starts_with("https://") {
             if song.contains("youtube") {
@@ -83,7 +83,7 @@ impl Song {
                     title:     list_seperated[i * 3].to_string(),
                     id:        list_seperated[i * 3].to_string(),
                     duration:  list_seperated[i * 3].to_string(),
-                    user_name: user_name.to_string(),
+                    user_name: user_name.clone(),
                 });
             }
             Ok(return_vec)
@@ -95,7 +95,7 @@ impl Song {
                         title:     list_seperated[i * 3].to_string(),
                         id:        list_seperated[i * 3 + 1].to_string(),
                         duration:  list_seperated[i * 3 + 2].to_string(),
-                        user_name: user_name.to_string(),
+                        user_name,
                     });
                     break;
                 }
