@@ -15,7 +15,9 @@ use crate::{
 )]
 pub async fn play(
     ctx: Context<'_>,
-    #[description = "Song name or Song URL"] song: String,
+    #[description = "Song name or Song URL"]
+    #[rest]
+    song: String,
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
     let servers = get_config().servers().read().await;
