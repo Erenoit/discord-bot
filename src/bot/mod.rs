@@ -2,11 +2,11 @@ mod commands;
 mod event;
 
 use event::Handler;
-use serenity::prelude::GatewayIntents;
+use serenity::model::{application::command::Command, gateway::GatewayIntents};
 use songbird::SerenityInit;
 
 pub use crate::bot::commands::Context;
-use crate::get_config;
+use crate::{get_config, logger};
 
 #[non_exhaustive]
 pub struct Bot;
@@ -54,7 +54,29 @@ impl Bot {
                 c.event_handler(Handler::new())
                     .register_songbird_with(get_config().songbird())
             })
-            .setup(|_ctx, _data_about_bot, _framework| Box::pin(async move { Ok(commands::Data) }))
+            .setup(|ctx, _data_about_bot, framework| {
+                Box::pin(async move {
+                    logger::info("Registering Slash Commands:");
+                    Command::set_global_application_commands(ctx, |b| {
+                        let commands = &framework.options().commands;
+                        *b = poise::builtins::create_application_commands(commands);
+                        for command in commands {
+                            logger::secondary_info(format!(
+                                "{}: {}",
+                                command.name,
+                                command
+                                    .description
+                                    .as_ref()
+                                    .expect("Every command should have description")
+                            ));
+                        }
+
+                        b
+                    })
+                    .await?;
+                    Ok(commands::Data)
+                })
+            })
             .run_autosharded()
             .await
             .expect("Client error");
