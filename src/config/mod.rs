@@ -117,6 +117,9 @@ impl Config {
     pub const fn prefix(&self) -> &String { self.general.prefix() }
 
     #[inline(always)]
+    pub const fn auto_register_commands(&self) -> bool { self.general.auto_register_commands() }
+
+    #[inline(always)]
     pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
 
     #[inline(always)]

@@ -56,6 +56,11 @@ impl Bot {
             })
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
+                    if !get_config().auto_register_commands() {
+                        logger::warn("Slash Command Autogeneration Is Disabled");
+                        return Ok(commands::Data);
+                    }
+
                     logger::info("Registering Slash Commands:");
                     Command::set_global_application_commands(ctx, |b| {
                         let commands = &framework.options().commands;
