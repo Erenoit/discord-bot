@@ -1,8 +1,19 @@
-use crate::{get_config, messager, bot::commands::{Context, Error}};
 use serenity::model::channel::GuildChannel;
 
+use crate::{
+    bot::commands::{Context, Error},
+    get_config,
+    messager,
+};
+
 /// Joins to the voice channel
-#[poise::command(slash_command, prefix_command, aliases("j"), category="Music", guild_only)]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    aliases("j"),
+    category = "Music",
+    guild_only
+)]
 pub async fn join(
     ctx: Context<'_>,
     #[description = "Which channel to join"]
@@ -15,8 +26,11 @@ pub async fn join(
 
     let channel_id = if let Some(channel) = channel {
         channel.id
-    } else if let Some(channel_id) = guild.voice_states.get(&ctx.author().id)
-        .and_then(|voice_state| voice_state.channel_id) {
+    } else if let Some(channel_id) = guild
+        .voice_states
+        .get(&ctx.author().id)
+        .and_then(|voice_state| voice_state.channel_id)
+    {
         channel_id
     } else {
         messager::send_error(&ctx, "Couldn't connect to a voice channel. Neither you are in a voice channel nor you provided a channel to join.", true).await;

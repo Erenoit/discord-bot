@@ -2,25 +2,26 @@ mod event;
 mod song;
 mod sp_structs;
 
-pub use crate::player::song::Song;
-use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
-use std::{collections::VecDeque, slice::Iter, sync::Arc};
+use std::{collections::VecDeque, fmt::Write, slice::Iter, sync::Arc};
+
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
 use tokio::sync::Mutex;
 
+pub use crate::player::song::Song;
+use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
+
 #[inline(always)]
-fn get_songbird_manager() -> Arc<Songbird> {
-    get_config().songbird()
-}
+fn get_songbird_manager() -> Arc<Songbird> { get_config().songbird() }
 
 #[inline(always)]
 fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
     get_songbird_manager().get(guild_id)
 }
 
+#[non_exhaustive]
 pub struct Player {
-    guild_id: GuildId,
+    guild_id:     GuildId,
     now_playing:  Mutex<Option<Song>>,
     repeat_mode:  Mutex<Repeat>,
     song_queue:   Mutex<VecDeque<Song>>,
@@ -31,9 +32,9 @@ impl Player {
     pub fn new(guild_id: GuildId) -> Self {
         Self {
             guild_id,
-            now_playing:  Mutex::new(None),
-            repeat_mode:  Mutex::new(Repeat::Off),
-            song_queue:   Mutex::new(VecDeque::with_capacity(100)),
+            now_playing: Mutex::new(None),
+            repeat_mode: Mutex::new(Repeat::Off),
+            song_queue: Mutex::new(VecDeque::with_capacity(100)),
             repeat_queue: Mutex::new(VecDeque::with_capacity(100)),
         }
     }
@@ -64,7 +65,9 @@ impl Player {
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
             let mut call = call_mutex.lock().await;
 
-            call.leave().await.expect("There shold be no error while leaving the call");
+            call.leave()
+                .await
+                .expect("There shold be no error while leaving the call");
         }
     }
 
@@ -72,32 +75,44 @@ impl Player {
         self.song_queue.lock().await.append(songs);
 
         if self.now_playing.lock().await.is_none() {
-            self.start_stream().await
+            self.start_stream().await;
         }
     }
 
     pub async fn start_stream(&self) {
         match self.get_repeat_mode().await {
-            Repeat::Off => {
-                if self.song_queue.lock().await.is_empty() { self.stop_stream().await; return; }
-            },
+            Repeat::Off =>
+                if self.song_queue.lock().await.is_empty() {
+                    self.stop_stream().await;
+                    return;
+                },
             Repeat::One => {},
-            Repeat::All => {
-                if self.song_queue.lock().await.is_empty() { self.song_queue.lock().await.append(&mut *self.repeat_queue.lock().await); }
-            }
+            Repeat::All =>
+                if self.song_queue.lock().await.is_empty() {
+                    self.song_queue
+                        .lock()
+                        .await
+                        .append(&mut *self.repeat_queue.lock().await);
+                },
         }
-
 
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
             let next_song = match self.get_repeat_mode().await {
-                Repeat::Off | Repeat::All => {
-                    self.song_queue.lock().await.pop_front().expect("Queue cannot be empty at this point")
-                },
+                Repeat::Off | Repeat::All =>
+                    self.song_queue
+                        .lock()
+                        .await
+                        .pop_front()
+                        .expect("Queue cannot be empty at this point"),
                 Repeat::One => {
                     // TODO: fix this .clone()
-                    if let Some(now_playing) = &*self.now_playing.lock().await { now_playing.clone() }
-                    else { self.stop_stream().await; return; }
-                }
+                    if let Some(now_playing) = &*self.now_playing.lock().await {
+                        now_playing.clone()
+                    } else {
+                        self.stop_stream().await;
+                        return;
+                    }
+                },
             };
 
             let source = match songbird::ytdl(next_song.url()).await {
@@ -110,9 +125,12 @@ impl Player {
             };
 
             let mut call = call_mutex.lock().await;
-            _ = call.play_source(source)
-                .add_event(Event::Track(TrackEvent::End), SongEnd { guild_id: self.guild_id });
-            *self.now_playing.lock().await  = Some(next_song);
+            _ = call
+                .play_source(source)
+                .add_event(Event::Track(TrackEvent::End), SongEnd {
+                    guild_id: self.guild_id,
+                });
+            *self.now_playing.lock().await = Some(next_song);
         } else {
             unreachable!("Not in a voice channel to play in")
         }
@@ -140,20 +158,23 @@ impl Player {
 
     pub async fn move_to_repeat_queue(&self) {
         if self.now_playing.lock().await.is_some() {
-            self.repeat_queue.lock().await.push_back(self.now_playing.lock().await.as_ref().unwrap().clone());
+            self.repeat_queue
+                .lock()
+                .await
+                .push_back(self.now_playing.lock().await.as_ref().unwrap().clone());
         }
     }
 
     pub async fn clear_the_queues(&self) {
-        *self.song_queue.lock().await   = VecDeque::with_capacity(100);
+        *self.song_queue.lock().await = VecDeque::with_capacity(100);
         *self.repeat_queue.lock().await = VecDeque::with_capacity(100);
     }
 
     pub async fn shuffle_song_queue(&self) {
         let mut queue = self.song_queue.lock().await;
         for i in 0 ..= queue.len() - 2 {
-          let j = (rand::random::<f32>() * (i as f32 - 1.0)) as usize;
-          queue.swap(i, j);
+            let j = rand::random::<usize>() % (queue.len() - i) + i;
+            queue.swap(i, j);
         }
     }
 
@@ -187,15 +208,20 @@ impl Player {
 
         for i in (r_len - before) .. r_len {
             Self::add_to_queue_string(&mut s, &r_queue[i], num, false);
-            num +=1;
+            num += 1;
         }
 
-        Self::add_to_queue_string(&mut s, self.now_playing.lock().await.as_ref().unwrap(), num, true);
-        num +=1;
+        Self::add_to_queue_string(
+            &mut s,
+            self.now_playing.lock().await.as_ref().unwrap(),
+            num,
+            true,
+        );
+        num += 1;
 
         for i in 0 .. after {
             Self::add_to_queue_string(&mut s, &s_queue[i], num, false);
-            num +=1;
+            num += 1;
         }
 
         messager::send_normal(ctx, "Queue", s, false).await;
@@ -209,11 +235,13 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            s.push_str(&messager::bold(format!("{}{}{}{}\n", selected_char, selected_whitespace, number_style, song_str)));
+            // TODO: write!() macro can be used as wel (?)
+            s.push_str(&messager::bold(&format!(
+                "{selected_char}{selected_whitespace}{number_style}{song_str}\n"
+            )));
         } else {
-            s.push_str(&format!("{}{}{}\n", normal_whitespace, number_style, song_str));
+            _ = writeln!(s, "{normal_whitespace}{number_style}{song_str}");
         }
-
     }
 
     pub async fn is_queues_empty(&self) -> bool {
@@ -222,12 +250,15 @@ impl Player {
 
     pub async fn change_repeat_mode(&self, ctx: &Context<'_>, new_mode: &Repeat) {
         *self.repeat_mode.lock().await = *new_mode;
-        messager::send_sucsess(ctx, format!("Repeat mode changed to {}", new_mode), false).await;
+        messager::send_sucsess(
+            ctx,
+            format!("Repeat mode changed to {new_mode}"),
+            false,
+        )
+        .await;
     }
 
-    pub async fn get_repeat_mode(&self) -> Repeat {
-        *self.repeat_mode.lock().await
-    }
+    pub async fn get_repeat_mode(&self) -> Repeat { *self.repeat_mode.lock().await }
 
     #[inline(always)]
     pub async fn connected_vc(&self) -> Option<songbird::id::ChannelId> {
@@ -239,7 +270,6 @@ impl Player {
     }
 }
 
-// TODO: add repeat algorithm
 #[derive(poise::ChoiceParameter, Copy, Clone, Eq, PartialEq)]
 pub enum Repeat {
     Off,
@@ -248,9 +278,8 @@ pub enum Repeat {
 }
 
 impl Repeat {
-    pub fn variants() -> Iter<'static, Repeat> {
+    pub fn variants() -> Iter<'static, Self> {
         static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
         V.iter()
     }
 }
-
