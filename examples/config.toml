@@ -1,6 +1,7 @@
 [general]
 token = "YOUR_BOT_TOKEN"
 prefix = "-"
+auto_register_commands = true
 vc_auto_change = false
 
 [youtube]
