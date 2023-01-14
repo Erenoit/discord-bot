@@ -8,7 +8,7 @@ use crate::{
     player::Song,
 };
 
-/// Adds song to queue
+/// Adds song from database to queue 
 #[poise::command(
     slash_command,
     prefix_command,
