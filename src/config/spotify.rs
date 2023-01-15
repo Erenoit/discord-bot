@@ -1,28 +1,34 @@
-use std::{env, process};
+use std::{env, process, time::Instant};
 
 use taplo::dom::Node;
 use tokio::sync::RwLock;
 
-use crate::{get_config, logger};
+use crate::logger;
 
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {
     client_id:     String,
     client_secret: String,
     token:         RwLock<Option<String>>,
+    last_refresh:  RwLock<Option<Instant>>,
 }
 
 impl SpotifyConfig {
+    const REFRESH_TIME: u64 = 3500;
+
     pub fn generate(config_file: &Node) -> Self {
         let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
                                    "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
         let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
                                    "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
         let token = RwLock::new(None);
+        let last_refresh = RwLock::new(None);
+
         Self {
             client_id,
             client_secret,
             token,
+            last_refresh,
         }
     }
 
@@ -31,22 +37,32 @@ impl SpotifyConfig {
 
     #[inline(always)]
     pub async fn token(&self) -> String {
-        if self.token.read().await.is_none() {
+        if self.token.read().await.is_none()
+            || self
+                .last_refresh
+                .read()
+                .await
+                .expect("Should be Some")
+                .elapsed()
+                .as_secs()
+                >= Self::REFRESH_TIME
+        {
             self.refresh_token().await;
         }
 
-        self.token.read().await.as_ref().unwrap().to_string()
+        // TODO: remove this copy
+        self.token.read().await.as_ref().expect("This can't be None at this point").to_string()
     }
 
     async fn refresh_token(&self) {
-        let mut write_lock = self.token.write().await;
+        let mut write_lock_token = self.token.write().await;
+        let mut write_lock_last_refresh = self.last_refresh.write().await;
 
-        let (client_id, client_secret) = get_config().spotify_client().unwrap();
         let form = std::collections::HashMap::from([("grant_type", "client_credentials")]);
 
         let res = reqwest::Client::new()
             .post("https://accounts.spotify.com/api/token")
-            .basic_auth(client_id, Some(client_secret))
+            .basic_auth(&self.client_id, Some(&self.client_secret))
             .form(&form)
             .send()
             .await;
@@ -54,7 +70,8 @@ impl SpotifyConfig {
         match res {
             Ok(r) =>
                 if let Ok(j) = json::parse(&r.text().await.unwrap()) {
-                    *write_lock = Some(j["access_token"].to_string());
+                    *write_lock_last_refresh = Some(Instant::now());
+                    *write_lock_token = Some(j["access_token"].to_string());
                 },
             Err(why) => {
                 logger::error("Couldn't get spotify token");
