@@ -1,3 +1,4 @@
+mod cmd_arguments;
 mod defaults;
 #[macro_use]
 mod macros;
@@ -9,6 +10,7 @@ mod youtube;
 
 use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
 
+use clap::Parser;
 use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use serenity::model::id::GuildId;
@@ -17,6 +19,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     config::{
+        cmd_arguments::CMDArguments,
         database::DatabaseConfig,
         defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
         general::GeneralConfig,
@@ -39,6 +42,8 @@ pub struct Config {
 
 impl Config {
     pub fn generate() -> Self {
+        let cmd_arguments = CMDArguments::parse();
+
         logger::info("Generating Project Directories");
         let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(
             || {
