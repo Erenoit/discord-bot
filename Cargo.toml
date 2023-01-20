@@ -1,7 +1,7 @@
 [package]
 name = "discord-bot"
 description = "Discord bot for playing music in VC but can make other things as well"
-version = "2.1.0"
+version = "2.1.1"
 edition = "2021"
 license-file = "LICENSE"
 repository = "https://gitlab.com/Erenoit/discord-bot"
