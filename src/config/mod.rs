@@ -1,3 +1,4 @@
+mod cmd_arguments;
 mod defaults;
 #[macro_use]
 mod macros;
@@ -9,6 +10,7 @@ mod youtube;
 
 use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
 
+use clap::Parser;
 use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use serenity::model::id::GuildId;
@@ -17,6 +19,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     config::{
+        cmd_arguments::CMDArguments,
         database::DatabaseConfig,
         defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
         general::GeneralConfig,
@@ -39,6 +42,8 @@ pub struct Config {
 
 impl Config {
     pub fn generate() -> Self {
+        let cmd_arguments = CMDArguments::parse();
+
         logger::info("Generating Project Directories");
         let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(
             || {
@@ -47,7 +52,9 @@ impl Config {
             },
             |p| p,
         );
-        let config_file_path = project_dirs.config_dir().join("config.toml");
+        let config_file_path = cmd_arguments
+            .cfg_file_path
+            .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"));
         if !config_file_path.exists() {
             fs::create_dir_all(config_file_path.parent().expect(
                 "it is safe to assume that this will always have a parent because we used join",
@@ -83,7 +90,7 @@ impl Config {
 
         logger::secondary_info("Database");
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
-            DatabaseConfig::generate(&config_file, &project_dirs)
+            DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().join("database")))
         });
 
         logger::secondary_info("Servers HashMap");
