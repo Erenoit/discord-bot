@@ -1,6 +1,5 @@
 use std::{env, fs, path::PathBuf, process};
 
-use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use taplo::dom::Node;
 
