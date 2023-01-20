@@ -11,6 +11,7 @@ repository = "https://gitlab.com/Erenoit/discord-bot"
 [dependencies]
 anyhow = "1.0"
 colored = "2.0"
+clap = { version = "4.1", features = ["derive"] }
 directories = "4.0"
 dotenv = "0.15"
 reqwest = "0.11"
