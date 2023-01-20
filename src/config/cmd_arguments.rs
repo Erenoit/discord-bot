@@ -9,4 +9,7 @@ pub(super) struct CMDArguments {
     /// Custom config file location
     #[arg(short, long, value_hint = ValueHint::FilePath)]
     pub cfg_file_path: Option<PathBuf>,
+    /// Custom database folder location
+    #[arg(short, long, value_hint = ValueHint::DirPath)]
+    pub database_folder_path: Option<PathBuf>,
 }

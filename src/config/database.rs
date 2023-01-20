@@ -14,8 +14,8 @@ pub(super) struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn generate(config_file: &Node, project_dirs: &ProjectDirs) -> Self {
-        let default_path = project_dirs.data_dir().join("database");
+    pub fn generate(config_file: &Node, default_path: PathBuf) -> Self {
+        // TODO: make cmd argument priority over config file one
         let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path);
 
         if !path.exists() {

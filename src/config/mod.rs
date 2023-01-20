@@ -88,7 +88,7 @@ impl Config {
 
         logger::secondary_info("Database");
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
-            DatabaseConfig::generate(&config_file, &project_dirs)
+            DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or(project_dirs.data_dir().join("database")))
         });
 
         logger::secondary_info("Servers HashMap");
