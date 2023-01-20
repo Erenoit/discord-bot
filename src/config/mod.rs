@@ -52,7 +52,7 @@ impl Config {
             },
             |p| p,
         );
-        let config_file_path = project_dirs.config_dir().join("config.toml");
+        let config_file_path = cmd_arguments.cfg_file_path.unwrap_or(project_dirs.config_dir().join("config.toml"));
         if !config_file_path.exists() {
             fs::create_dir_all(config_file_path.parent().expect(
                 "it is safe to assume that this will always have a parent because we used join",
