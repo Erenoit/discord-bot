@@ -52,26 +52,20 @@ impl Config {
             .cfg_file_path
             .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"));
         if !config_file_path.exists() {
-            fs::create_dir_all(config_file_path.parent().expect(
-                "it is safe to assume that this will always have a parent because we used join",
-            ))
-            .expect("directory creation should not fail in normal circumstances");
+            fs::create_dir_all(config_file_path.parent().ok_or_else(|| {
+                anyhow!(
+                    "it is safe to assume that this will always have a parent because we used join"
+                )
+            })?)?;
 
-            let mut config_file =
-                fs::File::create(&config_file_path).expect("file creation should not fail");
-            config_file
-                .write_all(include_bytes!("../../examples/config.toml"))
-                .expect("file is created just one line before this should not fail");
+            fs::File::create(&config_file_path)?
+                .write_all(include_bytes!("../../examples/config.toml"))?;
         }
 
         log!(info, "Registering Configs");
         _ = dotenv::dotenv(); // It doesn't matter even if it fails
-        let config_file = taplo::parser::parse(
-            fs::read_to_string(config_file_path)
-                .expect("config not found/cannot read")
-                .as_str(),
-        )
-        .into_dom();
+        let config_file =
+            taplo::parser::parse(fs::read_to_string(config_file_path)?.as_str()).into_dom();
 
         log!(info, ; "General");
         let general = GeneralConfig::generate(&config_file)?;

@@ -17,10 +17,11 @@ impl DatabaseConfig {
         let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path)?;
 
         if !path.exists() {
-            fs::create_dir_all(path.parent().expect(
-                "it is safe to assume that this will always have a parent because we used join",
-            ))
-            .expect("directory creation should not fail in normal circumstances");
+            fs::create_dir_all(path.parent().ok_or_else(|| {
+                anyhow!(
+                    "it is safe to assume that this will always have a parent because we used join",
+                )
+            })?)?;
         }
 
         let mut options = Options::default();
