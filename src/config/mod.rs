@@ -26,7 +26,6 @@ use crate::{
         spotify::SpotifyConfig,
         youtube::YouTubeConfig,
     },
-    logger,
     server::Server,
 };
 
@@ -44,10 +43,10 @@ impl Config {
     pub fn generate() -> Self {
         let cmd_arguments = CMDArguments::parse();
 
-        logger::info("Generating Project Directories");
+        log!(info, "Generating Project Directories");
         let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(
             || {
-                logger::error("Couldn't find config location");
+                log!(error, "Couldn't find config location");
                 process::exit(1);
             },
             |p| p,
@@ -68,7 +67,7 @@ impl Config {
                 .expect("file is created just one line before this should not fail");
         }
 
-        logger::info("Registering Configs");
+        log!(info, "Registering Configs");
         _ = dotenv::dotenv(); // It doesn't matter even if it fails
         let config_file = taplo::parser::parse(
             fs::read_to_string(config_file_path)
@@ -77,34 +76,34 @@ impl Config {
         )
         .into_dom();
 
-        logger::secondary_info("General");
+        log!(info, ; "General");
         let general = GeneralConfig::generate(&config_file);
 
-        logger::secondary_info("YouTube");
+        log!(info, ; "YouTube");
         let youtube = YouTubeConfig::generate(&config_file);
 
-        logger::secondary_info("Spotify");
+        log!(info, ; "Spotify");
         let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY).then(|| {
             SpotifyConfig::generate(&config_file)
         });
 
-        logger::secondary_info("Database");
+        log!(info, ; "Database");
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
             DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().join("database")))
         });
 
-        logger::secondary_info("Servers HashMap");
+        log!(info, ; "Servers HashMap");
         let servers = RwLock::new(HashMap::new());
 
-        logger::secondary_info("Songbird");
+        log!(info, ; "Songbird");
         let songbird = Songbird::serenity();
 
         if spotify.is_none() {
-            logger::warn("No Spotify config found");
+            log!(warn, "No Spotify config found");
         }
 
         if database.is_none() {
-            logger::warn("Database is unavailable");
+            log!(warn, "Database is unavailable");
         }
 
         Self {

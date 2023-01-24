@@ -3,8 +3,6 @@ use std::{env, fs, path::PathBuf, process};
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use taplo::dom::Node;
 
-use crate::logger;
-
 #[non_exhaustive]
 pub(super) struct DatabaseConfig {
     connection: DBWithThreadMode<MultiThreaded>,
@@ -31,8 +29,7 @@ impl DatabaseConfig {
         match DBWithThreadMode::open(&options, &path) {
             Ok(connection) => Self { connection, options, path },
             Err(why) => {
-                logger::error("Couldn't open database.");
-                logger::secondary_error(why);
+                log!(error, "Couldn't open database."; "{why}");
                 process::exit(1);
             },
         }

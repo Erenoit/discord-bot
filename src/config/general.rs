@@ -2,10 +2,7 @@ use std::{env, process};
 
 use taplo::dom::Node;
 
-use crate::{
-    config::defaults::{AUTO_REGISTER_COMMANDS, PREFIX, VC_AUTO_CHANGE},
-    logger,
-};
+use crate::config::defaults::{AUTO_REGISTER_COMMANDS, PREFIX, VC_AUTO_CHANGE};
 
 #[non_exhaustive]
 pub(super) struct GeneralConfig {

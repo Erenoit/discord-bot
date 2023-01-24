@@ -13,7 +13,7 @@ use serenity::{
     },
 };
 
-use crate::{bot::Context, logger};
+use crate::bot::Context;
 
 const USE_EMBED: bool = false;
 const TIME_LIMIT: u64 = 30;
@@ -42,8 +42,7 @@ where
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send message.");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send message."; "{why}");
     }
 }
 
@@ -85,8 +84,7 @@ pub async fn send_embed(
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send embed.");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send embed."; "{why}");
     }
 }
 
@@ -111,8 +109,7 @@ where
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send message with file(s).");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send message with file(s)."; "{why}");
     }
 }
 
@@ -138,8 +135,7 @@ where
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send confirm message.");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send confirm message."; "{why}");
         return false;
     }
 
@@ -180,10 +176,10 @@ where
 {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
-        logger::error("List cannot contain more than 10 elements");
+        log!(error, "List cannot contain more than 10 elements");
     } else if list.is_empty() {
         send_error(ctx, "An error happened", false).await;
-        logger::error("List cannot be empty");
+        log!(error, "List cannot be empty");
     }
 
     let res = ctx
@@ -211,8 +207,7 @@ where
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send confirm message.");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send confirm message."; "{why}");
         return BUTTON_ID_DANGER.to_owned();
     }
 
@@ -252,10 +247,10 @@ where
 {
     if list.len() > 10 {
         send_error(ctx, "An error happened", false).await;
-        logger::error("List cannot contain more than 10 elements");
+        log!(error, "List cannot contain more than 10 elements");
     } else if list.is_empty() {
         send_error(ctx, "An error happened", false).await;
-        logger::error("List cannot be empty");
+        log!(error, "List cannot be empty");
     }
 
     let mut msg = String::with_capacity(1024);
@@ -305,8 +300,7 @@ where
         .await;
 
     if let Err(why) = res {
-        logger::error("Couldn't send confirm message.");
-        logger::secondary_error(why);
+        log!(error, "Couldn't send confirm message."; "{why}");
         return BUTTON_ID_DANGER.to_owned();
     }
 

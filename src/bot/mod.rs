@@ -6,7 +6,7 @@ use serenity::model::{application::command::Command, gateway::GatewayIntents};
 use songbird::SerenityInit;
 
 pub use crate::bot::commands::Context;
-use crate::{get_config, logger};
+use crate::get_config;
 
 #[non_exhaustive]
 pub struct Bot;
@@ -57,23 +57,21 @@ impl Bot {
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
                     if !get_config().auto_register_commands() {
-                        logger::warn("Slash Command Autogeneration Is Disabled");
+                        log!(warn, "Slash Command Autogeneration Is Disabled");
                         return Ok(commands::Data);
                     }
 
-                    logger::info("Registering Slash Commands:");
+                    log!(info, "Registering Slash Commands:");
                     Command::set_global_application_commands(ctx, |b| {
                         let commands = &framework.options().commands;
                         *b = poise::builtins::create_application_commands(commands);
                         for command in commands {
-                            logger::secondary_info(format!(
-                                "{}: {}",
-                                command.name,
-                                command
+                            log!(info, ; "{}: {}", (command.name),
+                                (command
                                     .description
                                     .as_ref()
-                                    .expect("Every command should have description")
-                            ));
+                                    .expect("Every command should have description"))
+                            );
                         }
 
                         b
