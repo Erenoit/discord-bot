@@ -1,5 +1,6 @@
-use std::{env, process, time::Instant};
+use std::{env, time::Instant};
 
+use anyhow::Result;
 use taplo::dom::Node;
 use tokio::sync::RwLock;
 
@@ -14,20 +15,20 @@ pub(super) struct SpotifyConfig {
 impl SpotifyConfig {
     const REFRESH_TIME: u64 = 3500;
 
-    pub fn generate(config_file: &Node) -> Self {
+    pub fn generate(config_file: &Node) -> Result<Self> {
         let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
-                                   "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support");
+                                   "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support")?;
         let client_secret = get_value!(config_file, String, "BOT_SP_CLIENT_SECRET", "spotify"=>"client_secret",
-                                   "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support");
+                                   "For Spotify support client secret is requared. Either set your client secret on the config file or disable Spotify support")?;
         let token = RwLock::new(None);
         let last_refresh = RwLock::new(None);
 
-        Self {
+        Ok(Self {
             client_id,
             client_secret,
             token,
             last_refresh,
-        }
+        })
     }
 
     #[inline(always)]

@@ -6,6 +6,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::inline_always)] // Should learn more about inline
 #![allow(clippy::let_underscore_drop)] // Not understand why shouldn't I drop immediately
+#![allow(clippy::missing_errors_doc)] // Not documenting
 #![allow(clippy::missing_panics_doc)] // Not documenting
 #![allow(clippy::must_use_candidate)] // No idea what it means
 #![allow(clippy::unreadable_literal)] // Only used for colors
@@ -17,7 +18,7 @@
 #![warn(clippy::disallowed_script_idents)]
 #![warn(clippy::empty_structs_with_brackets)]
 #![warn(clippy::exhaustive_structs)]
-//#![warn(clippy::exit)]
+#![warn(clippy::exit)]
 #![warn(clippy::format_push_string)]
 #![warn(clippy::if_then_some_else_none)]
 //#![warn(clippy::implicit_return)]
@@ -42,6 +43,7 @@ pub mod messager;
 mod player;
 mod server;
 
+use anyhow::{anyhow, Result};
 use config::Config;
 use tokio::sync::OnceCell;
 
@@ -50,10 +52,11 @@ pub use crate::bot::Bot;
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
 #[inline(always)]
-pub fn init_config() {
-    if let Err(why) = CONFIG.set(Config::generate()) {
-        panic!("Config could not be created: {why}");
-    }
+pub fn init_config() -> Result<()> {
+    CONFIG.set(Config::generate()?).map_or_else(
+        |_| Err(anyhow!("Couldn't set the config in OnceCell")),
+        |_| Ok(()),
+    )
 }
 
 #[inline(always)]
