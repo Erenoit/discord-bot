@@ -32,10 +32,11 @@
 #![warn(clippy::style)]
 #![warn(clippy::suspicious)]
 
+#[macro_use]
+mod logger;
+
 mod bot;
 mod config;
-#[allow(dead_code)]
-pub mod logger;
 #[allow(dead_code)]
 pub mod messager;
 mod player;

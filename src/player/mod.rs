@@ -9,7 +9,7 @@ use songbird::{Call, Event, Songbird, TrackEvent};
 use tokio::sync::Mutex;
 
 pub use crate::player::song::Song;
-use crate::{bot::Context, get_config, logger, messager, player::event::SongEnd};
+use crate::{bot::Context, get_config, messager, player::event::SongEnd};
 
 #[inline(always)]
 fn get_songbird_manager() -> Arc<Songbird> { get_config().songbird() }
@@ -45,13 +45,11 @@ impl Player {
         let (call_mutex, result) = manager.join(self.guild_id, *channel_id).await;
 
         if let Err(why) = result {
-            logger::error("Couldn't join the voice channel.");
-            logger::secondary_error(why);
+            log!(error, "Couldn't join the voice channel."; "{why}");
         } else {
             let mut call = call_mutex.lock().await;
             if let Err(why) = call.deafen(true).await {
-                logger::error("Couldn't deafen the bot.");
-                logger::secondary_error(why);
+                log!(error, "Couldn't deafen the bot."; "{why}");
             }
         }
     }
@@ -118,8 +116,7 @@ impl Player {
             let source = match songbird::ytdl(next_song.url()).await {
                 Ok(source) => source,
                 Err(why) => {
-                    logger::error("Couldn't start source.");
-                    logger::secondary_error(why);
+                    log!(error, "Couldn't start source."; "{why}");
                     return;
                 },
             };

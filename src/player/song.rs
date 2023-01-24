@@ -6,7 +6,6 @@ use tokio::{process::Command, task::JoinSet};
 use crate::{
     bot::Context,
     get_config,
-    logger,
     messager,
     player::sp_structs::{
         SpotifyAlbumResponse,
@@ -132,10 +131,7 @@ impl Song {
             .await
         {
             if !res.status.success() {
-                logger::error("YouTube data fetch with youtube-dl failed:");
-                logger::secondary_error(
-                    String::from_utf8(res.stderr).expect("Output must be valid UTF-8"),
-                );
+                log!(error, "YouTube data fetch with youtube-dl failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
                 return Err(anyhow!("youtube-dl failed"));
             }
 
@@ -150,7 +146,7 @@ impl Song {
             let duration = splited_res.get(2);
 
             if title.is_none() || id.is_none() || duration.is_none() {
-                logger::error("Somehow youtube-dl returned less data");
+                log!(error, "Somehow youtube-dl returned less data");
                 return Err(anyhow!("youtube-dl failed"));
             }
 
@@ -163,7 +159,7 @@ impl Song {
             });
             Ok(return_vec)
         } else {
-            logger::error("Command creation for youtube-dl failed");
+            log!(error, "Command creation for youtube-dl failed");
             Err(anyhow!("youtube-dl failed"))
         }
     }
@@ -182,10 +178,7 @@ impl Song {
             .await
         {
             if !res.status.success() {
-                logger::error("YouTube data fetch with youtube-dl failed:");
-                logger::secondary_error(
-                    String::from_utf8(res.stderr).expect("Output must be valid UTF-8"),
-                );
+                log!(error, "YouTube data fetch with youtube-dl failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
                 return Err(anyhow!("youtube-dl failed"));
             }
 
@@ -197,7 +190,10 @@ impl Song {
                 .collect();
 
             if splited_res.len() % 3 != 0 {
-                logger::error("youtube-dl returned wrong number of arguments");
+                log!(
+                    error,
+                    "youtube-dl returned wrong number of arguments"
+                );
                 return Err(anyhow!("Output must be dividable by 3"));
             }
 
@@ -214,7 +210,7 @@ impl Song {
 
             Ok(return_vec)
         } else {
-            logger::error("Command creation for youtube-dl failed");
+            log!(error, "Command creation for youtube-dl failed");
             Err(anyhow!("youtube-dl failed"))
         }
     }
@@ -272,9 +268,7 @@ impl Song {
                 }
             },
             Err(why) => {
-                logger::error("Spotify request failed");
-                logger::secondary_error(why);
-
+                log!(error, "Spotify request failed"; "{why}");
                 Err(anyhow!("Spotify request failed"))
             },
         }
@@ -336,9 +330,7 @@ impl Song {
                 Ok(tracklist)
             },
             Err(why) => {
-                logger::error("Spotify request failed");
-                logger::secondary_error(why);
-
+                log!(error, "Spotify request failed"; "{why}");
                 Err(anyhow!("Spotify request failed"))
             },
         }
@@ -403,9 +395,7 @@ impl Song {
                 Ok(tracklist)
             },
             Err(why) => {
-                logger::error("Spotify request failed");
-                logger::secondary_error(why);
-
+                log!(error, "Spotify request failed"; "{why}");
                 Err(anyhow!("Spotify request failed"))
             },
         }
@@ -467,9 +457,7 @@ impl Song {
                 Ok(tracklist)
             },
             Err(why) => {
-                logger::error("Spotify request failed");
-                logger::secondary_error(why);
-
+                log!(error, "Spotify request failed"; "{why}");
                 Err(anyhow!("Spotify request failed"))
             },
         }

@@ -3,7 +3,6 @@ use std::fmt::Write;
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
     get_config,
-    logger,
     messager,
     player::Song,
 };
@@ -105,8 +104,7 @@ pub async fn add(
             true,
         )
         .await;
-        logger::error("Database Error");
-        logger::secondary_error(why);
+        log!(error, "Database Error"; "{why}");
     } else {
         messager::send_sucsess(
             &ctx,
@@ -166,8 +164,7 @@ pub async fn remove(
             true,
         )
         .await;
-        logger::error("Database Error");
-        logger::secondary_error(why);
+        log!(error, "Database Error"; "{why}");
     } else {
         messager::send_sucsess(
             &ctx,

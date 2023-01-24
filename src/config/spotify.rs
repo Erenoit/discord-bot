@@ -3,8 +3,6 @@ use std::{env, process, time::Instant};
 use taplo::dom::Node;
 use tokio::sync::RwLock;
 
-use crate::logger;
-
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {
     client_id:     String,
@@ -51,7 +49,12 @@ impl SpotifyConfig {
         }
 
         // TODO: remove this copy
-        self.token.read().await.as_ref().expect("This can't be None at this point").to_string()
+        self.token
+            .read()
+            .await
+            .as_ref()
+            .expect("This can't be None at this point")
+            .to_string()
     }
 
     async fn refresh_token(&self) {
@@ -74,8 +77,7 @@ impl SpotifyConfig {
                     *write_lock_token = Some(j["access_token"].to_string());
                 },
             Err(why) => {
-                logger::error("Couldn't get spotify token");
-                logger::secondary_error(why);
+                log!(error, "Couldn't get spotify token"; "{why}");
             },
         }
     }

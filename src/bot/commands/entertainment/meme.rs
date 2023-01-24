@@ -1,6 +1,5 @@
 use crate::{
     bot::commands::{Context, Error},
-    logger,
     messager,
 };
 
@@ -11,7 +10,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let url = if let Ok(u) = reqwest::Url::parse(link) {
         u
     } else {
-        logger::error("Couldn't parse the URL.");
+        log!(error, "Couldn't parse the URL.");
         messager::send_error(
             &ctx,
             "An error occured, please try again later.",
@@ -25,7 +24,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         let res_str = if let Ok(s) = res.text().await {
             s
         } else {
-            logger::error("Couldn't get respoense.");
+            log!(error, "Couldn't get respoense.");
             messager::send_error(
                 &ctx,
                 "An error occured, please try again later.",
@@ -58,8 +57,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         }
 
-        logger::error("Couldn't serialize the data.");
-        logger::secondary_error(format!("Link: {link}"));
+        log!(error, "Couldn't serialize the data."; "Link: {link}");
         messager::send_error(
             &ctx,
             "An error occured, please try again later.",
@@ -70,8 +68,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     }
 
-    logger::error("Couldn't fetch from.");
-    logger::secondary_error(format!("Link: {link}"));
+    log!(error, "Couldn't fetch from."; "Link: {link}");
     messager::send_error(
         &ctx,
         "An error occured, please try again later.",

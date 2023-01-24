@@ -1,61 +1,57 @@
-use std::fmt::Display;
-
-use colored::Colorize;
-
-#[inline(always)]
-pub fn info<S: Display>(main_str: S) { main_print(main_str, &LogType::Info); }
-
-#[inline(always)]
-pub fn warn<S: Display>(main_str: S) { main_print(main_str, &LogType::Warn); }
-
-#[inline(always)]
-pub fn error<S: Display>(main_str: S) { main_print(main_str, &LogType::Error); }
-
-#[inline(always)]
-pub fn secondary_info<S: Display>(secondary_str: S) {
-    secondary_print(secondary_str, &LogType::Info);
+#[macro_export]
+macro_rules! log {
+    (info,  ; $($($secondary_message: tt),*);*) => { log_common!(blue,    "", $($($secondary_message),*);*); };
+    (warn,  ; $($($secondary_message: tt),*);*) => { log_common!(cyan,    "", $($($secondary_message),*);*); };
+    (error, ; $($($secondary_message: tt),*);*) => { log_common!(magenta, "", $($($secondary_message),*);*); };
+    (info,  $($main_message: tt),*) => { log_common!(green,  "[I]", $($main_message),*); };
+    (warn,  $($main_message: tt),*) => { log_common!(yellow, "[W]", $($main_message),*); };
+    (error, $($main_message: tt),*) => { log_common!(red,    "[E]", $($main_message),*); };
+    (info,  $($main_message: tt),*; $($($secondary_message: tt),*);*) => { log_common!(green,  blue,    "[I]", $($main_message),*; $($($secondary_message),*);*); };
+    (warn,  $($main_message: tt),*; $($($secondary_message: tt),*);*) => { log_common!(yellow, cyan,    "[W]", $($main_message),*; $($($secondary_message),*);*); };
+    (error, $($main_message: tt),*; $($($secondary_message: tt),*);*) => { log_common!(red,    magenta, "[E]", $($main_message),*; $($($secondary_message),*);*); };
 }
 
-#[inline(always)]
-pub fn secondary_warn<S: Display>(secondary_str: S) {
-    secondary_print(secondary_str, &LogType::Warn);
-}
-
-#[inline(always)]
-pub fn secondary_error<S: Display>(secondary_str: S) {
-    secondary_print(secondary_str, &LogType::Error);
-}
-
-#[inline(always)]
-fn main_print<S: Display>(main_str: S, log_type: &LogType) {
-    let chr = match log_type {
-        LogType::Info => "[I]".green(),
-        LogType::Warn => "[W]".yellow(),
-        LogType::Error => "[E]".red(),
+macro_rules! log_common {
+    ($c1: ident, $c2: ident, $symbol: literal, $($main_message: tt),*; $($($secondary_message: tt),*);*) => {
+        log_common_wrapper!({
+            print_log!(main, $c1, $symbol, $($main_message),*);
+            print_log!(secondary, $c2, $($($secondary_message),*);*);
+        })
     };
-
-    let m_str = match log_type {
-        LogType::Info => main_str.to_string().green(),
-        LogType::Warn => main_str.to_string().yellow(),
-        LogType::Error => main_str.to_string().red(),
+    ($color: ident, "", $($($message: tt),*);*) => {
+        log_common_wrapper!({
+            print_log!(secondary, $color, $($($message),*);*);
+        })
     };
-
-    println!("{chr} {m_str}");
+    ($color: ident, $symbol: literal, $($message: tt),*) => {
+        log_common_wrapper!({
+            print_log!(main, $color, $symbol, $($message),*);
+        })
+    };
 }
 
-#[inline(always)]
-fn secondary_print<S: Display>(secondary_str: S, log_type: &LogType) {
-    let s_str = match log_type {
-        LogType::Info => secondary_str.to_string().blue(),
-        LogType::Warn => secondary_str.to_string().cyan(),
-        LogType::Error => secondary_str.to_string().magenta(),
-    };
+macro_rules! log_common_wrapper {
+    ($code: block) => {
+        {
+            use std::io::{stdout, Write};
+            use colored::Colorize;
 
-    println!("\t{s_str}");
+            $code
+
+            stdout().flush().unwrap();
+        }
+    }
 }
 
-enum LogType {
-    Info,
-    Warn,
-    Error,
+macro_rules! print_log {
+    (main, $color: ident, $symbol: literal, $($message: tt),*) => {
+        eprint!("{} {}\n", $symbol.$color(), format!($($message),*).$color());
+    };
+    (secondary, $color: ident, $($($message: tt),*);*) => {
+        $(
+            format!($($message),*).split('\n').for_each(|line| {
+                eprint!("\t{}\n", line.$color());
+            });
+        );*
+    };
 }

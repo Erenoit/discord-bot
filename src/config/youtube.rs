@@ -2,10 +2,7 @@ use std::{env, process};
 
 use taplo::dom::Node;
 
-use crate::{
-    config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT},
-    logger,
-};
+use crate::config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT};
 
 // TODO add more options
 // TODO: implement this configs
