@@ -8,8 +8,9 @@ mod general;
 mod spotify;
 mod youtube;
 
-use std::{collections::HashMap, env, fs, io::Write, process, sync::Arc};
+use std::{collections::HashMap, env, fs, io::Write, sync::Arc};
 
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use directories::ProjectDirs;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
@@ -40,17 +41,13 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn generate() -> Self {
+    pub fn generate() -> Result<Self> {
         let cmd_arguments = CMDArguments::parse();
 
         log!(info, "Generating Project Directories");
-        let project_dirs = ProjectDirs::from("com", "Erenoit", "The Bot").map_or_else(
-            || {
-                log!(error, "Couldn't find config location");
-                process::exit(1);
-            },
-            |p| p,
-        );
+        let Some(project_dirs) = ProjectDirs::from("com", "Erenoit", "The Bot") else {
+            return Err(anyhow!("Couldn't find config location"));
+        };
         let config_file_path = cmd_arguments
             .cfg_file_path
             .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"));
@@ -77,20 +74,20 @@ impl Config {
         .into_dom();
 
         log!(info, ; "General");
-        let general = GeneralConfig::generate(&config_file);
+        let general = GeneralConfig::generate(&config_file)?;
 
         log!(info, ; "YouTube");
-        let youtube = YouTubeConfig::generate(&config_file);
+        let youtube = YouTubeConfig::generate(&config_file)?;
 
         log!(info, ; "Spotify");
-        let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY).then(|| {
-            SpotifyConfig::generate(&config_file)
-        });
+        let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY)?.then_some(
+            SpotifyConfig::generate(&config_file)?
+        );
 
         log!(info, ; "Database");
-        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE).then(|| {
-            DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().join("database")))
-        });
+        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE)?.then_some(
+            DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().join("database")))?
+        );
 
         log!(info, ; "Servers HashMap");
         let servers = RwLock::new(HashMap::new());
@@ -106,14 +103,14 @@ impl Config {
             log!(warn, "Database is unavailable");
         }
 
-        Self {
+        Ok(Self {
             general,
             youtube,
             spotify,
             database,
             servers,
             songbird,
-        }
+        })
     }
 
     #[inline(always)]

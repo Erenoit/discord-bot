@@ -1,5 +1,6 @@
-use std::{env, fs, path::PathBuf, process};
+use std::{env, fs, path::PathBuf};
 
+use anyhow::{anyhow, Result};
 use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
 use taplo::dom::Node;
 
@@ -11,9 +12,9 @@ pub(super) struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn generate(config_file: &Node, default_path: PathBuf) -> Self {
+    pub fn generate(config_file: &Node, default_path: PathBuf) -> Result<Self> {
         // TODO: make cmd argument priority over config file one
-        let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path);
+        let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path)?;
 
         if !path.exists() {
             fs::create_dir_all(path.parent().expect(
@@ -27,10 +28,10 @@ impl DatabaseConfig {
         options.create_missing_column_families(true);
 
         match DBWithThreadMode::open(&options, &path) {
-            Ok(connection) => Self { connection, options, path },
+            Ok(connection) => Ok(Self { connection, options, path }),
             Err(why) => {
                 log!(error, "Couldn't open database."; "{why}");
-                process::exit(1);
+                Err(anyhow!("Couldn't open database."))
             },
         }
     }

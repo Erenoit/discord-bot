@@ -1,5 +1,6 @@
-use std::{env, process};
+use std::env;
 
+use anyhow::Result;
 use taplo::dom::Node;
 
 use crate::config::defaults::{AUTO_REGISTER_COMMANDS, PREFIX, VC_AUTO_CHANGE};
@@ -13,18 +14,18 @@ pub(super) struct GeneralConfig {
 }
 
 impl GeneralConfig {
-    pub fn generate(config_file: &Node) -> Self {
-        let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.");
-        let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX);
-        let auto_register_commands = get_value!(config_file, bool, "BOT_AUTO_REGISTER_COMMANDS", "general"=>"auto_register_commands", AUTO_REGISTER_COMMANDS);
-        let vc_auto_change = get_value!(config_file, bool, "BOT_VC_AUTO_CHANGE", "general"=>"vc_auto_change", VC_AUTO_CHANGE);
+    pub fn generate(config_file: &Node) -> Result<Self> {
+        let token = get_value!(config_file, String, "BOT_TOKEN", "general"=>"token", "Discord token couldn't found.")?;
+        let prefix = get_value!(config_file, String, "BOT_PREFIX", "general"=>"prefix", PREFIX)?;
+        let auto_register_commands = get_value!(config_file, bool, "BOT_AUTO_REGISTER_COMMANDS", "general"=>"auto_register_commands", AUTO_REGISTER_COMMANDS)?;
+        let vc_auto_change = get_value!(config_file, bool, "BOT_VC_AUTO_CHANGE", "general"=>"vc_auto_change", VC_AUTO_CHANGE)?;
 
-        Self {
+        Ok(Self {
             token,
             prefix,
             auto_register_commands,
             vc_auto_change,
-        }
+        })
     }
 
     #[inline(always)]

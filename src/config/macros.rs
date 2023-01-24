@@ -1,12 +1,12 @@
 #[macro_export]
 macro_rules! get_value {
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
-        get_value_common!($config_file, $ttype, $env_name, $($p)=>+, { <$ttype>::from($default_value) })
+        get_value_common!($config_file, $ttype, $env_name, $($p)=>+, { anyhow::Ok(<$ttype>::from($default_value)) })
     };
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $err_message: literal) => {
         get_value_common!($config_file, $ttype, $env_name, $($p)=>+, {
             log!(error, $err_message);
-            process::exit(1);
+            Err(anyhow::anyhow!("No value is given"))
         })
     }
 }
@@ -14,11 +14,7 @@ macro_rules! get_value {
 macro_rules! get_value_common {
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $else: block) => (
         if let Ok(value) = env::var($env_name) {
-            if let Ok(val) = value.parse::<$ttype>() { val }
-            else {
-                log!(error, "{} has wrong type", $env_name);
-                process::exit(1);
-            }
+            anyhow::Ok(value.parse::<$ttype>()?)
         }
         else if let Some(value) = get_as!($ttype, $config_file.$(get($p)).+) { convert_value!($ttype, value.value()) }
         else { $else }
@@ -42,24 +38,24 @@ macro_rules! get_as {
 
 macro_rules! convert_value {
     (String, $value:expr) => {
-        $value.to_owned()
+        Ok($value.to_owned())
     };
     (u8, $value:expr) => {
         if let Some(v) = $value.as_positive() {
-            v as u8
+            Ok(v as u8)
         } else {
             log!(
                 error,
                 "{} should be positive integer",
                 ($value.as_negative().unwrap())
             );
-            process::exit(1);
+            Err(anyhow::anyhow!("u8 cannot be negative"))
         }
     };
     (PathBuf, $value:expr) => {
-        PathBuf::from($value)
+        Ok(PathBuf::from($value))
     };
     ($any:tt, $value:expr) => {
-        $value
+        anyhow::Ok($value)
     };
 }
