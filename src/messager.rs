@@ -6,11 +6,8 @@ use std::{
 };
 
 use serenity::{
-    builder::{CreateButton, CreateComponents, CreateEmbed},
-    model::{
-        application::{component::ButtonStyle, interaction::InteractionResponseType},
-        channel::AttachmentType,
-    },
+    builder::{CreateComponents, CreateEmbed},
+    model::{application::interaction::InteractionResponseType, channel::AttachmentType},
 };
 
 use crate::bot::Context;
@@ -21,8 +18,44 @@ const SUCSESS_COLOR: u32 = 0x00FF00;
 const NORMAL_COLOR: u32 = 0x0000FF;
 const ERROR_COLOR: u32 = 0xFF0000;
 
-const BUTTON_ID_SUCCESS: &str = "success";
-const BUTTON_ID_DANGER: &str = "danger";
+#[macro_export]
+macro_rules! button {
+    (normal, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)
+    };
+    (secondary, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Secondary, $($name),+; $($id),+; $disabled)
+    };
+    (success, $($name:tt),+) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Success, $($name),+;  "SUCCESS"; false)
+    };
+    (success, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Success, $($name),+; $($id),+; $disabled)
+    };
+    (danger, $($name:tt),+) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Danger, $($name),+;  "DANGER"; false)
+    };
+    (danger, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
+        btn_generic!(serenity::model::application::component::ButtonStyle::Danger, $($name),+; $($id),+; $disabled)
+    };
+    (link, $($name:tt),+; $($url:tt),+) => {
+        unimplemented!()
+    };
+}
+
+macro_rules! btn_generic {
+    ($t:expr, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
+        {
+            let mut btn = serenity::builder::CreateButton::default();
+            btn.label(format!($($name),+));
+            btn.custom_id(format!($($id),+));
+            btn.style($t);
+            btn.disabled($disabled);
+
+            btn
+        }
+    };
+}
 
 #[inline(always)]
 async fn send_message<S, T>(ctx: &Context<'_>, title: T, content: S, color: u32, ephemeral: bool)
@@ -127,8 +160,8 @@ where
         .send(|m| {
             m.content(msg_str).components(|c| {
                 c.create_action_row(|row| {
-                    row.add_button(success_button("Yes".to_owned()));
-                    row.add_button(danger_button("No".to_owned()))
+                    row.add_button(button!(success, "Yes"));
+                    row.add_button(button!(danger, "No"))
                 })
             })
         })
@@ -162,7 +195,7 @@ where
         })
         .await;
 
-    interaction.data.custom_id == BUTTON_ID_SUCCESS
+    interaction.data.custom_id == "SUCCESS"
 }
 
 #[allow(clippy::future_not_send)] // Framework couse
@@ -187,7 +220,7 @@ where
             m.content(msg.to_string()).components(|c| {
                 c.create_action_row(|row| {
                     for e in list.iter().take(min(5, list.len())) {
-                        row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
+                        row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
                     }
                     row
                 });
@@ -195,7 +228,7 @@ where
                 if list.len() > 5 {
                     c.create_action_row(|row| {
                         for e in list.iter().skip(5) {
-                            row.add_button(normal_button(e.0.clone(), e.1.clone(), e.2));
+                            row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
                         }
                         row
                     });
@@ -208,7 +241,7 @@ where
 
     if let Err(why) = res {
         log!(error, "Couldn't send confirm message."; "{why}");
-        return BUTTON_ID_DANGER.to_owned();
+        return "DANGER".to_owned();
     }
 
     let handle = res.unwrap();
@@ -221,7 +254,7 @@ where
                     c.create_action_row(|row| row)
                 })
             }).await;
-            return BUTTON_ID_DANGER.to_owned();
+            return "DANGER".to_owned();
     };
 
     _ = interaction
@@ -269,11 +302,7 @@ where
             m.content(msg).components(|c| {
                 c.create_action_row(|row| {
                     for (i, e) in list.iter().enumerate().take(min(5, list.len())) {
-                        row.add_button(normal_button(
-                            (i + 1).to_string(),
-                            e.1.clone(),
-                            false,
-                        ));
+                        row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
                     }
                     row
                 });
@@ -281,19 +310,15 @@ where
                 if list.len() > 5 {
                     c.create_action_row(|row| {
                         for (i, e) in list.iter().enumerate().skip(5) {
-                            row.add_button(normal_button(
-                                (i + 1).to_string(),
-                                e.1.clone(),
-                                false,
-                            ));
+                            row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
                         }
                         row
                     });
                 }
 
                 c.create_action_row(|row| {
-                    row.add_button(success_button("All".to_owned()));
-                    row.add_button(danger_button("None".to_owned()))
+                    row.add_button(button!(success, "All"));
+                    row.add_button(button!(danger, "None"))
                 })
             })
         })
@@ -301,7 +326,7 @@ where
 
     if let Err(why) = res {
         log!(error, "Couldn't send confirm message."; "{why}");
-        return BUTTON_ID_DANGER.to_owned();
+        return "DANGER".to_owned();
     }
 
     let handle = res.unwrap();
@@ -314,7 +339,7 @@ where
                     c.create_action_row(|row| row)
                 })
             }).await;
-            return BUTTON_ID_DANGER.to_owned();
+            return "DANGER".to_owned();
     };
 
     _ = interaction
@@ -369,35 +394,4 @@ where
     T: Display + Send,
 {
     format!("```{block_type}\n{message}\n```")
-}
-
-#[inline(always)]
-fn normal_button(name: String, id: String, disabled: bool) -> CreateButton {
-    let mut button = CreateButton::default();
-    button.label(name);
-    button.custom_id(id);
-    button.style(ButtonStyle::Primary);
-    button.disabled(disabled);
-
-    button
-}
-
-#[inline(always)]
-fn success_button(name: String) -> CreateButton {
-    let mut button = CreateButton::default();
-    button.label(name);
-    button.custom_id(BUTTON_ID_SUCCESS);
-    button.style(ButtonStyle::Success);
-
-    button
-}
-
-#[inline(always)]
-fn danger_button(name: String) -> CreateButton {
-    let mut button = CreateButton::default();
-    button.label(name);
-    button.custom_id(BUTTON_ID_DANGER);
-    button.style(ButtonStyle::Danger);
-
-    button
 }
