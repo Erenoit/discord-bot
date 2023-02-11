@@ -1,6 +1,6 @@
 use std::{env, fs, io::Error, path::Path};
 
-use clap::CommandFactory;
+use clap::{CommandFactory, ValueEnum};
 use clap_complete::{generate_to, shells};
 
 mod fix_super {
@@ -19,54 +19,11 @@ fn main() -> Result<(), Error> {
 
     let mut cmd = CMDArguments::command();
 
-    // TODO: find a way to write this without copy-paste
-    let path = generate_to(
-        shells::Bash,
-        &mut cmd, // We need to specify what generator to use
-        pkg_name, // We need to specify the bin name manually
-        outdir,   // We need to specify where to write to
-    )?;
+    for shell in shells::Shell::value_variants() {
+        let path = generate_to(*shell, &mut cmd, pkg_name, outdir)?;
 
-    println!(
-        "cargo:warning=completion file is generated: {:?}",
-        path
-    );
-
-    let path = generate_to(
-        shells::Zsh,
-        &mut cmd, // We need to specify what generator to use
-        pkg_name, // We need to specify the bin name manually
-        outdir,   // We need to specify where to write to
-    )?;
-
-    println!(
-        "cargo:warning=completion file is generated: {:?}",
-        path
-    );
-
-    let path = generate_to(
-        shells::Fish,
-        &mut cmd, // We need to specify what generator to use
-        pkg_name, // We need to specify the bin name manually
-        outdir,   // We need to specify where to write to
-    )?;
-
-    println!(
-        "cargo:warning=completion file is generated: {:?}",
-        path
-    );
-
-    let path = generate_to(
-        shells::PowerShell,
-        &mut cmd, // We need to specify what generator to use
-        pkg_name, // We need to specify the bin name manually
-        outdir,   // We need to specify where to write to
-    )?;
-
-    println!(
-        "cargo:warning=completion file is generated: {:?}",
-        path
-    );
+        println!("cargo:warning=Completion file is generated: {path:?}");
+    }
 
     Ok(())
 }
