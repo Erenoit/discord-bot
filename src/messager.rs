@@ -288,8 +288,7 @@ where
 
     let mut msg = String::with_capacity(1024);
 
-    msg.push_str(&bold(&title));
-    msg.push('\n');
+    _ = writeln!(msg, "**{title}**");
 
     for (i, element) in list.iter().enumerate() {
         _ = write!(msg, "{}) ", i + 1);
@@ -353,45 +352,4 @@ where
         .await;
 
     interaction.data.custom_id.clone()
-}
-
-#[inline(always)]
-pub fn bold<S>(message: &S) -> String
-where
-    S: Display + Send,
-{
-    format!("**{message}**")
-}
-
-#[inline(always)]
-pub fn italic<S>(message: &S) -> String
-where
-    S: Display + Send,
-{
-    format!("*{message}*")
-}
-
-#[inline(always)]
-pub fn bold_italic<S>(message: &S) -> String
-where
-    S: Display + Send,
-{
-    format!("***{message}***")
-}
-
-#[inline(always)]
-pub fn highlight<S>(message: &S) -> String
-where
-    S: Display + Send,
-{
-    format!("`{message}`")
-}
-
-#[inline(always)]
-pub fn block<S, T>(block_type: &T, message: &S) -> String
-where
-    S: Display + Send,
-    T: Display + Send,
-{
-    format!("```{block_type}\n{message}\n```")
 }

@@ -480,10 +480,10 @@ impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} [{}] {}",
+            "{} [{}] `requested by {}`",
             self.title(),
             self.duration(),
-            messager::highlight(&format!("requested by {}", self.user_name()))
+            self.user_name()
         )
     }
 }

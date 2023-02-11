@@ -88,8 +88,7 @@ pub async fn add(
         && !messager::send_confirm(
             &ctx,
             Some(format!(
-                "{} already exists. Do you want to overwrite it?",
-                messager::highlight(&keyword)
+                "`{keyword}` already exists. Do you want to overwrite it?"
             )),
         )
         .await
@@ -108,10 +107,7 @@ pub async fn add(
     } else {
         messager::send_sucsess(
             &ctx,
-            format!(
-                "{} is successfully added to the database.",
-                messager::highlight(&keyword)
-            ),
+            format!("`{keyword}` is successfully added to the database."),
             true,
         )
         .await;
@@ -138,10 +134,7 @@ pub async fn remove(
     if !db.key_may_exist(key) {
         messager::send_error(
             &ctx,
-            format!(
-                "{} is already doesn't exist",
-                messager::highlight(&keyword)
-            ),
+            format!("`{keyword}` is already doesn't exist"),
             true,
         )
         .await;
@@ -168,10 +161,7 @@ pub async fn remove(
     } else {
         messager::send_sucsess(
             &ctx,
-            format!(
-                "{} is successfully removed from the database.",
-                messager::highlight(&keyword)
-            ),
+            format!("`{keyword}` is successfully removed from the database."),
             true,
         )
         .await;
@@ -208,13 +198,11 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         for entry in db.prefix_iterator(prefix.as_bytes()).flatten() {
             _ = writeln!(
                 msg,
-                "{}: {}",
-                messager::bold(
-                    &String::from_utf8_lossy(&entry.0)
-                        .split_once('-')
-                        .expect("There is a `-` in prefix. This cannot fail.")
-                        .1
-                ),
+                "**{}**: {}",
+                String::from_utf8_lossy(&entry.0)
+                    .split_once('-')
+                    .expect("There is a `-` in prefix. This cannot fail.")
+                    .1,
                 String::from_utf8_lossy(&entry.1)
             );
         }

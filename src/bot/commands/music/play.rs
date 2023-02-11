@@ -42,8 +42,8 @@ pub async fn play(
             messager::send_sucsess(
                 &ctx,
                 format!(
-                    "{} has been added to the queue.",
-                    messager::bold(&songs[0].title())
+                    "**{}** has been added to the queue.",
+                    songs[0].title()
                 ),
                 false,
             )
@@ -51,10 +51,7 @@ pub async fn play(
         _ =>
             messager::send_sucsess(
                 &ctx,
-                format!(
-                    "{} songs added to the queue.",
-                    messager::bold(&songs.len())
-                ),
+                format!("**{}** songs added to the queue.", songs.len()),
                 false,
             )
             .await,

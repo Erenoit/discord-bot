@@ -232,10 +232,10 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            // TODO: write!() macro can be used as wel (?)
-            s.push_str(&messager::bold(&format!(
-                "{selected_char}{selected_whitespace}{number_style}{song_str}\n"
-            )));
+            _ = writeln!(
+                s,
+                "**{selected_char}{selected_whitespace}{number_style}{song_str}**"
+            );
         } else {
             _ = writeln!(s, "{normal_whitespace}{number_style}{song_str}");
         }
