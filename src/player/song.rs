@@ -47,11 +47,11 @@ impl Song {
                 } else if song.contains("/album/") {
                     Self::sp_album(song, user_name).await
                 } else {
-                    messager::send_error(ctx, "Unsupported spotify url", true).await;
+                    message!(error, ctx, ("Unsupported spotify url"); true);
                     Err(anyhow!("Unsupported spotify url"))
                 }
             } else {
-                messager::send_error(ctx, "Unsupported music source", true).await;
+                message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
             }
         } else {

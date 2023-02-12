@@ -1,7 +1,6 @@
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
 };
 
 /// Prints song queue
@@ -18,7 +17,7 @@ pub async fn queue(ctx: Context<'_>) -> Result<(), Error> {
     let server = servers.get(&guild.id).unwrap();
 
     if server.player.is_queues_empty().await {
-        messager::send_error(&ctx, "Queue is empty", true).await;
+        message!(error, ctx, ("Queue is empty"); true);
     } else {
         server.player.print_queue(&ctx).await;
     }

@@ -25,7 +25,7 @@ pub async fn music(
     let server = servers.get(&guild.id).unwrap();
 
     let Some(db) = get_config().database() else {
-        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
         return Ok(());
     };
 
@@ -42,7 +42,7 @@ pub async fn music(
             .play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?)
             .await;
     } else {
-        messager::send_error(&ctx, "Invalid keyword", true).await;
+        message!(error, ctx, ("Invalid keyword"); true);
     }
 
     Ok(())
@@ -58,17 +58,12 @@ pub async fn add(
     let guild = ctx.guild().expect("Guild should be Some");
 
     let Some(db) = get_config().database() else {
-        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
         return Ok(());
     };
 
     if keyword.contains(' ') {
-        messager::send_error(
-            &ctx,
-            "Keywords cannot contain space. Use '-' or '_' instead.",
-            true,
-        )
-        .await;
+        message!(error, ctx, ("Keywords cannot contain space. Use '-' or '_' instead."); true);
         return Ok(());
     }
 
@@ -80,7 +75,7 @@ pub async fn add(
         || !url.starts_with("http://open.spotify.com")
         || url.contains(' ')
     {
-        messager::send_error(&ctx, "Invalid URL", true).await;
+        message!(error, ctx, ("Invalid URL"); true);
         return Ok(());
     }
 
@@ -97,20 +92,10 @@ pub async fn add(
     }
 
     if let Err(why) = db.put(key.as_bytes(), url.as_bytes()) {
-        messager::send_error(
-            &ctx,
-            "Couldn't add new item to the database. Please try again later.",
-            true,
-        )
-        .await;
+        message!(error, ctx, ("Couldn't add new item to the database. Please try again later."); true);
         log!(error, "Database Error"; "{why}");
     } else {
-        messager::send_sucsess(
-            &ctx,
-            format!("`{keyword}` is successfully added to the database."),
-            true,
-        )
-        .await;
+        message!(success, ctx, ("`{keyword}` is successfully added to the database."); true);
     }
 
     Ok(())
@@ -125,19 +110,14 @@ pub async fn remove(
     let guild = ctx.guild().expect("Guild should be Some");
 
     let Some(db) = get_config().database() else {
-        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
         return Ok(());
     };
 
     let key = guild.id.to_string() + "-" + &keyword;
 
     if !db.key_may_exist(key) {
-        messager::send_error(
-            &ctx,
-            format!("`{keyword}` is already doesn't exist"),
-            true,
-        )
-        .await;
+        message!(error, ctx, ("`{keyword}` is already doesn't exist"); true);
         return Ok(());
     }
 
@@ -151,20 +131,10 @@ pub async fn remove(
     }
 
     if let Err(why) = db.delete(keyword.as_bytes()) {
-        messager::send_error(
-            &ctx,
-            "Couldn't remove new item to the database. Please try again later..",
-            true,
-        )
-        .await;
+        message!(error, ctx, ("Couldn't remove new item to the database. Please try again later.."); true);
         log!(error, "Database Error"; "{why}");
     } else {
-        messager::send_sucsess(
-            &ctx,
-            format!("`{keyword}` is successfully removed from the database."),
-            true,
-        )
-        .await;
+        message!(success, ctx, ("`{keyword}` is successfully removed from the database."); true);
     }
 
     Ok(())
@@ -176,7 +146,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
 
     let Some(db) = get_config().database() else {
-        messager::send_error(&ctx, "Database option is not enabled on this bot. So, you cannot use music command.", true).await;
+        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
         return Ok(());
     };
 
@@ -208,7 +178,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         }
     }
 
-    messager::send_normal(&ctx, "Avavable Keywords", msg, true).await;
+    message!(normal, ctx, ("Avavable Keywords"); ("{}", msg); true);
 
     Ok(())
 }

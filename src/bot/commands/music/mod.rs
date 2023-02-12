@@ -30,7 +30,7 @@ async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Res
 
             Ok(())
         } else {
-            messager::send_error(ctx, "You are not in the voice channel", true).await;
+            message!(error, ctx, ("You are not in the voice channel"); true);
             return Err(anyhow::anyhow!("You are not in a voice channel"));
         }
     } else {

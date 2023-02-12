@@ -12,7 +12,7 @@ pub async fn shuffle(ctx: Context<'_>) -> Result<(), Error> {
     let server = servers.get(&guild.id).unwrap();
 
     if server.player.is_queues_empty().await {
-        messager::send_error(&ctx, "Queue is empty", true).await;
+        message!(error, ctx, ("Queue is empty"); true);
     } else {
         let answer = messager::send_confirm(
             &ctx,
@@ -22,7 +22,7 @@ pub async fn shuffle(ctx: Context<'_>) -> Result<(), Error> {
 
         if answer {
             server.player.shuffle_song_queue().await;
-            messager::send_sucsess(&ctx, "Queue shuffled", true).await;
+            message!(success, ctx, ("Queue shuffled"); true);
         }
     }
 

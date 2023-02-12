@@ -3,7 +3,6 @@ use serenity::model::channel::GuildChannel;
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
 };
 
 /// Joins to the voice channel
@@ -33,14 +32,14 @@ pub async fn join(
     {
         channel_id
     } else {
-        messager::send_error(&ctx, "Couldn't connect to a voice channel. Neither you are in a voice channel nor you provided a channel to join.", true).await;
+        message!(error, ctx, ("Couldn't connect to a voice channel. Neither you are in a voice channel nor you provided a channel to join."); true);
         return Ok(());
     };
 
     // TODO: Already joined. Would you like to change?
     server.player.connect_to_voice_channel(&channel_id).await;
 
-    messager::send_sucsess(&ctx, "Connected to the voice channel", true).await;
+    message!(success, ctx, ("Connected to the voice channel"); true);
 
     Ok(())
 }

@@ -1,22 +1,77 @@
 use std::{
     cmp::min,
     fmt::{Display, Write},
-    path::Path,
     time::Duration,
 };
 
 use serenity::{
-    builder::{CreateComponents, CreateEmbed},
-    model::{application::interaction::InteractionResponseType, channel::AttachmentType},
+    builder::CreateComponents,
+    model::application::interaction::InteractionResponseType,
 };
 
 use crate::bot::Context;
 
-const USE_EMBED: bool = false;
 const TIME_LIMIT: u64 = 30;
-const SUCSESS_COLOR: u32 = 0x00FF00;
-const NORMAL_COLOR: u32 = 0x0000FF;
-const ERROR_COLOR: u32 = 0xFF0000;
+
+macro_rules! message {
+    //($t:tt, $ctx:ident, $title:tt, $content:tt, $ephemeral:expr) => {};
+    (file, $ctx:ident, $message:expr, $($file:expr);+, $ephemeral:expr) => {
+        let res = $ctx
+            .send(|m| {
+                let mut last = m.content($message.to_string());
+
+                $(last = last.attachment(serenity::model::channel::AttachmentType::Path($file)));+;
+
+                last.ephemeral = $ephemeral;
+
+                last
+            })
+            .await;
+
+        if let Err(why) = res {
+            log!(error, "Couldn't send message with file(s)."; "{why}");
+        }
+    };
+    (normal, $ctx:ident, ($($title:tt)+); ($($message:tt)+); $ephemeral:expr) => {
+        message!(custom, $ctx, format!($($title)+), format!($($message)+), 0x0000FF, $ephemeral, false)
+    };
+    (success, $ctx:ident, ($($message:tt)+); $ephemeral:expr) => {
+        message!(custom, $ctx, "Success", format!($($message)+), 0x00FF00, $ephemeral, false)
+    };
+    (error, $ctx:ident, ($($message:tt)+); $ephemeral:expr) => {
+        message!(custom, $ctx, "Error", format!($($message)+), 0xFF0000, $ephemeral, false)
+    };
+    (custom, $ctx:ident, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
+        {
+            let res = $ctx
+                .send(|m| {
+                    if $embed {
+                        m.embed(|e| e.color($color).title($title).description($content))
+                            .ephemeral($ephemeral)
+                    } else {
+                        m.content($content).ephemeral($ephemeral)
+                    }
+                })
+                .await;
+
+            if let Err(why) = res {
+                log!(error, "Couldn't send message."; "{why}");
+            }
+        }
+    };
+    (embed, $ctx:ident, $b:expr, $ephemeral:expr) => {
+        {
+            let res = $ctx
+                .send(|m| m.embed($b).ephemeral($ephemeral))
+                .await;
+
+            if let Err(why) = res {
+                log!(error, "Couldn't send embed."; "{why}");
+            }
+        }
+    };
+}
+
 
 #[macro_export]
 macro_rules! button {
@@ -55,95 +110,6 @@ macro_rules! btn_generic {
             btn
         }
     };
-}
-
-#[inline(always)]
-async fn send_message<S, T>(ctx: &Context<'_>, title: T, content: S, color: u32, ephemeral: bool)
-where
-    S: Display + Send,
-    T: Display + Send,
-{
-    let res = ctx
-        .send(|m| {
-            if USE_EMBED {
-                m.embed(|e| e.color(color).title(title).description(content))
-                    .ephemeral(ephemeral)
-            } else {
-                m.content(content.to_string()).ephemeral(ephemeral)
-            }
-        })
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send message."; "{why}");
-    }
-}
-
-#[inline(always)]
-pub async fn send_normal<S, T>(ctx: &Context<'_>, title: T, content: S, ephemeral: bool)
-where
-    S: Display + Send,
-    T: Display + Send,
-{
-    send_message(ctx, title, content, NORMAL_COLOR, ephemeral).await;
-}
-
-#[inline(always)]
-pub async fn send_sucsess<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
-where
-    S: Display + Send,
-{
-    const TITLE: &str = "Success";
-    send_message(ctx, TITLE, content, SUCSESS_COLOR, ephemeral).await;
-}
-
-#[inline(always)]
-pub async fn send_error<S>(ctx: &Context<'_>, content: S, ephemeral: bool)
-where
-    S: Display + Send,
-{
-    const TITLE: &str = "Error";
-    send_message(ctx, TITLE, content, ERROR_COLOR, ephemeral).await;
-}
-
-#[inline(always)]
-pub async fn send_embed(
-    ctx: &Context<'_>,
-    embed_func: impl FnOnce(&mut CreateEmbed) -> &mut CreateEmbed + Send,
-    ephemeral: bool,
-) {
-    let res = ctx
-        .send(|m| m.embed(|e| embed_func(e)).ephemeral(ephemeral))
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send embed."; "{why}");
-    }
-}
-
-#[inline(always)]
-#[allow(clippy::future_not_send)] // Framework cause
-pub async fn send_files<S>(ctx: &Context<'_>, content: S, files: Vec<&Path>, ephemeral: bool)
-where
-    S: Display + Send,
-{
-    let res = ctx
-        .send(|m| {
-            let mut last = m.content(content.to_string());
-
-            for f in files {
-                last = last.attachment(AttachmentType::Path(f));
-            }
-
-            last.ephemeral = ephemeral;
-
-            last
-        })
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send message with file(s)."; "{why}");
-    }
 }
 
 pub async fn send_confirm<S>(ctx: &Context<'_>, msg: Option<S>) -> bool
@@ -208,10 +174,10 @@ where
     S: Display + Send,
 {
     if list.len() > 10 {
-        send_error(ctx, "An error happened", false).await;
+        message!(error, ctx, ("An error happened"); false);
         log!(error, "List cannot contain more than 10 elements");
     } else if list.is_empty() {
-        send_error(ctx, "An error happened", false).await;
+        message!(error, ctx, ("An error happened"); false);
         log!(error, "List cannot be empty");
     }
 
@@ -279,10 +245,10 @@ where
     T: Display + Send,
 {
     if list.len() > 10 {
-        send_error(ctx, "An error happened", false).await;
+        message!(error, ctx, ("An error happened"); false);
         log!(error, "List cannot contain more than 10 elements");
     } else if list.is_empty() {
-        send_error(ctx, "An error happened", false).await;
+        message!(error, ctx, ("An error happened"); false);
         log!(error, "List cannot be empty");
     }
 

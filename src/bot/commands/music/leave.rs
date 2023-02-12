@@ -1,7 +1,6 @@
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
 };
 
 /// Leaves the voice channel
@@ -18,7 +17,7 @@ pub async fn leave(ctx: Context<'_>) -> Result<(), Error> {
     let server = servers.get(&guild.id).unwrap();
 
     server.player.leave_voice_channel(&ctx).await;
-    messager::send_sucsess(&ctx, "Left the voice channel", true).await;
+    message!(success, ctx, ("Left the voice channel"); true);
 
     Ok(())
 }

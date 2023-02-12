@@ -1,7 +1,6 @@
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
     get_config,
-    messager,
     player::Song,
 };
 
@@ -30,31 +29,12 @@ pub async fn play(
     let mut songs = Song::new(&ctx, song).await?;
     match songs.len() {
         0 => {
-            messager::send_error(
-                &ctx,
-                "An error happened please try again later",
-                false,
-            )
-            .await;
+            message!(error, ctx, ("An error happened please try again later"); false);
             return Ok(());
         },
         1 =>
-            messager::send_sucsess(
-                &ctx,
-                format!(
-                    "**{}** has been added to the queue.",
-                    songs[0].title()
-                ),
-                false,
-            )
-            .await,
-        _ =>
-            messager::send_sucsess(
-                &ctx,
-                format!("**{}** songs added to the queue.", songs.len()),
-                false,
-            )
-            .await,
+            message!(success, ctx, ("**{}** has been added to the queue.", songs[0].title()); false),
+        _ => message!(success, ctx, ("**{}** songs added to the queue.", songs.len()); false),
     }
     server.player.play(&mut songs).await;
 
