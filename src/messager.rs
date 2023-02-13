@@ -155,7 +155,7 @@ macro_rules! selection {
                     m.content(msg).components(|c| {
                         c.create_action_row(|row| {
                             for (i, e) in $list.iter().enumerate().take(std::cmp::min(5, $list.len())) {
-                                row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
+                                row.add_button(button!(normal, "{}", (i + 1); "{}", (e.1); false));
                             }
                             row
                         });
@@ -163,7 +163,7 @@ macro_rules! selection {
                         if $list.len() > 5 {
                             c.create_action_row(|row| {
                                 for (i, e) in $list.iter().enumerate().skip(5) {
-                                    row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
+                                    row.add_button(button!(normal, "{}", (i + 1); "{}", (e.1); false));
                                 }
                                 row
                             });
