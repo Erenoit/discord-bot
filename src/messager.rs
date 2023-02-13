@@ -15,7 +15,7 @@ const TIME_LIMIT: u64 = 30;
 
 macro_rules! message {
     //($t:tt, $ctx:ident, $title:tt, $content:tt, $ephemeral:expr) => {};
-    (file, $ctx:ident, $message:expr, $($file:expr);+, $ephemeral:expr) => {
+    (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx
             .send(|m| {
                 let mut last = m.content($message.to_string());
@@ -32,16 +32,16 @@ macro_rules! message {
             log!(error, "Couldn't send message with file(s)."; "{why}");
         }
     };
-    (normal, $ctx:ident, ($($title:tt)+); ($($message:tt)+); $ephemeral:expr) => {
+    (normal, $ctx:expr, ($($title:tt)+); ($($message:tt)+); $ephemeral:expr) => {
         message!(custom, $ctx, format!($($title)+), format!($($message)+), 0x0000FF, $ephemeral, false)
     };
-    (success, $ctx:ident, ($($message:tt)+); $ephemeral:expr) => {
+    (success, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
         message!(custom, $ctx, "Success", format!($($message)+), 0x00FF00, $ephemeral, false)
     };
-    (error, $ctx:ident, ($($message:tt)+); $ephemeral:expr) => {
+    (error, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
         message!(custom, $ctx, "Error", format!($($message)+), 0xFF0000, $ephemeral, false)
     };
-    (custom, $ctx:ident, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
+    (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
         {
             let res = $ctx
                 .send(|m| {
@@ -59,7 +59,7 @@ macro_rules! message {
             }
         }
     };
-    (embed, $ctx:ident, $b:expr, $ephemeral:expr) => {
+    (embed, $ctx:expr, $b:expr, $ephemeral:expr) => {
         {
             let res = $ctx
                 .send(|m| m.embed($b).ephemeral($ephemeral))
