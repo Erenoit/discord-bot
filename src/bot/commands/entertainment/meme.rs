@@ -4,18 +4,14 @@ use crate::bot::commands::{Context, Error};
 #[poise::command(slash_command, prefix_command, category = "Entertainment")]
 pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let link = "https://www.reddit.com/r/memes/random/.json";
-    let url = if let Ok(u) = reqwest::Url::parse(link) {
-        u
-    } else {
+    let Ok(url) = reqwest::Url::parse(link) else {
         log!(error, "Couldn't parse the URL.");
         message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };
 
     if let Ok(res) = reqwest::get(url).await {
-        let res_str = if let Ok(s) = res.text().await {
-            s
-        } else {
+        let Ok(res_str) = res.text().await else {
             log!(error, "Couldn't get respoense.");
             message!(error, ctx, ("An error occured, please try again later."); false);
             return Ok(());
