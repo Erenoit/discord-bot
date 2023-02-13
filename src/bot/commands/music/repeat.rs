@@ -3,7 +3,6 @@ use std::str::FromStr;
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
     player::Repeat,
 };
 
@@ -38,7 +37,7 @@ pub async fn repeat(
             list.push((name.clone(), name, e == &current_mode));
         }
 
-        let answer = messager::send_selection(&ctx, msg, list).await;
+        let answer = selection!(normal, ctx, ("{}", msg), list);
 
         if let Ok(repeat) = Repeat::from_str(&answer) {
             server.player.change_repeat_mode(&ctx, &repeat).await;

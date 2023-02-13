@@ -102,6 +102,47 @@ macro_rules! selection {
             break 'confirm_selection interaction.data.custom_id == "SUCCESS"
         }
     };
+    (normal, $ctx:expr, ($($msg:tt)*), $list:expr) => {
+        'normal_selection: {
+            if $list.len() > 10 {
+                message!(error, $ctx, ("An error happened"); false);
+                log!(error, "List cannot contain more than 10 elements");
+            } else if $list.is_empty() {
+                message!(error, $ctx, ("An error happened"); false);
+                log!(error, "List cannot be empty");
+            }
+
+            let res = $ctx
+                .send(|m| {
+                    m.content(format!($($msg)+)).components(|c| {
+                        c.create_action_row(|row| {
+                            for e in $list.iter().take(std::cmp::min(5, $list.len())) {
+                                row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
+                            }
+                            row
+                        });
+
+                        if $list.len() > 5 {
+                            c.create_action_row(|row| {
+                                for e in $list.iter().skip(5) {
+                                    row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
+                                }
+                                row
+                            });
+                        }
+
+                        c
+                    })
+                })
+                .await;
+
+            let interaction = selection_inner!(get_interaction, $ctx, res, 'normal_selection, "DANGER".to_owned());
+
+            selection_inner!(clear, $ctx, interaction);
+
+            break 'normal_selection interaction.data.custom_id.clone()
+        }
+    };
 
 macro_rules! selection_inner {
     (clear, $ctx:expr, $interaction:ident) => {
@@ -178,79 +219,6 @@ macro_rules! btn_generic {
         }
     };
 }
-
-#[allow(clippy::future_not_send)] // Framework couse
-pub async fn send_selection<S>(
-    ctx: &Context<'_>,
-    msg: S,
-    list: Vec<(String, String, bool)>,
-) -> String
-where
-    S: Display + Send,
-{
-    if list.len() > 10 {
-        message!(error, ctx, ("An error happened"); false);
-        log!(error, "List cannot contain more than 10 elements");
-    } else if list.is_empty() {
-        message!(error, ctx, ("An error happened"); false);
-        log!(error, "List cannot be empty");
-    }
-
-    let res = ctx
-        .send(|m| {
-            m.content(msg.to_string()).components(|c| {
-                c.create_action_row(|row| {
-                    for e in list.iter().take(min(5, list.len())) {
-                        row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                    }
-                    row
-                });
-
-                if list.len() > 5 {
-                    c.create_action_row(|row| {
-                        for e in list.iter().skip(5) {
-                            row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                        }
-                        row
-                    });
-                }
-
-                c
-            })
-        })
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send confirm message."; "{why}");
-        return "DANGER".to_owned();
-    }
-
-    let handle = res.unwrap();
-
-    let Some(interaction) = handle.message().await.unwrap()
-        .await_component_interaction(ctx.serenity_context())
-        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
-            _ = handle.edit(*ctx, |m| {
-                m.content("Interaction timed out.").components(|c| {
-                    c.create_action_row(|row| row)
-                })
-            }).await;
-            return "DANGER".to_owned();
-    };
-
-    _ = interaction
-        .create_interaction_response(ctx.serenity_context(), |r| {
-            r.kind(InteractionResponseType::UpdateMessage)
-                .interaction_response_data(|d| {
-                    d.content("An action has already been taken.")
-                        .set_components(CreateComponents::default())
-                })
-        })
-        .await;
-
-    interaction.data.custom_id.clone()
-}
-
 pub async fn send_selection_from_list<T>(
     ctx: &Context<'_>,
     title: T,
