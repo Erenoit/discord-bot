@@ -6,7 +6,6 @@ use tokio::{process::Command, task::JoinSet};
 use crate::{
     bot::Context,
     get_config,
-    messager,
     player::sp_structs::{
         SpotifyAlbumResponse,
         SpotifyArtistTopTracksResponse,
@@ -90,7 +89,7 @@ impl Song {
             ));
         }
 
-        let answer = messager::send_selection_from_list(ctx, "Search", &l).await;
+        let answer = selection!(list, *ctx, "Search", l, true);
         if answer == "success" {
             let mut return_vec = VecDeque::with_capacity(search_count);
             for i in 0 .. search_count {

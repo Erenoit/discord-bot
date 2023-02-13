@@ -1,18 +1,3 @@
-use std::{
-    cmp::min,
-    fmt::{Display, Write},
-    time::Duration,
-};
-
-use serenity::{
-    builder::CreateComponents,
-    model::application::interaction::InteractionResponseType,
-};
-
-use crate::bot::Context;
-
-const TIME_LIMIT: u64 = 30;
-
 #[macro_export]
 macro_rules! message {
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
@@ -143,6 +128,67 @@ macro_rules! selection {
             break 'normal_selection interaction.data.custom_id.clone()
         }
     };
+    (list, $ctx:expr, $title:expr, $list:expr, $all_none: expr) => {
+        'list_selection: {
+            use std::fmt::Write;
+
+            if $list.len() > 10 {
+                message!(error, $ctx, ("An error happened"); false);
+                log!(error, "List cannot contain more than 10 elements");
+            } else if $list.is_empty() {
+                message!(error, $ctx, ("An error happened"); false);
+                log!(error, "List cannot be empty");
+            }
+
+            let mut msg = String::with_capacity(1024);
+
+            _ = writeln!(msg, "**{}**", $title);
+
+            for (i, element) in $list.iter().enumerate() {
+                _ = write!(msg, "{}) ", i + 1);
+                msg.push_str(&element.0);
+                msg.push('\n');
+            }
+
+            let res = $ctx
+                .send(|m| {
+                    m.content(msg).components(|c| {
+                        c.create_action_row(|row| {
+                            for (i, e) in $list.iter().enumerate().take(std::cmp::min(5, $list.len())) {
+                                row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
+                            }
+                            row
+                        });
+
+                        if $list.len() > 5 {
+                            c.create_action_row(|row| {
+                                for (i, e) in $list.iter().enumerate().skip(5) {
+                                    row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
+                                }
+                                row
+                            });
+                        }
+
+                        if $all_none {
+                            c.create_action_row(|row| {
+                                row.add_button(button!(success, "All"));
+                                row.add_button(button!(danger, "None"))
+                            });
+                        }
+
+                        c
+                    })
+                })
+                .await;
+
+            let interaction = selection_inner!(get_interaction, $ctx, res, 'list_selection, "DANGER".to_owned());
+
+            selection_inner!(clear, $ctx, interaction);
+
+            break 'list_selection interaction.data.custom_id.clone()
+        }
+    };
+}
 
 macro_rules! selection_inner {
     (clear, $ctx:expr, $interaction:ident) => {
@@ -218,87 +264,4 @@ macro_rules! btn_generic {
             btn
         }
     };
-}
-pub async fn send_selection_from_list<T>(
-    ctx: &Context<'_>,
-    title: T,
-    list: &Vec<(String, String)>,
-) -> String
-where
-    T: Display + Send,
-{
-    if list.len() > 10 {
-        message!(error, ctx, ("An error happened"); false);
-        log!(error, "List cannot contain more than 10 elements");
-    } else if list.is_empty() {
-        message!(error, ctx, ("An error happened"); false);
-        log!(error, "List cannot be empty");
-    }
-
-    let mut msg = String::with_capacity(1024);
-
-    _ = writeln!(msg, "**{title}**");
-
-    for (i, element) in list.iter().enumerate() {
-        _ = write!(msg, "{}) ", i + 1);
-        msg.push_str(&element.0);
-        msg.push('\n');
-    }
-
-    let res = ctx
-        .send(|m| {
-            m.content(msg).components(|c| {
-                c.create_action_row(|row| {
-                    for (i, e) in list.iter().enumerate().take(min(5, list.len())) {
-                        row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
-                    }
-                    row
-                });
-
-                if list.len() > 5 {
-                    c.create_action_row(|row| {
-                        for (i, e) in list.iter().enumerate().skip(5) {
-                            row.add_button(button!( normal, "{}", (i + 1); "{}", (e.1); false));
-                        }
-                        row
-                    });
-                }
-
-                c.create_action_row(|row| {
-                    row.add_button(button!(success, "All"));
-                    row.add_button(button!(danger, "None"))
-                })
-            })
-        })
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send confirm message."; "{why}");
-        return "DANGER".to_owned();
-    }
-
-    let handle = res.unwrap();
-
-    let Some(interaction) = handle.message().await.unwrap()
-        .await_component_interaction(ctx.serenity_context())
-        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
-            _ = handle.edit(*ctx, |m| {
-                m.content("Interaction timed out.").components(|c| {
-                    c.create_action_row(|row| row)
-                })
-            }).await;
-            return "DANGER".to_owned();
-    };
-
-    _ = interaction
-        .create_interaction_response(ctx.serenity_context(), |r| {
-            r.kind(InteractionResponseType::UpdateMessage)
-                .interaction_response_data(|d| {
-                    d.content("An action has already been taken.")
-                        .set_components(CreateComponents::default())
-                })
-        })
-        .await;
-
-    interaction.data.custom_id.clone()
 }
