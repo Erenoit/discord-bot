@@ -13,8 +13,8 @@ use crate::bot::Context;
 
 const TIME_LIMIT: u64 = 30;
 
+#[macro_export]
 macro_rules! message {
-    //($t:tt, $ctx:ident, $title:tt, $content:tt, $ephemeral:expr) => {};
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx
             .send(|m| {
