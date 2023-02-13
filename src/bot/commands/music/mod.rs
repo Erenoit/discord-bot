@@ -10,7 +10,7 @@ pub mod shuffle;
 pub mod skip;
 pub mod stop;
 
-use crate::{bot::commands::Context, get_config, messager, server::Server};
+use crate::{bot::commands::Context, get_config, server::Server};
 
 #[inline(always)]
 fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id::ChannelId> {
@@ -41,7 +41,7 @@ async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Res
         // TODO: fix this mess
         if songbird::id::ChannelId::from(user_vc) != bot_vc.expect("checked in outer if")
         && (get_config().vc_auto_change()
-        || messager::send_confirm(ctx, Some("You are in a different voice channel than bot. Do you want bot to switch channels?")).await)
+        || selection!(confirm, *ctx, "You are in a different voice channel than bot. Do you want bot to switch channels?"))
         {
             server.player.connect_to_voice_channel(&user_vc).await;
         }

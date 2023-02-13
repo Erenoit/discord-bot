@@ -72,6 +72,73 @@ macro_rules! message {
     };
 }
 
+#[macro_export]
+macro_rules! selection {
+    (confirm, $ctx:expr, $($msg:tt)*) => {
+        'confirm_selection: {
+            //let msg_str = if msg.is_some() {
+            //    msg.unwrap().to_string()
+            //} else {
+            //    "Are you sure?".to_owned()
+            //};
+
+            let msg_str = format!($($msg)*);
+
+            let res = $ctx
+                .send(|m| {
+                    m.content(msg_str).components(|c| {
+                        c.create_action_row(|row| {
+                            row.add_button(button!(success, "Yes"));
+                            row.add_button(button!(danger, "No"))
+                        })
+                    })
+                })
+                .await;
+
+            let interaction = selection_inner!(get_interaction, $ctx, res, 'confirm_selection, false);
+
+            selection_inner!(clear, $ctx, interaction);
+
+            break 'confirm_selection interaction.data.custom_id == "SUCCESS"
+        }
+    };
+
+macro_rules! selection_inner {
+    (clear, $ctx:expr, $interaction:ident) => {
+        _ = $interaction
+            .create_interaction_response($ctx.serenity_context(), |r| {
+                r.kind(serenity::model::application::interaction::InteractionResponseType::UpdateMessage)
+                    .interaction_response_data(|d| {
+                        d.content("An action has already been taken.")
+                            .set_components(serenity::builder::CreateComponents::default())
+                    })
+            })
+            .await;
+    };
+    (get_interaction, $ctx:expr, $res:ident, $n:lifetime, $def_return:expr) => {
+        {
+            if let Err(why) = $res {
+                log!(error, "Couldn't send confirm message."; "{why}");
+                break $n $def_return;
+            }
+
+            let handle = $res.unwrap();
+
+            let Some(interaction) = handle.message().await.unwrap()
+                .await_component_interaction($ctx.serenity_context())
+                .timeout(std::time::Duration::from_secs(30)).await else {
+                    _ = handle.edit($ctx, |m| {
+                        m.content("Interaction timed out.").components(|c| {
+                            c.create_action_row(|row| row)
+                        })
+                    }).await;
+                    break $n $def_return;
+            };
+
+            interaction
+        }
+    };
+}
 
 #[macro_export]
 macro_rules! button {
@@ -110,58 +177,6 @@ macro_rules! btn_generic {
             btn
         }
     };
-}
-
-pub async fn send_confirm<S>(ctx: &Context<'_>, msg: Option<S>) -> bool
-where
-    S: Display + Send,
-{
-    let msg_str = if msg.is_some() {
-        msg.unwrap().to_string()
-    } else {
-        "Are you sure?".to_owned()
-    };
-
-    let res = ctx
-        .send(|m| {
-            m.content(msg_str).components(|c| {
-                c.create_action_row(|row| {
-                    row.add_button(button!(success, "Yes"));
-                    row.add_button(button!(danger, "No"))
-                })
-            })
-        })
-        .await;
-
-    if let Err(why) = res {
-        log!(error, "Couldn't send confirm message."; "{why}");
-        return false;
-    }
-
-    let handle = res.unwrap();
-
-    let Some(interaction) = handle.message().await.unwrap()
-        .await_component_interaction(ctx.serenity_context())
-        .timeout(Duration::from_secs(TIME_LIMIT)).await else {
-            _ = handle.edit(*ctx, |m| {
-                m.content("Interaction timed out.").components(|c| {
-                    c.create_action_row(|row| row)
-                })
-            }).await;
-            return false;
-    };
-
-    _ = interaction
-        .create_interaction_response(ctx.serenity_context(), |r| {
-            r.kind(InteractionResponseType::UpdateMessage)
-                .interaction_response_data(|d| {
-                    d.content("An action has already been taken.")
-                        .set_components(CreateComponents::default())
-                })
-        })
-        .await;
-
-    interaction.data.custom_id == "SUCCESS"
 }
 
 #[allow(clippy::future_not_send)] // Framework couse

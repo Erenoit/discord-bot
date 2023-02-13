@@ -1,7 +1,6 @@
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
 };
 
 /// Shuffles the queue
@@ -14,11 +13,11 @@ pub async fn shuffle(ctx: Context<'_>) -> Result<(), Error> {
     if server.player.is_queues_empty().await {
         message!(error, ctx, ("Queue is empty"); true);
     } else {
-        let answer = messager::send_confirm(
-            &ctx,
-            Some("You cannot unshuffle the queue. Are you sure?"),
-        )
-        .await;
+        let answer = selection!(
+            confirm,
+            ctx,
+            "You cannot unshuffle the queue. Are you sure?"
+        );
 
         if answer {
             server.player.shuffle_song_queue().await;

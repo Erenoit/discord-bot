@@ -3,7 +3,6 @@ use std::fmt::Write;
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
     get_config,
-    messager,
     player::Song,
 };
 
@@ -80,13 +79,11 @@ pub async fn add(
     }
 
     if db.key_may_exist(&key)
-        && !messager::send_confirm(
-            &ctx,
-            Some(format!(
-                "`{keyword}` already exists. Do you want to overwrite it?"
-            )),
+        && !selection!(
+            confirm,
+            ctx,
+            "`{keyword}` already exists. Do you want to overwrite it?"
         )
-        .await
     {
         return Ok(());
     }
@@ -121,12 +118,11 @@ pub async fn remove(
         return Ok(());
     }
 
-    if !messager::send_confirm(
-        &ctx,
-        Some("You cannot revert this action. Are you sure?"),
-    )
-    .await
-    {
+    if !selection!(
+        confirm,
+        ctx,
+        "You cannot revert this action. Are you sure?"
+    ) {
         return Ok(());
     }
 
