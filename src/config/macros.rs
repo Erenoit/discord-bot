@@ -31,6 +31,12 @@ macro_rules! get_as {
     (u8, $node:expr) => {
         $node.as_integer()
     };
+    (u32, $node:expr) => {
+        $node.as_integer()
+    };
+    (u64, $node:expr) => {
+        $node.as_integer()
+    };
     (PathBuf, $node:expr) => {
         $node.as_str()
     };
@@ -50,6 +56,30 @@ macro_rules! convert_value {
                 ($value.as_negative().unwrap())
             );
             Err(anyhow::anyhow!("u8 cannot be negative"))
+        }
+    };
+    (u32, $value:expr) => {
+        if let Some(v) = $value.as_positive() {
+            Ok(v as u32)
+        } else {
+            log!(
+                error,
+                "{} should be positive integer",
+                ($value.as_negative().unwrap())
+            );
+            Err(anyhow::anyhow!("u32 cannot be negative"))
+        }
+    };
+    (u64, $value:expr) => {
+        if let Some(v) = $value.as_positive() {
+            Ok(v as u64)
+        } else {
+            log!(
+                error,
+                "{} should be positive integer",
+                ($value.as_negative().unwrap())
+            );
+            Err(anyhow::anyhow!("u64 cannot be negative"))
         }
     };
     (PathBuf, $value:expr) => {
