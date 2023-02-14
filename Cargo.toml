@@ -18,7 +18,7 @@ reqwest = "0.11"
 json = "0.12"
 poise = "0.5"
 rand = "0.8"
-rocksdb = "0.19"
+rocksdb = "0.20"
 serde = "1.0"
 serenity = { version = "0.11", default-features = false, features = [
     "client",
@@ -30,7 +30,7 @@ serenity = { version = "0.11", default-features = false, features = [
 ] }
 songbird = { version = "0.3", features = ["yt-dlp"] }
 taplo = "0.12"
-tokio = { version = "1.24", features = [
+tokio = { version = "1.25", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
@@ -45,4 +45,3 @@ opt-level = 3
 lto = true
 panic = 'abort'
 overflow-checks = false
-
