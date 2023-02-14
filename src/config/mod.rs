@@ -128,6 +128,8 @@ impl Config {
 
     pub const fn message_always_embed(&self) -> bool { self.message.always_embed() }
 
+    pub const fn message_random_embed_colors(&self) -> bool { self.message.random_embed_colors() }
+
     pub const fn message_success_color(&self) -> u32 { self.message.success_color() }
 
     pub const fn message_normal_color(&self) -> u32 { self.message.normal_color() }

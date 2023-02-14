@@ -6,6 +6,7 @@ pub(super) const YT_SEARCH_COUNT: u8 = 5;
 pub(super) const YT_AGE_RESTRICTED: bool = false;
 pub(super) const ENABLE_DATABASE: bool = true;
 pub(super) const ALWAYS_EMBED: bool = false;
+pub(super) const RANDOM_EMBED_COLORS: bool = false;
 pub(super) const SUCCESS_COLOR: u32 = 0x00FF00;
 pub(super) const NORMAL_COLOR: u32 = 0x0000FF;
 pub(super) const ERROR_COLOR: u32 = 0xFF0000;

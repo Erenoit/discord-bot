@@ -55,7 +55,16 @@ macro_rules! message {
             let res = $ctx
                 .send(|m| {
                     if $embed {
-                        m.embed(|e| e.color($color).title($title).description($content))
+                        m.embed(|e| e.color(
+                                    if $crate::get_config()
+                                    .message_random_embed_colors()
+                                    {
+                                        rand::random::<u32>() & 0x00FFFFFF
+                                    } else { $color }
+                                )
+                                .title($title)
+                                .description($content)
+                        )
                             .ephemeral($ephemeral)
                     } else {
                         m.content($content).ephemeral($ephemeral)
