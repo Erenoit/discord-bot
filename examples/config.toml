@@ -6,6 +6,7 @@ vc_auto_change = false
 
 [message]
 always_embed = false
+random_embed_colors = false
 success_color = 0x00FF00
 normal_color = 0x0000FF
 error_color = 0xFF0000
