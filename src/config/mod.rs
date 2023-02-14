@@ -5,6 +5,7 @@ mod macros;
 
 mod database;
 mod general;
+mod message;
 mod spotify;
 mod youtube;
 
@@ -24,6 +25,7 @@ use crate::{
         database::DatabaseConfig,
         defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
         general::GeneralConfig,
+        message::MessageConfig,
         spotify::SpotifyConfig,
         youtube::YouTubeConfig,
     },
@@ -33,6 +35,7 @@ use crate::{
 #[non_exhaustive]
 pub struct Config {
     general:  GeneralConfig,
+    message:  MessageConfig,
     youtube:  YouTubeConfig,
     spotify:  Option<SpotifyConfig>,
     database: Option<DatabaseConfig>,
@@ -70,6 +73,9 @@ impl Config {
         log!(info, ; "General");
         let general = GeneralConfig::generate(&config_file)?;
 
+        log!(info, ; "Message");
+        let message = MessageConfig::generate(&config_file)?;
+
         log!(info, ; "YouTube");
         let youtube = YouTubeConfig::generate(&config_file)?;
 
@@ -99,6 +105,7 @@ impl Config {
 
         Ok(Self {
             general,
+            message,
             youtube,
             spotify,
             database,
@@ -118,6 +125,18 @@ impl Config {
 
     #[inline(always)]
     pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
+
+    pub const fn message_always_embed(&self) -> bool { self.message.always_embed() }
+
+    pub const fn message_success_color(&self) -> u32 { self.message.success_color() }
+
+    pub const fn message_normal_color(&self) -> u32 { self.message.normal_color() }
+
+    pub const fn message_error_color(&self) -> u32 { self.message.error_color() }
+
+    pub const fn message_interaction_time_limit(&self) -> u64 {
+        self.message.interaction_time_limit()
+    }
 
     #[inline(always)]
     pub const fn youtube_search_count(&self) -> u8 { self.youtube.search_count() }

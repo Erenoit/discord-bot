@@ -18,13 +18,37 @@ macro_rules! message {
         }
     };
     (normal, $ctx:expr, ($($title:tt)+); ($($message:tt)+); $ephemeral:expr) => {
-        message!(custom, $ctx, format!($($title)+), format!($($message)+), 0x0000FF, $ephemeral, false)
+        message!(
+            custom,
+            $ctx,
+            format!($($title)+),
+            format!($($message)+),
+            $crate::get_config().message_normal_color(),
+            $ephemeral,
+            $crate::get_config().message_always_embed()
+        )
     };
     (success, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
-        message!(custom, $ctx, "Success", format!($($message)+), 0x00FF00, $ephemeral, false)
+        message!(
+            custom,
+            $ctx,
+            "Success",
+            format!($($message)+),
+            $crate::get_config().message_success_color(),
+            $ephemeral,
+            $crate::get_config().message_always_embed()
+        )
     };
     (error, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
-        message!(custom, $ctx, "Error", format!($($message)+), 0xFF0000, $ephemeral, false)
+        message!(
+            custom,
+            $ctx,
+            "Error",
+            format!($($message)+),
+            $crate::get_config().message_error_color(),
+            $ephemeral,
+            $crate::get_config().message_always_embed()
+        )
     };
     (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
         {
@@ -164,7 +188,10 @@ macro_rules! selection_inner {
 
             let Some(interaction) = handle.message().await.unwrap()
                 .await_component_interaction($ctx.serenity_context())
-                .timeout(std::time::Duration::from_secs(30)).await else {
+                .timeout(
+                    std::time::Duration::from_secs(get_config().message_interaction_time_limit())
+                ).await else
+                {
                     _ = handle.edit($ctx, |m| {
                         m.content("Interaction timed out.").components(|c| {
                             c.create_action_row(|row| row)
