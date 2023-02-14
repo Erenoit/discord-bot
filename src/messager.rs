@@ -97,29 +97,7 @@ macro_rules! selection {
                 log!(error, "List cannot be empty");
             }
 
-            let res = $ctx
-                .send(|m| {
-                    m.content(format!($($msg)+)).components(|c| {
-                        c.create_action_row(|row| {
-                            for e in $list.iter().take(std::cmp::min(5, $list.len())) {
-                                row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                            }
-                            row
-                        });
-
-                        if $list.len() > 5 {
-                            c.create_action_row(|row| {
-                                for e in $list.iter().skip(5) {
-                                    row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                                }
-                                row
-                            });
-                        }
-
-                        c
-                    })
-                })
-                .await;
+            let res = selection_inner!(send_buttons, $ctx, format!($($msg)+), $list, false);
 
             let interaction = selection_inner!(get_interaction, $ctx, res, 'normal_selection, "DANGER".to_owned());
 
@@ -150,36 +128,9 @@ macro_rules! selection {
                 msg.push('\n');
             }
 
-            let res = $ctx
-                .send(|m| {
-                    m.content(msg).components(|c| {
-                        c.create_action_row(|row| {
-                            for (i, e) in $list.iter().enumerate().take(std::cmp::min(5, $list.len())) {
-                                row.add_button(button!(normal, "{}", (i + 1); "{}", (e.1); false));
-                            }
-                            row
-                        });
+            let new_list = $list.into_iter().enumerate().map(|(i, e)| (i + 1, e.1, false)).collect::<Vec<_>>();
 
-                        if $list.len() > 5 {
-                            c.create_action_row(|row| {
-                                for (i, e) in $list.iter().enumerate().skip(5) {
-                                    row.add_button(button!(normal, "{}", (i + 1); "{}", (e.1); false));
-                                }
-                                row
-                            });
-                        }
-
-                        if $all_none {
-                            c.create_action_row(|row| {
-                                row.add_button(button!(success, "All"));
-                                row.add_button(button!(danger, "None"))
-                            });
-                        }
-
-                        c
-                    })
-                })
-                .await;
+            let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none);
 
             let interaction = selection_inner!(get_interaction, $ctx, res, 'list_selection, "DANGER".to_owned());
 
@@ -224,6 +175,37 @@ macro_rules! selection_inner {
 
             interaction
         }
+    };
+    (send_buttons, $ctx:expr, $message:expr, $list:expr, $all_none: expr) => {
+        $ctx.send(|m| {
+            m.content($message).components(|c| {
+                c.create_action_row(|row| {
+                    for e in $list.iter().take(std::cmp::min(5, $list.len())) {
+                        row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
+                    }
+                    row
+                });
+
+                if $list.len() > 5 {
+                    c.create_action_row(|row| {
+                        for e in $list.iter().skip(5) {
+                            row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
+                        }
+                        row
+                    });
+                }
+
+                if $all_none {
+                    c.create_action_row(|row| {
+                        row.add_button(button!(success, "All"));
+                        row.add_button(button!(danger, "None"))
+                    });
+                }
+
+                c
+            })
+        })
+        .await
     };
 }
 
