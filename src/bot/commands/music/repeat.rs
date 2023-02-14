@@ -3,7 +3,6 @@ use std::str::FromStr;
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
     player::Repeat,
 };
 
@@ -30,10 +29,7 @@ pub async fn repeat(
             .await;
     } else {
         let current_mode = server.player.get_repeat_mode().await;
-        let msg = format!(
-            "Current repeat option is {}. Select one to change:",
-            messager::highlight(&current_mode)
-        );
+        let msg = format!("Current repeat option is `{current_mode}`. Select one to change:");
         let mut list = Vec::new();
 
         for e in Repeat::variants() {
@@ -41,7 +37,7 @@ pub async fn repeat(
             list.push((name.clone(), name, e == &current_mode));
         }
 
-        let answer = messager::send_selection(&ctx, msg, list).await;
+        let answer = selection!(normal, ctx, ("{}", msg), list);
 
         if let Ok(repeat) = Repeat::from_str(&answer) {
             server.player.change_repeat_mode(&ctx, &repeat).await;

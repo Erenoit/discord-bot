@@ -4,6 +4,13 @@ prefix = "-"
 auto_register_commands = true
 vc_auto_change = false
 
+[message]
+always_embed = false
+success_color = 0x00FF00
+normal_color = 0x0000FF
+error_color = 0xFF0000
+interaction_time_limit = 30
+
 [youtube]
 search_count = 5
 age_restricted = false
@@ -16,4 +23,3 @@ enable = false
 [database]
 enable = true
 #location = ""
-

@@ -9,7 +9,7 @@ use songbird::{Call, Event, Songbird, TrackEvent};
 use tokio::sync::Mutex;
 
 pub use crate::player::song::Song;
-use crate::{bot::Context, get_config, messager, player::event::SongEnd};
+use crate::{bot::Context, get_config, player::event::SongEnd};
 
 #[inline(always)]
 fn get_songbird_manager() -> Arc<Songbird> { get_config().songbird() }
@@ -56,7 +56,7 @@ impl Player {
 
     pub async fn leave_voice_channel(&self, ctx: &Context<'_>) {
         if self.connected_vc().await.is_none() {
-            messager::send_error(ctx, "Not in a voice channel", true).await;
+            message!(error, ctx, ("Not in a voice channel"); true);
             return;
         }
 
@@ -177,7 +177,7 @@ impl Player {
 
     pub async fn print_queue(&self, ctx: &Context<'_>) {
         if self.now_playing.lock().await.is_none() {
-            messager::send_error(ctx, "Nothings playing :unamused:", true).await;
+            message!(error, ctx, ("Nothings playing :unamused:"); true);
             return;
         }
 
@@ -221,7 +221,7 @@ impl Player {
             num += 1;
         }
 
-        messager::send_normal(ctx, "Queue", s, false).await;
+        message!(normal, ctx, ("Queue"); ("{}", s); false);
     }
 
     fn add_to_queue_string(s: &mut String, song: &Song, num: usize, selected: bool) {
@@ -232,10 +232,10 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            // TODO: write!() macro can be used as wel (?)
-            s.push_str(&messager::bold(&format!(
-                "{selected_char}{selected_whitespace}{number_style}{song_str}\n"
-            )));
+            _ = writeln!(
+                s,
+                "**{selected_char}{selected_whitespace}{number_style}{song_str}**"
+            );
         } else {
             _ = writeln!(s, "{normal_whitespace}{number_style}{song_str}");
         }
@@ -247,12 +247,7 @@ impl Player {
 
     pub async fn change_repeat_mode(&self, ctx: &Context<'_>, new_mode: &Repeat) {
         *self.repeat_mode.lock().await = *new_mode;
-        messager::send_sucsess(
-            ctx,
-            format!("Repeat mode changed to {new_mode}"),
-            false,
-        )
-        .await;
+        message!(success, ctx, ("Repeat mode changed to {new_mode}"); false);
     }
 
     pub async fn get_repeat_mode(&self) -> Repeat { *self.repeat_mode.lock().await }

@@ -1,7 +1,6 @@
 use crate::{
     bot::commands::{Context, Error},
     get_config,
-    messager,
 };
 
 /// Clears the queue but do not stop current playing song
@@ -12,10 +11,10 @@ pub async fn clear(ctx: Context<'_>) -> Result<(), Error> {
     let server = servers.get(&guild.id).unwrap();
 
     if server.player.is_queues_empty().await {
-        messager::send_error(&ctx, "Queue is already empty", true).await;
+        message!(error, ctx, ("Queue is already empty"); true);
     } else {
         server.player.clear_the_queues().await;
-        messager::send_sucsess(&ctx, "Queue cleared", true).await;
+        message!(success, ctx, ("Queue cleared"); true);
     }
 
     Ok(())

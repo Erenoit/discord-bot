@@ -1,43 +1,27 @@
-use crate::{
-    bot::commands::{Context, Error},
-    messager,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Sends random meme from r/memes.
 #[poise::command(slash_command, prefix_command, category = "Entertainment")]
 pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let link = "https://www.reddit.com/r/memes/random/.json";
-    let url = if let Ok(u) = reqwest::Url::parse(link) {
-        u
-    } else {
+    let Ok(url) = reqwest::Url::parse(link) else {
         log!(error, "Couldn't parse the URL.");
-        messager::send_error(
-            &ctx,
-            "An error occured, please try again later.",
-            false,
-        )
-        .await;
+        message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };
 
     if let Ok(res) = reqwest::get(url).await {
-        let res_str = if let Ok(s) = res.text().await {
-            s
-        } else {
+        let Ok(res_str) = res.text().await else {
             log!(error, "Couldn't get respoense.");
-            messager::send_error(
-                &ctx,
-                "An error occured, please try again later.",
-                false,
-            )
-            .await;
+            message!(error, ctx, ("An error occured, please try again later."); false);
             return Ok(());
         };
 
         if let Ok(res_last) = json::parse(&res_str) {
             let post = &res_last[0]["data"]["children"][0]["data"];
-            messager::send_embed(
-                &ctx,
+            message!(
+                embed,
+                ctx,
                 |e| {
                     e.color(0xE0AF68)
                         .title(&post["title"])
@@ -50,31 +34,20 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
                             ))
                         })
                 },
-                false,
-            )
-            .await;
+                false
+            );
 
             return Ok(());
         }
 
         log!(error, "Couldn't serialize the data."; "Link: {link}");
-        messager::send_error(
-            &ctx,
-            "An error occured, please try again later.",
-            false,
-        )
-        .await;
+        message!(error, ctx, ("An error occured, please try again later."); false);
 
         return Ok(());
     }
 
     log!(error, "Couldn't fetch from."; "Link: {link}");
-    messager::send_error(
-        &ctx,
-        "An error occured, please try again later.",
-        false,
-    )
-    .await;
+    message!(error, ctx, ("An error occured, please try again later."); false);
 
     Ok(())
 }

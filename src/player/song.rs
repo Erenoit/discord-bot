@@ -6,7 +6,6 @@ use tokio::{process::Command, task::JoinSet};
 use crate::{
     bot::Context,
     get_config,
-    messager,
     player::sp_structs::{
         SpotifyAlbumResponse,
         SpotifyArtistTopTracksResponse,
@@ -47,11 +46,11 @@ impl Song {
                 } else if song.contains("/album/") {
                     Self::sp_album(song, user_name).await
                 } else {
-                    messager::send_error(ctx, "Unsupported spotify url", true).await;
+                    message!(error, ctx, ("Unsupported spotify url"); true);
                     Err(anyhow!("Unsupported spotify url"))
                 }
             } else {
-                messager::send_error(ctx, "Unsupported music source", true).await;
+                message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
@@ -90,7 +89,7 @@ impl Song {
             ));
         }
 
-        let answer = messager::send_selection_from_list(ctx, "Search", &l).await;
+        let answer = selection!(list, *ctx, "Search", l, true);
         if answer == "success" {
             let mut return_vec = VecDeque::with_capacity(search_count);
             for i in 0 .. search_count {
@@ -480,10 +479,10 @@ impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} [{}] {}",
+            "{} [{}] `requested by {}`",
             self.title(),
             self.duration(),
-            messager::highlight(&format!("requested by {}", self.user_name()))
+            self.user_name()
         )
     }
 }

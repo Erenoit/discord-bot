@@ -35,11 +35,11 @@
 
 #[macro_use]
 mod logger;
+#[macro_use]
+mod messager;
 
 mod bot;
 mod config;
-#[allow(dead_code)]
-pub mod messager;
 mod player;
 mod server;
 
