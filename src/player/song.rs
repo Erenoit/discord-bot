@@ -64,10 +64,10 @@ impl Song {
         song: String,
         user_name: String,
     ) -> Result<VecDeque<Self>> {
-        // TODO: change something faster than youtube-dl
+        // TODO: change something faster than yt-dlp
         // TODO: clean this code
         let search_count = 5;
-        let out = Command::new("youtube-dl")
+        let out = Command::new("yt-dlp")
             .args([
                 "--no-playlist",
                 "--get-title",
@@ -120,18 +120,18 @@ impl Song {
         }
     }
 
-    // TODO: youtube-dl is slow sometimes
+    // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
     #[inline(always)]
     async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("youtube-dl")
+        if let Ok(res) = Command::new("yt-dlp")
             .args(["--get-title", "--get-id", "--get-duration", &song])
             .output()
             .await
         {
             if !res.status.success() {
-                log!(error, "YouTube data fetch with youtube-dl failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
-                return Err(anyhow!("youtube-dl failed"));
+                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+                return Err(anyhow!("yt-dlp failed"));
             }
 
             let splited_res: Vec<String> = String::from_utf8(res.stdout)
@@ -145,8 +145,8 @@ impl Song {
             let duration = splited_res.get(2);
 
             if title.is_none() || id.is_none() || duration.is_none() {
-                log!(error, "Somehow youtube-dl returned less data");
-                return Err(anyhow!("youtube-dl failed"));
+                log!(error, "Somehow yt-dlp returned less data");
+                return Err(anyhow!("yt-dlp failed"));
             }
 
             let mut return_vec = VecDeque::with_capacity(1);
@@ -158,14 +158,14 @@ impl Song {
             });
             Ok(return_vec)
         } else {
-            log!(error, "Command creation for youtube-dl failed");
-            Err(anyhow!("youtube-dl failed"))
+            log!(error, "Command creation for yt-dlp failed");
+            Err(anyhow!("yt-dlp failed"))
         }
     }
 
     #[inline(always)]
     async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("youtube-dl")
+        if let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
@@ -177,8 +177,8 @@ impl Song {
             .await
         {
             if !res.status.success() {
-                log!(error, "YouTube data fetch with youtube-dl failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
-                return Err(anyhow!("youtube-dl failed"));
+                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+                return Err(anyhow!("yt-dlp failed"));
             }
 
             let splited_res: Vec<String> = String::from_utf8(res.stdout)
@@ -189,10 +189,7 @@ impl Song {
                 .collect();
 
             if splited_res.len() % 3 != 0 {
-                log!(
-                    error,
-                    "youtube-dl returned wrong number of arguments"
-                );
+                log!(error, "yt-dlp returned wrong number of arguments");
                 return Err(anyhow!("Output must be dividable by 3"));
             }
 
@@ -209,8 +206,8 @@ impl Song {
 
             Ok(return_vec)
         } else {
-            log!(error, "Command creation for youtube-dl failed");
-            Err(anyhow!("youtube-dl failed"))
+            log!(error, "Command creation for yt-dlp failed");
+            Err(anyhow!("yt-dlp failed"))
         }
     }
 
@@ -236,7 +233,7 @@ impl Song {
                 let j = json::parse(&r.text().await?)?;
                 let title = &j["name"];
 
-                let out = Command::new("youtube-dl")
+                let out = Command::new("yt-dlp")
                     .args([
                         "--no-playlist",
                         "--get-title",
@@ -300,7 +297,7 @@ impl Song {
                     let title = track.track.name.clone();
 
                     join_set.spawn(async move {
-                        Command::new("youtube-dl")
+                        Command::new("yt-dlp")
                             .args([
                                 "--no-playlist",
                                 "--get-title",
@@ -365,7 +362,7 @@ impl Song {
                     let title = track.name.clone();
 
                     join_set.spawn(async move {
-                        Command::new("youtube-dl")
+                        Command::new("yt-dlp")
                             .args([
                                 "--no-playlist",
                                 "--get-title",
@@ -427,7 +424,7 @@ impl Song {
                     let title = track.name.clone();
 
                     join_set.spawn(async move {
-                        Command::new("youtube-dl")
+                        Command::new("yt-dlp")
                             .args([
                                 "--no-playlist",
                                 "--get-title",
