@@ -33,6 +33,7 @@ impl Bot {
                 commands::music::stop::stop(),
                 commands::music::skip::skip(),
                 commands::music::repeat::repeat(),
+                #[cfg(feature = "database")]
                 commands::music::music::music(),
                 commands::music::queue::queue(),
                 commands::music::clear::clear(),

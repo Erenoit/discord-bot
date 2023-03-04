@@ -2,6 +2,7 @@ pub mod clear;
 pub mod join;
 pub mod leave;
 #[allow(clippy::module_inception)]
+#[cfg(feature = "database")]
 pub mod music;
 pub mod play;
 pub mod queue;

@@ -3,6 +3,7 @@ mod defaults;
 #[macro_use]
 mod macros;
 
+#[cfg(feature = "database")]
 mod database;
 mod general;
 mod message;
@@ -16,14 +17,16 @@ use clap::Parser;
 use directories::ProjectDirs;
 use serenity::model::id::GuildId;
 use songbird::Songbird;
+#[cfg(feature = "database")]
 use sqlx::SqlitePool;
 use tokio::sync::RwLock;
 
+#[cfg(feature = "database")]
+use crate::config::{database::DatabaseConfig, defaults::ENABLE_DATABASE};
 use crate::{
     config::{
         cmd_arguments::CMDArguments,
-        database::DatabaseConfig,
-        defaults::{ENABLE_DATABASE, ENABLE_SPOTIFY},
+        defaults::ENABLE_SPOTIFY,
         general::GeneralConfig,
         message::MessageConfig,
         spotify::SpotifyConfig,
@@ -38,6 +41,7 @@ pub struct Config {
     message:  MessageConfig,
     youtube:  YouTubeConfig,
     spotify:  Option<SpotifyConfig>,
+    #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
     servers:  RwLock<HashMap<GuildId, Server>>,
     songbird: Arc<Songbird>,
@@ -84,7 +88,9 @@ impl Config {
             SpotifyConfig::generate(&config_file)?
         );
 
+        #[cfg(feature = "database")]
         log!(info, ; "Database");
+        #[cfg(feature = "database")]
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE",
          "database"=>"enable", ENABLE_DATABASE)?
         .then_some(DatabaseConfig::generate(
@@ -104,6 +110,7 @@ impl Config {
             log!(warn, "No Spotify config found");
         }
 
+        #[cfg(feature = "database")]
         if database.is_none() {
             log!(warn, "Database is unavailable");
         }
@@ -113,6 +120,7 @@ impl Config {
             message,
             youtube,
             spotify,
+            #[cfg(feature = "database")]
             database,
             servers,
             songbird,
@@ -164,6 +172,7 @@ impl Config {
         Some(self.spotify.as_ref()?.token().await)
     }
 
+    #[cfg(feature = "database")]
     #[inline(always)]
     pub const fn database_pool(&self) -> Option<&SqlitePool> {
         if let Some(db) = &self.database {
