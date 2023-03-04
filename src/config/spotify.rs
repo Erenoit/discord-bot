@@ -1,8 +1,12 @@
-use std::{env, time::Instant};
+use std::time::Instant;
 
 use anyhow::Result;
+#[cfg(feature = "config_file")]
 use taplo::dom::Node;
 use tokio::sync::RwLock;
+
+#[cfg(not(feature = "config_file"))]
+use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {

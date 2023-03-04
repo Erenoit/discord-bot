@@ -34,7 +34,7 @@ sqlx = { version = "0.6", features = [
     "runtime-tokio-rustls",
     "sqlite",
 ], optional = true }
-taplo = "0.12"
+taplo = { version = "0.12", optional = true }
 tokio = { version = "1.26", features = [
     "macros",
     "rt-multi-thread",
@@ -52,7 +52,8 @@ panic = 'abort'
 overflow-checks = false
 
 [features]
-default = ["database", "dotenv", "spotify", "music"]
+default = ["config_file", "database", "dotenv", "music", "spotify"]
+config_file = ["dep:taplo"]
 database = ["dep:sqlx", "music"]
 dotenv = ["dep:dotenv"]
 music = ["dep:songbird"]

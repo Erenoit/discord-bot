@@ -12,13 +12,28 @@ macro_rules! get_value {
 }
 
 macro_rules! get_value_common {
-    ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $else: block) => (
-        if let Ok(value) = env::var($env_name) {
-            anyhow::Ok(value.parse::<$ttype>()?)
+    ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $else: block) => {
+        {
+            use std::env;
+
+            #[cfg(feature = "config_file")]
+            if let Ok(value) = env::var($env_name) {
+                anyhow::Ok(value.parse::<$ttype>()?)
+            }
+            else if let Some(value) = get_as!($ttype, $config_file.$(get($p)).+) { convert_value!($ttype, value.value()) }
+            else { $else }
+
+            #[cfg(not(feature = "config_file"))]
+            let _ = $config_file;
+
+            #[cfg(not(feature = "config_file"))]
+            if let Ok(value) = env::var($env_name) {
+                anyhow::Ok(value.parse::<$ttype>()?)
+            }
+            else { $else }
+
         }
-        else if let Some(value) = get_as!($ttype, $config_file.$(get($p)).+) { convert_value!($ttype, value.value()) }
-        else { $else }
-    )
+    }
 }
 
 macro_rules! get_as {

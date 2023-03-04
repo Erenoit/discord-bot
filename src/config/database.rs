@@ -1,8 +1,12 @@
-use std::{env, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+#[cfg(feature = "config_file")]
 use taplo::dom::Node;
+
+#[cfg(not(feature = "config_file"))]
+use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct DatabaseConfig {

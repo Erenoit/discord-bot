@@ -1,11 +1,12 @@
-use std::env;
-
 use anyhow::Result;
+#[cfg(feature = "config_file")]
 use taplo::dom::Node;
 
 #[cfg(feature = "music")]
 use crate::config::defaults::VC_AUTO_CHANGE;
 use crate::config::defaults::{AUTO_REGISTER_COMMANDS, PREFIX};
+#[cfg(not(feature = "config_file"))]
+use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct GeneralConfig {

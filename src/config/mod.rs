@@ -12,9 +12,11 @@ mod spotify;
 #[cfg(feature = "music")]
 mod youtube;
 
-use std::{collections::HashMap, fs, io::Write};
+use std::collections::HashMap;
 #[cfg(feature = "music")]
-use std::{env, sync::Arc};
+use std::sync::Arc;
+#[cfg(feature = "config_file")]
+use std::{fs, io::Write};
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -37,6 +39,9 @@ use crate::{
     server::Server,
 };
 
+#[cfg(not(feature = "config_file"))]
+struct Node;
+
 #[non_exhaustive]
 pub struct Config {
     general:  GeneralConfig,
@@ -56,13 +61,17 @@ impl Config {
     pub fn generate() -> Result<Self> {
         let cmd_arguments = CMDArguments::parse();
 
+        #[cfg(any(feature = "config_file", feature = "database"))]
         log!(info, "Generating Project Directories");
+        #[cfg(any(feature = "config_file", feature = "database"))]
         let Some(project_dirs) = ProjectDirs::from("com", "Erenoit", "The Bot") else {
             return Err(anyhow!("Couldn't find config location"));
         };
+        #[cfg(feature = "config_file")]
         let config_file_path = cmd_arguments
             .cfg_file_path
             .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"));
+        #[cfg(feature = "config_file")]
         if !config_file_path.exists() {
             fs::create_dir_all(config_file_path.parent().ok_or_else(|| {
                 anyhow!(
@@ -77,8 +86,11 @@ impl Config {
         log!(info, "Registering Configs");
         #[cfg(feature = "dotenv")]
         drop(dotenv::dotenv()); // It doesn't matter even if it fails
+        #[cfg(feature = "config_file")]
         let config_file =
             taplo::parser::parse(fs::read_to_string(config_file_path)?.as_str()).into_dom();
+        #[cfg(not(feature = "config_file"))]
+        let config_file = Node;
 
         log!(info, ; "General");
         let general = GeneralConfig::generate(&config_file)?;
