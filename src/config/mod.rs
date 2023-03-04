@@ -7,6 +7,7 @@ mod macros;
 mod database;
 mod general;
 mod message;
+#[cfg(feature = "spotify")]
 mod spotify;
 mod youtube;
 
@@ -23,13 +24,13 @@ use tokio::sync::RwLock;
 
 #[cfg(feature = "database")]
 use crate::config::{database::DatabaseConfig, defaults::ENABLE_DATABASE};
+#[cfg(feature = "spotify")]
+use crate::config::{defaults::ENABLE_SPOTIFY, spotify::SpotifyConfig};
 use crate::{
     config::{
         cmd_arguments::CMDArguments,
-        defaults::ENABLE_SPOTIFY,
         general::GeneralConfig,
         message::MessageConfig,
-        spotify::SpotifyConfig,
         youtube::YouTubeConfig,
     },
     server::Server,
@@ -40,6 +41,7 @@ pub struct Config {
     general:  GeneralConfig,
     message:  MessageConfig,
     youtube:  YouTubeConfig,
+    #[cfg(feature = "spotify")]
     spotify:  Option<SpotifyConfig>,
     #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
@@ -84,7 +86,9 @@ impl Config {
         log!(info, ; "YouTube");
         let youtube = YouTubeConfig::generate(&config_file)?;
 
+        #[cfg(feature = "spotify")]
         log!(info, ; "Spotify");
+        #[cfg(feature = "spotify")]
         let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY)?.then_some(
             SpotifyConfig::generate(&config_file)?
         );
@@ -107,6 +111,7 @@ impl Config {
         log!(info, ; "Songbird");
         let songbird = Songbird::serenity();
 
+        #[cfg(feature = "spotify")]
         if spotify.is_none() {
             log!(warn, "No Spotify config found");
         }
@@ -120,6 +125,7 @@ impl Config {
             general,
             message,
             youtube,
+            #[cfg(feature = "spotify")]
             spotify,
             #[cfg(feature = "database")]
             database,
@@ -160,14 +166,17 @@ impl Config {
     #[inline(always)]
     pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     pub const fn is_spotify_initialized(&self) -> bool { self.spotify.is_some() }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
         Some(self.spotify.as_ref()?.client())
     }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     pub async fn spotify_token(&self) -> Option<String> {
         Some(self.spotify.as_ref()?.token().await)

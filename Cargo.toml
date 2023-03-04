@@ -52,6 +52,7 @@ panic = 'abort'
 overflow-checks = false
 
 [features]
-default = ["database", "dotenv"]
+default = ["database", "dotenv", "spotify"]
 database = ["dep:sqlx"]
 dotenv = ["dep:dotenv"]
+spotify = []

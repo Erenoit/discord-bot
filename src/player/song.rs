@@ -1,18 +1,19 @@
 use std::{collections::VecDeque, fmt::Display};
 
 use anyhow::{anyhow, Result};
-use tokio::{process::Command, task::JoinSet};
+use tokio::process::Command;
+#[cfg(feature = "spotify")]
+use tokio::task::JoinSet;
 
-use crate::{
-    bot::Context,
-    get_config,
-    player::sp_structs::{
-        SpotifyAlbumResponse,
-        SpotifyArtistTopTracksResponse,
-        SpotifyPlaylistResponse,
-    },
+#[cfg(feature = "spotify")]
+use crate::player::sp_structs::{
+    SpotifyAlbumResponse,
+    SpotifyArtistTopTracksResponse,
+    SpotifyPlaylistResponse,
 };
+use crate::{bot::Context, get_config};
 
+#[cfg(feature = "spotify")]
 const SP_MARKET: &str = "US";
 
 #[derive(Clone)]
@@ -37,6 +38,7 @@ impl Song {
                     Self::yt_playlist(song, user_name).await
                 }
             } else if song.contains("spotify") {
+                #[cfg(feature = "spotify")]
                 if song.contains("/track/") {
                     Self::sp_url(song, user_name).await
                 } else if song.contains("/playlist/") {
@@ -49,6 +51,9 @@ impl Song {
                     message!(error, ctx, ("Unsupported spotify url"); true);
                     Err(anyhow!("Unsupported spotify url"))
                 }
+
+                #[cfg(not(feature = "spotify"))]
+                Err(anyhow!("Unsupported music source"))
             } else {
                 message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
@@ -211,6 +216,7 @@ impl Song {
         }
     }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
@@ -270,6 +276,7 @@ impl Song {
         }
     }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
@@ -332,6 +339,7 @@ impl Song {
         }
     }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
@@ -397,6 +405,7 @@ impl Song {
         }
     }
 
+    #[cfg(feature = "spotify")]
     #[inline(always)]
     async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";

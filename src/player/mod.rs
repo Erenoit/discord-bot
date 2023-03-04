@@ -1,5 +1,6 @@
 mod event;
 mod song;
+#[cfg(feature = "spotify")]
 mod sp_structs;
 
 use std::{collections::VecDeque, fmt::Write, slice::Iter, sync::Arc};
