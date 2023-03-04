@@ -9,30 +9,31 @@ mod general;
 mod message;
 #[cfg(feature = "spotify")]
 mod spotify;
+#[cfg(feature = "music")]
 mod youtube;
 
-use std::{collections::HashMap, env, fs, io::Write, sync::Arc};
+use std::{collections::HashMap, fs, io::Write};
+#[cfg(feature = "music")]
+use std::{env, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use directories::ProjectDirs;
 use serenity::model::id::GuildId;
+#[cfg(feature = "music")]
 use songbird::Songbird;
 #[cfg(feature = "database")]
 use sqlx::SqlitePool;
 use tokio::sync::RwLock;
 
+#[cfg(feature = "music")]
+use crate::config::youtube::YouTubeConfig;
 #[cfg(feature = "database")]
 use crate::config::{database::DatabaseConfig, defaults::ENABLE_DATABASE};
 #[cfg(feature = "spotify")]
 use crate::config::{defaults::ENABLE_SPOTIFY, spotify::SpotifyConfig};
 use crate::{
-    config::{
-        cmd_arguments::CMDArguments,
-        general::GeneralConfig,
-        message::MessageConfig,
-        youtube::YouTubeConfig,
-    },
+    config::{cmd_arguments::CMDArguments, general::GeneralConfig, message::MessageConfig},
     server::Server,
 };
 
@@ -40,12 +41,14 @@ use crate::{
 pub struct Config {
     general:  GeneralConfig,
     message:  MessageConfig,
+    #[cfg(feature = "music")]
     youtube:  YouTubeConfig,
     #[cfg(feature = "spotify")]
     spotify:  Option<SpotifyConfig>,
     #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
     servers:  RwLock<HashMap<GuildId, Server>>,
+    #[cfg(feature = "music")]
     songbird: Arc<Songbird>,
 }
 
@@ -83,7 +86,9 @@ impl Config {
         log!(info, ; "Message");
         let message = MessageConfig::generate(&config_file)?;
 
+        #[cfg(feature = "music")]
         log!(info, ; "YouTube");
+        #[cfg(feature = "music")]
         let youtube = YouTubeConfig::generate(&config_file)?;
 
         #[cfg(feature = "spotify")]
@@ -108,7 +113,9 @@ impl Config {
         log!(info, ; "Servers HashMap");
         let servers = RwLock::new(HashMap::new());
 
+        #[cfg(feature = "music")]
         log!(info, ; "Songbird");
+        #[cfg(feature = "music")]
         let songbird = Songbird::serenity();
 
         #[cfg(feature = "spotify")]
@@ -124,12 +131,14 @@ impl Config {
         Ok(Self {
             general,
             message,
+            #[cfg(feature = "music")]
             youtube,
             #[cfg(feature = "spotify")]
             spotify,
             #[cfg(feature = "database")]
             database,
             servers,
+            #[cfg(feature = "music")]
             songbird,
         })
     }
@@ -143,6 +152,7 @@ impl Config {
     #[inline(always)]
     pub const fn auto_register_commands(&self) -> bool { self.general.auto_register_commands() }
 
+    #[cfg(feature = "music")]
     #[inline(always)]
     pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
 
@@ -160,9 +170,11 @@ impl Config {
         self.message.interaction_time_limit()
     }
 
+    #[cfg(feature = "music")]
     #[inline(always)]
     pub const fn youtube_search_count(&self) -> u8 { self.youtube.search_count() }
 
+    #[cfg(feature = "music")]
     #[inline(always)]
     pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
@@ -203,6 +215,7 @@ impl Config {
     #[inline(always)]
     pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> { &self.servers }
 
+    #[cfg(feature = "music")]
     #[inline(always)]
     pub fn songbird(&self) -> Arc<Songbird> { Arc::clone(&self.songbird) }
 }

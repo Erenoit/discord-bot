@@ -3,6 +3,7 @@ mod event;
 
 use event::Handler;
 use serenity::model::{application::command::Command, gateway::GatewayIntents};
+#[cfg(feature = "music")]
 use songbird::SerenityInit;
 
 pub use crate::bot::commands::Context;
@@ -27,16 +28,25 @@ impl Bot {
                 commands::others::ping::ping(),
                 commands::entertainment::sus::sus(),
                 commands::entertainment::meme::meme(),
+                #[cfg(feature = "music")]
                 commands::music::join::join(),
+                #[cfg(feature = "music")]
                 commands::music::leave::leave(),
+                #[cfg(feature = "music")]
                 commands::music::play::play(),
+                #[cfg(feature = "music")]
                 commands::music::stop::stop(),
+                #[cfg(feature = "music")]
                 commands::music::skip::skip(),
+                #[cfg(feature = "music")]
                 commands::music::repeat::repeat(),
                 #[cfg(feature = "database")]
                 commands::music::music::music(),
+                #[cfg(feature = "music")]
                 commands::music::queue::queue(),
+                #[cfg(feature = "music")]
                 commands::music::clear::clear(),
+                #[cfg(feature = "music")]
                 commands::music::shuffle::shuffle(),
             ],
 
@@ -57,8 +67,14 @@ impl Bot {
             .intents(GatewayIntents::all())
             .options(options)
             .client_settings(move |c| {
+                #[cfg(feature = "music")]
+                {
+                    c.event_handler(Handler::new())
+                        .register_songbird_with(get_config().songbird())
+                }
+
+                #[cfg(not(feature = "music"))]
                 c.event_handler(Handler::new())
-                    .register_songbird_with(get_config().songbird())
             })
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
