@@ -1,3 +1,4 @@
+#[cfg(feature = "cmd")]
 mod cmd_arguments;
 mod defaults;
 #[macro_use]
@@ -19,6 +20,7 @@ use std::sync::Arc;
 use std::{fs, io::Write};
 
 use anyhow::{anyhow, Result};
+#[cfg(feature = "cmd")]
 use clap::Parser;
 use directories::ProjectDirs;
 use serenity::model::id::GuildId;
@@ -28,6 +30,8 @@ use songbird::Songbird;
 use sqlx::SqlitePool;
 use tokio::sync::RwLock;
 
+#[cfg(feature = "cmd")]
+use crate::config::cmd_arguments::CMDArguments;
 #[cfg(feature = "music")]
 use crate::config::youtube::YouTubeConfig;
 #[cfg(feature = "database")]
@@ -35,7 +39,7 @@ use crate::config::{database::DatabaseConfig, defaults::ENABLE_DATABASE};
 #[cfg(feature = "spotify")]
 use crate::config::{defaults::ENABLE_SPOTIFY, spotify::SpotifyConfig};
 use crate::{
-    config::{cmd_arguments::CMDArguments, general::GeneralConfig, message::MessageConfig},
+    config::{general::GeneralConfig, message::MessageConfig},
     server::Server,
 };
 
@@ -59,6 +63,7 @@ pub struct Config {
 
 impl Config {
     pub fn generate() -> Result<Self> {
+        #[cfg(feature = "cmd")]
         let cmd_arguments = CMDArguments::parse();
 
         #[cfg(any(feature = "config_file", feature = "database"))]
@@ -68,9 +73,17 @@ impl Config {
             return Err(anyhow!("Couldn't find config location"));
         };
         #[cfg(feature = "config_file")]
-        let config_file_path = cmd_arguments
-            .cfg_file_path
-            .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"));
+        let config_file_path = {
+            #[cfg(feature = "cmd")]
+            {
+                cmd_arguments
+                    .cfg_file_path
+                    .unwrap_or_else(|| project_dirs.config_dir().join("config.toml"))
+            }
+
+            #[cfg(not(feature = "cmd"))]
+            project_dirs.config_dir().join("config.toml")
+        };
         #[cfg(feature = "config_file")]
         if !config_file_path.exists() {
             fs::create_dir_all(config_file_path.parent().ok_or_else(|| {
@@ -113,14 +126,14 @@ impl Config {
         #[cfg(feature = "database")]
         log!(info, ; "Database");
         #[cfg(feature = "database")]
-        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE",
-         "database"=>"enable", ENABLE_DATABASE)?
-        .then_some(DatabaseConfig::generate(
-            &config_file,
-            cmd_arguments
-                .database_folder_path
-                .unwrap_or_else(|| project_dirs.data_dir().to_path_buf()),
-        )?);
+        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE)?.then_some({
+            #[cfg(feature = "cmd")]
+            let path = cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().to_path_buf());
+            #[cfg(not(feature = "cmd"))]
+            let path = project_dirs.data_dir().join("database");
+
+            DatabaseConfig::generate(&config_file, path)?
+        });
 
         log!(info, ; "Servers HashMap");
         let servers = RwLock::new(HashMap::new());

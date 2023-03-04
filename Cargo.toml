@@ -11,7 +11,7 @@ repository = "https://gitlab.com/Erenoit/discord-bot"
 [dependencies]
 anyhow = "1.0"
 colored = "2.0"
-clap = { version = "4.1", features = ["derive"] }
+clap = { version = "4.1", features = ["derive"], optional = true }
 directories = "5.0"
 dotenv = { version = "0.15", optional = true }
 reqwest = "0.11"
@@ -42,8 +42,8 @@ tokio = { version = "1.26", features = [
 ] }
 
 [build-dependencies]
-clap = { version = "4.1", features = ["derive"] }
-clap_complete = "4.1"
+clap = { version = "4.1", features = ["derive"], optional = true }
+clap_complete = { version = "4.1", optional = true }
 
 [profile.release]
 opt-level = 3
@@ -52,7 +52,8 @@ panic = 'abort'
 overflow-checks = false
 
 [features]
-default = ["config_file", "database", "dotenv", "music", "spotify"]
+default = ["cmd", "config_file", "database", "dotenv", "music", "spotify"]
+cmd = ["dep:clap", "dep:clap_complete"]
 config_file = ["dep:taplo"]
 database = ["dep:sqlx", "music"]
 dotenv = ["dep:dotenv"]
