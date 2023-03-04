@@ -18,7 +18,7 @@ reqwest = "0.11"
 json = "0.12"
 poise = "0.5"
 rand = "0.8"
-serde = "1.0"
+serde = { version = "1.0", optional = true }
 serenity = { version = "0.11", default-features = false, features = [
     "client",
     "collector",
@@ -59,4 +59,4 @@ config_file = ["dep:directories", "dep:taplo"]
 database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenv"]
 music = ["dep:songbird"]
-spotify = ["music"]
+spotify = ["dep:serde", "music"]
