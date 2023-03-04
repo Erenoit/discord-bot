@@ -70,7 +70,8 @@ impl Config {
         }
 
         log!(info, "Registering Configs");
-        _ = dotenv::dotenv(); // It doesn't matter even if it fails
+        #[cfg(feature = "dotenv")]
+        drop(dotenv::dotenv()); // It doesn't matter even if it fails
         let config_file =
             taplo::parser::parse(fs::read_to_string(config_file_path)?.as_str()).into_dom();
 
