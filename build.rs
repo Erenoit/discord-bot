@@ -1,6 +1,6 @@
+use std::io::Error;
 #[cfg(feature = "cmd")]
 use std::{env, fs, path::Path};
-use std::io::Error;
 
 #[cfg(feature = "cmd")]
 use clap::{CommandFactory, ValueEnum};
