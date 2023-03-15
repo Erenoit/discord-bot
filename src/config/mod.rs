@@ -22,6 +22,7 @@ use std::{fs, io::Write};
 use anyhow::{anyhow, Result};
 #[cfg(feature = "cmd")]
 use clap::Parser;
+#[cfg(any(feature = "config_file", feature = "database"))]
 use directories::ProjectDirs;
 use serenity::model::id::GuildId;
 #[cfg(feature = "music")]
