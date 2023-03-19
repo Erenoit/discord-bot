@@ -24,7 +24,9 @@ impl DatabaseConfig {
         }
 
         let url = format!(
-            "sqlite://{}/discord_bot.db",
+            // create db file if not exists
+            // <https://github.com/launchbadge/sqlx/issues/1114#issuecomment-827815038>
+            "sqlite://{}/discord_bot.db?mode=rwc",
             path.to_string_lossy()
         );
         let pool: SqlitePool = SqlitePoolOptions::new().connect_lazy(&url)?;
