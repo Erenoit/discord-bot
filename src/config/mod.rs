@@ -91,7 +91,7 @@ impl Config {
             &config_file,
             cmd_arguments
                 .database_folder_path
-                .unwrap_or_else(|| project_dirs.data_dir().join("database")),
+                .unwrap_or_else(|| project_dirs.data_dir().to_path_buf()),
         )?);
 
         log!(info, ; "Servers HashMap");
