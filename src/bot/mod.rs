@@ -15,6 +15,11 @@ impl Bot {
     pub const fn new() -> Self { Self }
 
     pub async fn run(&mut self) {
+        get_config()
+            .run_database_migrations()
+            .await
+            .expect("Couldn't setup the database");
+
         let options = poise::FrameworkOptions {
             commands: vec![
                 commands::others::help::help(),

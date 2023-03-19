@@ -173,6 +173,14 @@ impl Config {
         }
     }
 
+    pub async fn run_database_migrations(&self) -> Result<()> {
+        if let Some(db) = &self.database {
+            db.run_migrations().await?;
+        }
+
+        Ok(())
+    }
+
     #[inline(always)]
     pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> { &self.servers }
 

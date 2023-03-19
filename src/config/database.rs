@@ -32,5 +32,10 @@ impl DatabaseConfig {
         Ok(Self { pool, url })
     }
 
+    pub async fn run_migrations(&self) -> Result<()> {
+        sqlx::migrate!().run(&self.pool).await?;
+        Ok(())
+    }
+
     pub const fn pool(&self) -> &SqlitePool { &self.pool }
 }
