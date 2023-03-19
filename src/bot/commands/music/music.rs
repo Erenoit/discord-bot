@@ -24,6 +24,8 @@ pub async fn music(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
+    ctx.defer().await?;
+
     let mut connection = db_connection!(ctx);
 
     handle_vc_connection(&ctx, server).await?;
@@ -66,6 +68,8 @@ pub async fn add(
     #[description = "URL for video/playlist"] url: String,
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
+
+    ctx.defer().await?;
 
     let mut connection = db_connection!(ctx);
 
@@ -137,6 +141,8 @@ pub async fn remove(
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
 
+    ctx.defer().await?;
+
     let mut connection = db_connection!(ctx);
 
     let key = guild.id.to_string() + "-" + &keyword;
@@ -166,6 +172,8 @@ pub async fn remove(
 #[poise::command(slash_command, prefix_command)]
 pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
+
+    ctx.defer().await?;
 
     let mut connection = db_connection!(ctx);
 
