@@ -116,6 +116,8 @@ pub async fn add(
             )
             .execute(&mut connection)
             .await?;
+
+            message!(success, ctx, ("{} is successfully changed.", keyword); true);
         }
     } else {
         sqlx::query!(
@@ -128,6 +130,8 @@ pub async fn add(
         )
         .execute(&mut connection)
         .await?;
+
+        message!(success, ctx, ("{} is successfully added.", keyword); true);
     }
 
     Ok(())
@@ -164,6 +168,8 @@ pub async fn remove(
     )
     .execute(&mut connection)
     .await?;
+
+    message!(success, ctx, ("{} is successfully deleted.", keyword); true);
 
     Ok(())
 }
