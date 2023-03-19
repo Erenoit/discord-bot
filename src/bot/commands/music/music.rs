@@ -179,16 +179,16 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         };
 
         let prefix = if group == 0 {
-            "general-".to_string()
+            "general-%".to_string()
         } else {
-            guild.id.to_string() + "-"
+            guild.id.to_string() + "-%"
         };
 
         sqlx::query_as!(
             KeyValue,
             r#"
             SELECT * FROM key_value
-            WHERE key MATCH ?
+            WHERE key LIKE ?
             "#,
             prefix
         )
