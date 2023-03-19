@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 pub mod entertainment;
 pub mod music;
 pub mod others;
