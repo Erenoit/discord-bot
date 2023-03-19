@@ -212,7 +212,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .for_each(|result| {
             _ = writeln!(
                 msg,
-                "**{}**: {}",
+                "**{}**: <{}>",
                 result
                     .key
                     .split_once('-')
