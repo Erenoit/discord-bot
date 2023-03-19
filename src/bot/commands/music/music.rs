@@ -77,10 +77,10 @@ pub async fn add(
     let key = guild.id.to_string() + "-" + &keyword;
 
     if !url.starts_with("https://www.youtube.com")
-        || !url.starts_with("https://open.spotify.com")
-        || !url.starts_with("http://www.youtube.com")
-        || !url.starts_with("http://open.spotify.com")
-        || url.contains(' ')
+        && !url.starts_with("https://open.spotify.com")
+        && !url.starts_with("http://www.youtube.com")
+        && !url.starts_with("http://open.spotify.com")
+        && url.contains(' ')
     {
         message!(error, ctx, ("Invalid URL"); true);
         return Ok(());
