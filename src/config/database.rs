@@ -1,14 +1,13 @@
 use std::{env, fs, path::PathBuf};
 
 use anyhow::{anyhow, Result};
-use rocksdb::{DBWithThreadMode, MultiThreaded, Options};
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use taplo::dom::Node;
 
 #[non_exhaustive]
 pub(super) struct DatabaseConfig {
-    connection: DBWithThreadMode<MultiThreaded>,
-    options:    Options,
-    path:       PathBuf,
+    pool: SqlitePool,
+    url:  String,
 }
 
 impl DatabaseConfig {
@@ -24,25 +23,21 @@ impl DatabaseConfig {
             })?)?;
         }
 
-        let mut options = Options::default();
-        options.create_if_missing(true);
-        options.create_missing_column_families(true);
+        let url = format!(
+            // create db file if not exists
+            // <https://github.com/launchbadge/sqlx/issues/1114#issuecomment-827815038>
+            "sqlite://{}/discord_bot.db?mode=rwc",
+            path.to_string_lossy()
+        );
+        let pool: SqlitePool = SqlitePoolOptions::new().connect_lazy(&url)?;
 
-        match DBWithThreadMode::open(&options, &path) {
-            Ok(connection) => Ok(Self { connection, options, path }),
-            Err(why) => {
-                log!(error, "Couldn't open database."; "{why}");
-                Err(anyhow!("Couldn't open database."))
-            },
-        }
+        Ok(Self { pool, url })
     }
 
-    #[inline(always)]
-    pub const fn connection(&self) -> &DBWithThreadMode<MultiThreaded> { &self.connection }
-
-    // TODO: use this fuction somewhere makes sense
-    #[allow(dead_code)]
-    fn close_connection(self) {
-        _ = DBWithThreadMode::<MultiThreaded>::destroy(&self.options, self.path);
+    pub async fn run_migrations(&self) -> Result<()> {
+        sqlx::migrate!().run(&self.pool).await?;
+        Ok(())
     }
+
+    pub const fn pool(&self) -> &SqlitePool { &self.pool }
 }

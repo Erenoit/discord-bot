@@ -2,6 +2,7 @@ use std::fmt::Write;
 
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
+    database_tables::KeyValue,
     get_config,
     player::Song,
 };
@@ -23,26 +24,38 @@ pub async fn music(
     let servers = get_config().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
-    let Some(db) = get_config().database() else {
-        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
-        return Ok(());
-    };
+    ctx.defer().await?;
+
+    let mut connection = db_connection!(ctx);
 
     handle_vc_connection(&ctx, server).await?;
 
-    if let Ok(Some(url)) = db.get((guild.id.to_string() + "-" + &keyword).as_bytes()) {
-        server
-            .player
-            .play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?)
-            .await;
-    } else if let Ok(Some(url)) = db.get(("general-".to_string() + &keyword).as_bytes()) {
-        server
-            .player
-            .play(&mut Song::new(&ctx, String::from_utf8_lossy(&url)).await?)
-            .await;
-    } else {
-        message!(error, ctx, ("Invalid keyword"); true);
+    let keywords = [
+        guild.id.to_string() + "-" + &keyword,
+        "general-".to_string() + &keyword,
+    ];
+
+    for key in keywords {
+        if let Some(res) = sqlx::query_as!(
+            KeyValue,
+            r#"
+            SELECT * FROM key_value
+            WHERE key = ?
+            "#,
+            key
+        )
+        .fetch_optional(&mut connection)
+        .await?
+        {
+            server
+                .player
+                .play(&mut Song::new(&ctx, res.value).await?)
+                .await;
+            return Ok(());
+        }
     }
+
+    message!(error, ctx, ("Invalid keyword"); true);
 
     Ok(())
 }
@@ -56,10 +69,9 @@ pub async fn add(
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
 
-    let Some(db) = get_config().database() else {
-        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
-        return Ok(());
-    };
+    ctx.defer().await?;
+
+    let mut connection = db_connection!(ctx);
 
     if keyword.contains(' ') {
         message!(error, ctx, ("Keywords cannot contain space. Use '-' or '_' instead."); true);
@@ -69,30 +81,57 @@ pub async fn add(
     let key = guild.id.to_string() + "-" + &keyword;
 
     if !url.starts_with("https://www.youtube.com")
-        || !url.starts_with("https://open.spotify.com")
-        || !url.starts_with("http://www.youtube.com")
-        || !url.starts_with("http://open.spotify.com")
-        || url.contains(' ')
+        && !url.starts_with("https://open.spotify.com")
+        && !url.starts_with("http://www.youtube.com")
+        && !url.starts_with("http://open.spotify.com")
+        && url.contains(' ')
     {
         message!(error, ctx, ("Invalid URL"); true);
         return Ok(());
     }
 
-    if db.key_may_exist(&key)
-        && !selection!(
+    if sqlx::query!(
+        r#"
+        SELECT * FROM key_value
+        WHERE key = ?
+        "#,
+        key
+    )
+    .fetch_optional(&mut connection)
+    .await?
+    .is_some()
+    {
+        if !selection!(
             confirm,
             ctx,
             "`{keyword}` already exists. Do you want to overwrite it?"
-        )
-    {
-        return Ok(());
-    }
+        ) {
+            sqlx::query!(
+                r#"
+                REPLACE INTO key_value (key, value)
+                VALUES (?, ?)
+                "#,
+                key,
+                url
+            )
+            .execute(&mut connection)
+            .await?;
 
-    if let Err(why) = db.put(key.as_bytes(), url.as_bytes()) {
-        message!(error, ctx, ("Couldn't add new item to the database. Please try again later."); true);
-        log!(error, "Database Error"; "{why}");
+            message!(success, ctx, ("{} is successfully changed.", keyword); true);
+        }
     } else {
-        message!(success, ctx, ("`{keyword}` is successfully added to the database."); true);
+        sqlx::query!(
+            r#"
+            INSERT INTO key_value (key, value)
+            VALUES (?, ?)
+            "#,
+            key,
+            url
+        )
+        .execute(&mut connection)
+        .await?;
+
+        message!(success, ctx, ("{} is successfully added.", keyword); true);
     }
 
     Ok(())
@@ -106,17 +145,11 @@ pub async fn remove(
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
 
-    let Some(db) = get_config().database() else {
-        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
-        return Ok(());
-    };
+    ctx.defer().await?;
+
+    let mut connection = db_connection!(ctx);
 
     let key = guild.id.to_string() + "-" + &keyword;
-
-    if !db.key_may_exist(key) {
-        message!(error, ctx, ("`{keyword}` is already doesn't exist"); true);
-        return Ok(());
-    }
 
     if !selection!(
         confirm,
@@ -126,12 +159,17 @@ pub async fn remove(
         return Ok(());
     }
 
-    if let Err(why) = db.delete(keyword.as_bytes()) {
-        message!(error, ctx, ("Couldn't remove new item to the database. Please try again later.."); true);
-        log!(error, "Database Error"; "{why}");
-    } else {
-        message!(success, ctx, ("`{keyword}` is successfully removed from the database."); true);
-    }
+    sqlx::query!(
+        r#"
+        DELETE FROM key_value
+        WHERE key = ?
+        "#,
+        key
+    )
+    .execute(&mut connection)
+    .await?;
+
+    message!(success, ctx, ("{} is successfully deleted.", keyword); true);
 
     Ok(())
 }
@@ -141,10 +179,9 @@ pub async fn remove(
 pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
 
-    let Some(db) = get_config().database() else {
-        message!(error, ctx, ("Database option is not enabled on this bot. So, you cannot use music command."); true);
-        return Ok(());
-    };
+    ctx.defer().await?;
+
+    let mut connection = db_connection!(ctx);
 
     let mut msg = String::with_capacity(1024);
 
@@ -156,22 +193,36 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         };
 
         let prefix = if group == 0 {
-            "general-".to_string()
+            "general-%".to_string()
         } else {
-            guild.id.to_string() + "-"
+            guild.id.to_string() + "-%"
         };
 
-        for entry in db.prefix_iterator(prefix.as_bytes()).flatten() {
+        sqlx::query_as!(
+            KeyValue,
+            r#"
+            SELECT * FROM key_value
+            WHERE key LIKE ?
+            "#,
+            prefix
+        )
+        .fetch_all(&mut connection)
+        .await?
+        .iter()
+        .for_each(|result| {
             _ = writeln!(
                 msg,
-                "**{}**: {}",
-                String::from_utf8_lossy(&entry.0)
+                "**{}**: <{}>",
+                result
+                    .key
                     .split_once('-')
                     .expect("There is a `-` in prefix. This cannot fail.")
                     .1,
-                String::from_utf8_lossy(&entry.1)
+                result.value
             );
-        }
+        });
+
+        msg += "\n";
     }
 
     message!(normal, ctx, ("Avavable Keywords"); ("{}", msg); true);

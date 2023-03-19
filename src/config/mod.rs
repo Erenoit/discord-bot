@@ -14,9 +14,9 @@ use std::{collections::HashMap, env, fs, io::Write, sync::Arc};
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use directories::ProjectDirs;
-use rocksdb::{DBWithThreadMode, MultiThreaded};
 use serenity::model::id::GuildId;
 use songbird::Songbird;
+use sqlx::SqlitePool;
 use tokio::sync::RwLock;
 
 use crate::{
@@ -85,9 +85,14 @@ impl Config {
         );
 
         log!(info, ; "Database");
-        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE)?.then_some(
-            DatabaseConfig::generate(&config_file, cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().join("database")))?
-        );
+        let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE",
+         "database"=>"enable", ENABLE_DATABASE)?
+        .then_some(DatabaseConfig::generate(
+            &config_file,
+            cmd_arguments
+                .database_folder_path
+                .unwrap_or_else(|| project_dirs.data_dir().to_path_buf()),
+        )?);
 
         log!(info, ; "Servers HashMap");
         let servers = RwLock::new(HashMap::new());
@@ -160,12 +165,20 @@ impl Config {
     }
 
     #[inline(always)]
-    pub const fn database(&self) -> Option<&DBWithThreadMode<MultiThreaded>> {
+    pub const fn database_pool(&self) -> Option<&SqlitePool> {
         if let Some(db) = &self.database {
-            Some(db.connection())
+            Some(db.pool())
         } else {
             None
         }
+    }
+
+    pub async fn run_database_migrations(&self) -> Result<()> {
+        if let Some(db) = &self.database {
+            db.run_migrations().await?;
+        }
+
+        Ok(())
     }
 
     #[inline(always)]

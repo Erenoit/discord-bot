@@ -40,6 +40,7 @@ mod messager;
 
 mod bot;
 mod config;
+mod database_tables;
 mod player;
 mod server;
 
