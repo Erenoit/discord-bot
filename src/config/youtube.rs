@@ -1,9 +1,10 @@
-use std::env;
-
 use anyhow::Result;
+#[cfg(feature = "config_file")]
 use taplo::dom::Node;
 
 use crate::config::defaults::{YT_AGE_RESTRICTED, YT_SEARCH_COUNT};
+#[cfg(not(feature = "config_file"))]
+use crate::config::Node;
 
 // TODO add more options
 // TODO: implement this configs

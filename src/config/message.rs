@@ -1,6 +1,5 @@
-use std::env;
-
 use anyhow::Result;
+#[cfg(feature = "config_file")]
 use taplo::dom::Node;
 
 use crate::config::defaults::{
@@ -11,6 +10,8 @@ use crate::config::defaults::{
     RANDOM_EMBED_COLORS,
     SUCCESS_COLOR,
 };
+#[cfg(not(feature = "config_file"))]
+use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct MessageConfig {

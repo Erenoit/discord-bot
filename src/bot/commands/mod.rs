@@ -2,6 +2,7 @@
 mod macros;
 
 pub mod entertainment;
+#[cfg(feature = "music")]
 pub mod music;
 pub mod others;
 

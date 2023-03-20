@@ -2,6 +2,7 @@ pub mod clear;
 pub mod join;
 pub mod leave;
 #[allow(clippy::module_inception)]
+#[cfg(feature = "database")]
 pub mod music;
 pub mod play;
 pub mod queue;
@@ -31,7 +32,7 @@ async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Res
             Ok(())
         } else {
             message!(error, ctx, ("You are not in the voice channel"); true);
-            return Err(anyhow::anyhow!("You are not in a voice channel"));
+            Err(anyhow::anyhow!("You are not in a voice channel"))
         }
     } else {
         let Some(user_vc) = context_to_voice_channel_id(ctx) else {

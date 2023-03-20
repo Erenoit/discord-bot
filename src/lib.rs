@@ -41,6 +41,7 @@ mod messager;
 mod bot;
 mod config;
 mod database_tables;
+#[cfg(feature = "music")]
 mod player;
 mod server;
 
