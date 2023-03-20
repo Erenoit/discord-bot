@@ -16,6 +16,7 @@ impl Bot {
     pub const fn new() -> Self { Self }
 
     pub async fn run(&mut self) {
+        #[cfg(feature = "database")]
         get_config()
             .run_database_migrations()
             .await

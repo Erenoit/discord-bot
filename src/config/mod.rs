@@ -131,7 +131,7 @@ impl Config {
             #[cfg(feature = "cmd")]
             let path = cmd_arguments.database_folder_path.unwrap_or_else(|| project_dirs.data_dir().to_path_buf());
             #[cfg(not(feature = "cmd"))]
-            let path = project_dirs.data_dir().join("database");
+            let path = project_dirs.data_dir().to_path_buf();
 
             DatabaseConfig::generate(&config_file, path)?
         });
@@ -230,6 +230,7 @@ impl Config {
         }
     }
 
+    #[cfg(feature = "database")]
     pub async fn run_database_migrations(&self) -> Result<()> {
         if let Some(db) = &self.database {
             db.run_migrations().await?;
