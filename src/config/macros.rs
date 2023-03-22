@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! get_value {
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
         get_value_common!($config_file, $ttype, $env_name, $($p)=>+, { anyhow::Ok(<$ttype>::from($default_value)) })

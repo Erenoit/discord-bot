@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! message {
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx
@@ -90,7 +89,6 @@ macro_rules! message {
     };
 }
 
-#[macro_export]
 macro_rules! selection {
     (confirm, $ctx:expr, $($msg:tt)*) => {
         'confirm_selection: {
@@ -245,7 +243,6 @@ macro_rules! selection_inner {
     };
 }
 
-#[macro_export]
 macro_rules! button {
     (normal, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::component::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)
