@@ -63,7 +63,6 @@ impl Song {
         }
     }
 
-    #[inline(always)]
     pub async fn yt_search(
         ctx: &Context<'_>,
         song: String,
@@ -127,7 +126,6 @@ impl Song {
 
     // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
-    #[inline(always)]
     async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("yt-dlp")
             .args(["--get-title", "--get-id", "--get-duration", &song])
@@ -168,7 +166,6 @@ impl Song {
         }
     }
 
-    #[inline(always)]
     async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Command::new("yt-dlp")
             .args([
@@ -217,7 +214,6 @@ impl Song {
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/track/").collect::<Vec<_>>()[1]
@@ -277,7 +273,6 @@ impl Song {
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/playlist/").collect::<Vec<_>>()[1]
@@ -340,7 +335,6 @@ impl Song {
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/artist/").collect::<Vec<_>>()[1]
@@ -406,7 +400,6 @@ impl Song {
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let base_url = "https://api.spotify.com/v1";
         let track_id = song.split("/album/").collect::<Vec<_>>()[1]
@@ -468,16 +461,12 @@ impl Song {
         }
     }
 
-    #[inline(always)]
     pub fn title(&self) -> String { self.title.clone() }
 
-    #[inline(always)]
     pub fn url(&self) -> String { self.id.clone() }
 
-    #[inline(always)]
     pub fn duration(&self) -> String { self.duration.clone() }
 
-    #[inline(always)]
     pub fn user_name(&self) -> String { self.user_name.clone() }
 }
 

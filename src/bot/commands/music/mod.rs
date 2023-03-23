@@ -13,7 +13,6 @@ pub mod stop;
 
 use crate::{bot::commands::Context, get_config, server::Server};
 
-#[inline(always)]
 fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id::ChannelId> {
     ctx.guild()
         .expect("Guild should be Some")
@@ -22,7 +21,6 @@ fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id:
         .and_then(|voice_state| voice_state.channel_id)
 }
 
-#[inline(always)]
 async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Result<()> {
     let bot_vc = server.player.connected_vc().await;
     if bot_vc.is_none() {

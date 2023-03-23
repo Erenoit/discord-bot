@@ -12,10 +12,8 @@ use tokio::sync::Mutex;
 pub use crate::player::song::Song;
 use crate::{bot::Context, get_config, player::event::SongEnd};
 
-#[inline(always)]
 fn get_songbird_manager() -> Arc<Songbird> { get_config().songbird() }
 
-#[inline(always)]
 fn get_call_mutex(guild_id: GuildId) -> Option<Arc<Mutex<Call>>> {
     get_songbird_manager().get(guild_id)
 }
@@ -253,7 +251,6 @@ impl Player {
 
     pub async fn get_repeat_mode(&self) -> Repeat { *self.repeat_mode.lock().await }
 
-    #[inline(always)]
     pub async fn connected_vc(&self) -> Option<songbird::id::ChannelId> {
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
             call_mutex.lock().await.current_channel()

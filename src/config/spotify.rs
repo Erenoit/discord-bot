@@ -35,10 +35,8 @@ impl SpotifyConfig {
         })
     }
 
-    #[inline(always)]
     pub const fn client(&self) -> (&String, &String) { (&self.client_id, &self.client_secret) }
 
-    #[inline(always)]
     pub async fn token(&self) -> String {
         if self.token.read().await.is_none()
             || self

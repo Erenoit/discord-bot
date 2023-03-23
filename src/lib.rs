@@ -4,7 +4,6 @@
 #![deny(clippy::correctness)]
 #![warn(clippy::nursery)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::inline_always)] // Should learn more about inline
 #![allow(clippy::let_underscore_drop)] // Not understand why shouldn't I drop immediately
 #![allow(clippy::missing_errors_doc)] // Not documenting
 #![allow(clippy::missing_panics_doc)] // Not documenting
@@ -53,7 +52,6 @@ pub use crate::bot::Bot;
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
-#[inline(always)]
 pub fn init_config() -> Result<()> {
     CONFIG.set(Config::generate()?).map_or_else(
         |_| Err(anyhow!("Couldn't set the config in OnceCell")),
@@ -61,5 +59,4 @@ pub fn init_config() -> Result<()> {
     )
 }
 
-#[inline(always)]
 fn get_config() -> &'static Config { CONFIG.get().expect("CONFIG should be initialized at start") }
