@@ -4,7 +4,6 @@
 #![deny(clippy::correctness)]
 #![warn(clippy::nursery)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::let_underscore_drop)] // Not understand why shouldn't I drop immediately
 #![allow(clippy::missing_errors_doc)] // Not documenting
 #![allow(clippy::missing_panics_doc)] // Not documenting
 #![allow(clippy::must_use_candidate)] // No idea what it means
