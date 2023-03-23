@@ -32,8 +32,10 @@
 #![warn(clippy::suspicious)]
 
 #[macro_use]
+#[allow(unused_macros)]
 mod logger;
 #[macro_use]
+#[allow(unused_macros)]
 mod messager;
 
 mod bot;

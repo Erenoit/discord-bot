@@ -2,6 +2,7 @@
 mod cmd_arguments;
 mod defaults;
 #[macro_use]
+#[allow(unused_macros)]
 mod macros;
 
 #[cfg(feature = "database")]

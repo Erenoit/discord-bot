@@ -10,13 +10,9 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(guild_id: GuildId) -> Self {
-        #[cfg(feature = "music")]
-        {
-            Self { player: Player::new(guild_id) }
-        }
+    #[cfg(feature = "music")]
+    pub fn new(guild_id: GuildId) -> Self { Self { player: Player::new(guild_id) } }
 
-        #[cfg(not(feature = "music"))]
-        Self {}
-    }
+    #[cfg(not(feature = "music"))]
+    pub const fn new(_guild_id: GuildId) -> Self { Self {} }
 }
