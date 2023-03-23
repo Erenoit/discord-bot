@@ -50,7 +50,7 @@ use tokio::sync::OnceCell;
 
 pub use crate::bot::Bot;
 
-pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
+static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
 pub fn init_config() -> Result<()> {
     CONFIG.set(Config::generate()?).map_or_else(
