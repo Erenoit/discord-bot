@@ -1,3 +1,4 @@
+#[cfg(feature = "database")]
 macro_rules! db_connection {
     ($ctx: ident) => {{
         let Some(db) = get_config().database_pool() else {

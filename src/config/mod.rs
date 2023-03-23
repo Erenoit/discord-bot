@@ -19,7 +19,9 @@ use std::sync::Arc;
 #[cfg(feature = "config_file")]
 use std::{fs, io::Write};
 
-use anyhow::{anyhow, Result};
+#[cfg(any(feature = "config_file", feature = "database"))]
+use anyhow::anyhow;
+use anyhow::Result;
 #[cfg(feature = "cmd")]
 use clap::Parser;
 #[cfg(any(feature = "config_file", feature = "database"))]
