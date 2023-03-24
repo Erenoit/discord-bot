@@ -3,7 +3,7 @@ mod song;
 #[cfg(feature = "spotify")]
 mod sp_structs;
 
-use std::{collections::VecDeque, fmt::Write, slice::Iter, sync::Arc};
+use std::{collections::VecDeque, fmt::Write, mem, slice::Iter, sync::Arc};
 
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Call, Event, Songbird, TrackEvent};
@@ -86,10 +86,10 @@ impl Player {
             Repeat::One => {},
             Repeat::All =>
                 if self.song_queue.lock().await.is_empty() {
-                    self.song_queue
-                        .lock()
-                        .await
-                        .append(&mut *self.repeat_queue.lock().await);
+                    mem::swap(
+                        &mut *self.song_queue.lock().await,
+                        &mut *self.repeat_queue.lock().await,
+                    );
                 },
         }
 
