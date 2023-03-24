@@ -162,8 +162,8 @@ impl Player {
     }
 
     pub async fn clear_the_queues(&self) {
-        *self.song_queue.lock().await = VecDeque::with_capacity(100);
-        *self.repeat_queue.lock().await = VecDeque::with_capacity(100);
+        mem::take(&mut *self.song_queue.lock().await);
+        mem::take(&mut *self.repeat_queue.lock().await);
     }
 
     pub async fn shuffle_song_queue(&self) {
