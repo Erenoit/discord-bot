@@ -98,23 +98,29 @@ impl Player {
                 },
         }
 
-                Repeat::Off | Repeat::All =>
-                    self.song_queue
         let next_song = match repeat_mode {
+            Repeat::Off | Repeat::All =>
+                self.song_queue
+                    .lock()
+                    .await
+                    .pop_front()
+                    .expect("Queue cannot be empty at this point"),
+            Repeat::One => {
+                let mut now_playing = self.now_playing.lock().await;
+                if now_playing.is_some() {
+                    mem::replace(&mut *now_playing, None).expect("Cannot be None at this point")
+                } else {
+                    let Some(song) = self.song_queue
                         .lock()
                         .await
-                        .pop_front()
-                        .expect("Queue cannot be empty at this point"),
-                Repeat::One => {
-                    // TODO: fix this .clone()
-                    if let Some(now_playing) = &*self.now_playing.lock().await {
-                        now_playing.clone()
-                    } else {
-                        self.stop_stream().await;
-                        return;
-                    }
-                },
-            };
+                        .pop_front() else {
+                            self.stop_stream().await;
+                            return;
+                        };
+                    song
+                }
+            },
+        };
 
         let source = match songbird::ytdl(next_song.url()).await {
             Ok(source) => source,
