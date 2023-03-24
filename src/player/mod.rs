@@ -77,7 +77,9 @@ impl Player {
     }
 
     pub async fn start_stream(&self) {
-        match self.get_repeat_mode().await {
+        let repeat_mode = self.get_repeat_mode().await;
+
+        match repeat_mode {
             Repeat::Off =>
                 if self.song_queue.lock().await.is_empty() {
                     self.stop_stream().await;
@@ -94,9 +96,9 @@ impl Player {
         }
 
         if let Some(call_mutex) = get_call_mutex(self.guild_id) {
-            let next_song = match self.get_repeat_mode().await {
                 Repeat::Off | Repeat::All =>
                     self.song_queue
+        let next_song = match repeat_mode {
                         .lock()
                         .await
                         .pop_front()
