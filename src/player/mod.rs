@@ -78,6 +78,9 @@ impl Player {
 
     pub async fn start_stream(&self) {
         let repeat_mode = self.get_repeat_mode().await;
+        let Some(call_mutex) = get_call_mutex(self.guild_id) else {
+            unreachable!("Not in a voice channel to play in")
+        };
 
         match repeat_mode {
             Repeat::Off =>
@@ -95,7 +98,6 @@ impl Player {
                 },
         }
 
-        if let Some(call_mutex) = get_call_mutex(self.guild_id) {
                 Repeat::Off | Repeat::All =>
                     self.song_queue
         let next_song = match repeat_mode {
@@ -114,24 +116,21 @@ impl Player {
                 },
             };
 
-            let source = match songbird::ytdl(next_song.url()).await {
-                Ok(source) => source,
-                Err(why) => {
-                    log!(error, "Couldn't start source."; "{why}");
-                    return;
-                },
-            };
+        let source = match songbird::ytdl(next_song.url()).await {
+            Ok(source) => source,
+            Err(why) => {
+                log!(error, "Couldn't start source."; "{why}");
+                return;
+            },
+        };
 
-            let mut call = call_mutex.lock().await;
-            _ = call
-                .play_source(source)
-                .add_event(Event::Track(TrackEvent::End), SongEnd {
-                    guild_id: self.guild_id,
-                });
-            *self.now_playing.lock().await = Some(next_song);
-        } else {
-            unreachable!("Not in a voice channel to play in")
-        }
+        let mut call = call_mutex.lock().await;
+        _ = call
+            .play_source(source)
+            .add_event(Event::Track(TrackEvent::End), SongEnd {
+                guild_id: self.guild_id,
+            });
+        *self.now_playing.lock().await = Some(next_song);
     }
 
     pub async fn stop_stream(&self) {
