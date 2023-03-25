@@ -54,66 +54,69 @@ impl Song {
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            Self::yt_search(ctx, song, user_name).await
+            Self::search(ctx, song, user_name).await
         }
     }
 
-    pub async fn yt_search(
-        ctx: &Context<'_>,
-        song: String,
-        user_name: String,
-    ) -> Result<VecDeque<Self>> {
-        // TODO: change something faster than yt-dlp
-        // TODO: clean this code
-        let search_count = 5;
-        let out = Command::new("yt-dlp")
+    async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let res = Command::new("yt-dlp")
             .args([
                 "--no-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &format!("ytsearch{search_count}:{song}"),
+                &format!(
+                    "ytsearch{}:{}",
+                    get_config().youtube_search_count(),
+                    song
+                ),
             ])
             .output()
             .await?;
 
-        let list = String::from_utf8(out.stdout).unwrap();
-        let list_seperated = list.split('\n').collect::<Vec<_>>();
-
-        let mut l: Vec<(String, String)> = Vec::with_capacity(search_count);
-        for i in 0 .. search_count {
-            l.push((
-                list_seperated[i * 3].to_owned(),
-                list_seperated[i * 3 + 1].to_owned(),
-            ));
+        if !res.status.success() {
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            return Err(anyhow!("yt-dlp failed"));
         }
 
-        let answer = selection!(list, *ctx, "Search", l, true);
+        let list = String::from_utf8_lossy(&res.stdout)
+            .lines()
+            .array_chunks::<3>()
+            .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
+            .collect::<Vec<_>>();
+
+        let answer = selection!(
+            list,
+            *ctx,
+            "Search",
+            list.iter().map(|e| (&e.0, &e.1)).collect::<Vec<_>>(),
+            true
+        );
         if answer == "success" {
-            let mut return_vec = VecDeque::with_capacity(search_count);
-            for i in 0 .. search_count {
-                return_vec.push_back(Self {
-                    title:     list_seperated[i * 3].to_owned(),
-                    id:        list_seperated[i * 3].to_owned(),
-                    duration:  list_seperated[i * 3].to_owned(),
-                    user_name: user_name.clone(),
-                });
-            }
-            Ok(return_vec)
+            Ok(list
+                .into_iter()
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.clone(),
+                    }
+                })
+                .collect::<VecDeque<_>>())
         } else if answer != "danger" {
-            let mut return_vec = VecDeque::with_capacity(1);
-            for i in 0 .. search_count {
-                if *list_seperated[i * 3 + 1] == answer {
-                    return_vec.push_back(Self {
-                        title: list_seperated[i * 3].to_owned(),
-                        id: list_seperated[i * 3 + 1].to_owned(),
-                        duration: list_seperated[i * 3 + 2].to_owned(),
-                        user_name,
-                    });
-                    break;
-                }
-            }
-            Ok(return_vec)
+            Ok(list
+                .into_iter()
+                .filter(|e| e.1 == answer)
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.clone(),
+                    }
+                })
+                .collect::<VecDeque<_>>())
         } else {
             Err(anyhow!("Selection failed/canceled"))
         }
