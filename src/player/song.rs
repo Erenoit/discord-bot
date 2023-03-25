@@ -44,7 +44,7 @@ impl Song {
         let song = song.to_string();
         let user_name = ctx.author().name.clone();
 
-        if song.starts_with("http://") || song.starts_with("https://") {
+        if song.starts_with("https://") || song.starts_with("http://") {
             if song.contains("youtube") {
                 if song.contains("list") {
                     Self::yt_url(song, user_name).await
