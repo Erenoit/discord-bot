@@ -30,6 +30,7 @@
 //#![warn(clippy::unwrap_used)]
 #![warn(clippy::style)]
 #![warn(clippy::suspicious)]
+#![feature(iter_array_chunks)]
 
 #[macro_use]
 #[allow(unused_macros)]
