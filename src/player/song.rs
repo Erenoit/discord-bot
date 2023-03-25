@@ -46,11 +46,7 @@ impl Song {
 
         if song.starts_with("https://") || song.starts_with("http://") {
             if song.contains("youtube") {
-                if song.contains("list") {
-                    Self::yt_url(song, user_name).await
-                } else {
-                    Self::yt_playlist(song, user_name).await
-                }
+                Self::youtube(song, user_name).await
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
                 Self::spotify(song, user_name).await
             } else {
@@ -125,48 +121,8 @@ impl Song {
 
     // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
-    async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("yt-dlp")
-            .args(["--get-title", "--get-id", "--get-duration", &song])
-            .output()
-            .await
-        {
-            if !res.status.success() {
-                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
-                return Err(anyhow!("yt-dlp failed"));
-            }
-
-            let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                .expect("Output must be valid UTF-8")
-                .split('\n')
-                .map(std::string::ToString::to_string)
-                .collect();
-
-            let title = splited_res.get(0);
-            let id = splited_res.get(1);
-            let duration = splited_res.get(2);
-
-            if title.is_none() || id.is_none() || duration.is_none() {
-                log!(error, "Somehow yt-dlp returned less data");
-                return Err(anyhow!("yt-dlp failed"));
-            }
-
-            let mut return_vec = VecDeque::with_capacity(1);
-            return_vec.push_back(Self {
-                title: title.unwrap().clone(),
-                id: id.unwrap().clone(),
-                duration: duration.unwrap().clone(),
-                user_name,
-            });
-            Ok(return_vec)
-        } else {
-            log!(error, "Command creation for yt-dlp failed");
-            Err(anyhow!("yt-dlp failed"))
-        }
-    }
-
-    async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("yt-dlp")
+    async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
@@ -175,41 +131,28 @@ impl Song {
                 &song,
             ])
             .output()
-            .await
-        {
-            if !res.status.success() {
-                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            .await else {
+                log!(error, "Command creation for yt-dlp failed");
                 return Err(anyhow!("yt-dlp failed"));
-            }
+            };
 
-            let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                .expect("Output must be valid UTF-8")
-                .split('\n')
-                .filter(|e| !e.is_empty())
-                .map(std::string::ToString::to_string)
-                .collect();
-
-            if splited_res.len() % 3 != 0 {
-                log!(error, "yt-dlp returned wrong number of arguments");
-                return Err(anyhow!("Output must be dividable by 3"));
-            }
-
-            let mut return_vec: VecDeque<Self> = VecDeque::with_capacity(splited_res.len() / 3);
-
-            for i in 0 .. splited_res.len() / 3 {
-                return_vec.push_back(Self {
-                    title:     splited_res.get(i * 3).unwrap().to_string(),
-                    id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
-                    duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
-                    user_name: user_name.clone(),
-                });
-            }
-
-            Ok(return_vec)
-        } else {
-            log!(error, "Command creation for yt-dlp failed");
-            Err(anyhow!("yt-dlp failed"))
+        if !res.status.success() {
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            return Err(anyhow!("yt-dlp failed"));
         }
+
+        Ok(String::from_utf8_lossy(&res.stdout)
+            .split('\n')
+            .array_chunks::<3>()
+            .map(|e| {
+                Self {
+                    title:     e[0].to_owned(),
+                    id:        e[1].to_owned(),
+                    duration:  e[2].to_owned(),
+                    user_name: user_name.clone(),
+                }
+            })
+            .collect())
     }
 
     #[cfg(feature = "spotify")]
