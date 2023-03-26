@@ -39,14 +39,6 @@ mod logger;
 #[allow(unused_macros)]
 mod messager;
 
-mod bot;
-mod config;
-#[cfg(feature = "database")]
-mod database_tables;
-#[cfg(feature = "music")]
-mod player;
-mod server;
-
 use anyhow::{anyhow, Result};
 use config::Config;
 use tokio::sync::OnceCell;
@@ -62,4 +54,21 @@ pub fn init_config() -> Result<()> {
     )
 }
 
-fn get_config() -> &'static Config { CONFIG.get().expect("CONFIG should be initialized at start") }
+#[macro_use]
+mod dummy_module {
+    macro_rules! get_config {
+        () => {{
+            use crate::CONFIG;
+
+            CONFIG.get().expect("CONFIG should be initialized at start")
+        }};
+    }
+}
+
+mod bot;
+mod config;
+#[cfg(feature = "database")]
+mod database_tables;
+#[cfg(feature = "music")]
+mod player;
+mod server;

@@ -10,11 +10,11 @@ use songbird::{Event, TrackEvent};
 use tokio::sync::Mutex;
 
 pub use crate::player::song::Song;
-use crate::{bot::Context, get_config, player::event::SongEnd};
+use crate::{bot::Context, player::event::SongEnd};
 
 macro_rules! get_songbird_manager {
     () => {
-        get_config().songbird()
+        get_config!().songbird()
     };
 }
 

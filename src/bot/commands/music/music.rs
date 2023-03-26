@@ -3,7 +3,6 @@ use std::fmt::Write;
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
     database_tables::KeyValue,
-    get_config,
     player::Song,
 };
 
@@ -21,7 +20,7 @@ pub async fn music(
     #[description = "Keyword for wanted video/playlist"] keyword: String,
 ) -> Result<(), Error> {
     let guild = ctx.guild().expect("Guild should be Some");
-    let servers = get_config().servers().read().await;
+    let servers = get_config!().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     ctx.defer().await?;

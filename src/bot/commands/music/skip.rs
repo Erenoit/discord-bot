@@ -1,7 +1,4 @@
-use crate::{
-    bot::commands::{Context, Error},
-    get_config,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Skips the current playing song
 #[poise::command(
@@ -13,7 +10,7 @@ use crate::{
 )]
 pub async fn skip(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
+    let servers = get_config!().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     // TODO: add chack for already stopped bot

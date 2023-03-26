@@ -1,9 +1,6 @@
 use serenity::model::channel::GuildChannel;
 
-use crate::{
-    bot::commands::{Context, Error},
-    get_config,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Joins to the voice channel
 #[poise::command(
@@ -20,7 +17,7 @@ pub async fn join(
     channel: Option<GuildChannel>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
+    let servers = get_config!().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     let channel_id = if let Some(channel) = channel {

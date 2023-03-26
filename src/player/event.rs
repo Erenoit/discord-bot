@@ -1,8 +1,6 @@
 use serenity::model::id::GuildId;
 use songbird::{Event, EventContext, EventHandler};
 
-use crate::get_config;
-
 pub struct SongEnd {
     pub guild_id: GuildId,
 }
@@ -12,7 +10,7 @@ impl EventHandler for SongEnd {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         match ctx {
             EventContext::Track(..) => {
-                get_config()
+                get_config!()
                     .servers()
                     .read()
                     .await

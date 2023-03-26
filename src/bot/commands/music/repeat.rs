@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use crate::{
     bot::commands::{Context, Error},
-    get_config,
     player::Repeat,
 };
 
@@ -19,7 +18,7 @@ pub async fn repeat(
     #[description = "Repeat mode"] repeat_mode: Option<Repeat>,
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
+    let servers = get_config!().servers().read().await;
     let server = servers.get(&guild.id).unwrap();
 
     if repeat_mode.is_some() {

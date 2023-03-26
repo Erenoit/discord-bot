@@ -22,9 +22,9 @@ macro_rules! message {
             $ctx,
             format!($($title)+),
             format!($($message)+),
-            $crate::get_config().message_normal_color(),
+            get_config!().message_normal_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (success, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
@@ -33,9 +33,9 @@ macro_rules! message {
             $ctx,
             "Success",
             format!($($message)+),
-            $crate::get_config().message_success_color(),
+            get_config!().message_success_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (error, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
@@ -44,9 +44,9 @@ macro_rules! message {
             $ctx,
             "Error",
             format!($($message)+),
-            $crate::get_config().message_error_color(),
+            get_config!().message_error_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
@@ -55,7 +55,7 @@ macro_rules! message {
                 .send(|m| {
                     if $embed {
                         m.embed(|e| e.color(
-                                    if $crate::get_config()
+                                    if get_config!()
                                     .message_random_embed_colors()
                                     {
                                         rand::random::<u32>() & 0x00FFFFFF
@@ -196,7 +196,7 @@ macro_rules! selection_inner {
             let Some(interaction) = handle.message().await.unwrap()
                 .await_component_interaction($ctx.serenity_context())
                 .timeout(
-                    std::time::Duration::from_secs(get_config().message_interaction_time_limit())
+                    std::time::Duration::from_secs(get_config!().message_interaction_time_limit())
                 ).await else
                 {
                     _ = handle.edit($ctx, |m| {

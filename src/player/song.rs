@@ -4,6 +4,7 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use tokio::process::Command;
 
+use crate::bot::Context;
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -12,7 +13,6 @@ use crate::player::sp_structs::{
     SpotifyPlaylistResponse,
     SpotifyTrackResponse,
 };
-use crate::{bot::Context, get_config};
 
 const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
@@ -67,7 +67,7 @@ impl Song {
                 "--get-duration",
                 &format!(
                     "ytsearch{}:{}",
-                    get_config().youtube_search_count(),
+                    get_config!().youtube_search_count(),
                     song
                 ),
             ])
@@ -160,7 +160,7 @@ impl Song {
 
     #[cfg(feature = "spotify")]
     pub async fn spotify(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let Some(token) = get_config().spotify_token().await else {
+        let Some(token) = get_config!().spotify_token().await else {
             return Err(anyhow!("Spotify token is not initialized"));
         };
 
