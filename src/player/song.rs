@@ -40,8 +40,8 @@ pub struct Song {
 }
 
 impl Song {
-    pub async fn new<S: Display + Send>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
-        let song = song.to_string();
+    pub async fn new(ctx: &Context<'_>, song: String) -> Result<VecDeque<Self>> {
+        let song = song.trim().to_owned();
         let user_name = ctx.author().name.clone();
 
         if song.starts_with("https://") || song.starts_with("http://") {
