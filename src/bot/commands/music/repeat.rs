@@ -17,9 +17,7 @@ pub async fn repeat(
     ctx: Context<'_>,
     #[description = "Repeat mode"] repeat_mode: Option<Repeat>,
 ) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config!().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
     if repeat_mode.is_some() {
         server

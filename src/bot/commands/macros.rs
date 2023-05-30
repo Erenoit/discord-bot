@@ -1,3 +1,14 @@
+macro_rules! get_common {
+    ($ctx:ident) => {{
+        use std::sync::Arc;
+
+        let guild = $ctx.guild().unwrap();
+        let server = Arc::clone(get_config!().servers().read().await.get(&guild.id).unwrap());
+
+        (guild, server)
+    }};
+}
+
 #[cfg(feature = "database")]
 macro_rules! db_connection {
     ($ctx: ident) => {{

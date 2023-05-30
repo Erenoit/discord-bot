@@ -16,9 +16,7 @@ pub async fn join(
     #[channel_types("Voice")]
     channel: Option<GuildChannel>,
 ) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config!().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (guild, server) = get_common!(ctx);
 
     let channel_id = if let Some(channel) = channel {
         channel.id

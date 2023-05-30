@@ -9,9 +9,7 @@ use crate::bot::commands::{Context, Error};
     guild_only
 )]
 pub async fn skip(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config!().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
     // TODO: add chack for already stopped bot
     server.player.skip_song().await;

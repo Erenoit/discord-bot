@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
@@ -23,7 +25,7 @@ impl EventHandler for Handler {
 
         for g in ready.guilds {
             log!(info, ; "{}", (g.id));
-            servers.insert(g.id, Server::new(g.id));
+            servers.insert(g.id, Arc::new(Server::new(g.id)));
         }
 
         log!(info, "{} is online!", (ready.user.name.magenta()));
@@ -36,7 +38,7 @@ impl EventHandler for Handler {
                 .servers()
                 .write()
                 .await
-                .insert(guild.id, Server::new(guild.id));
+                .insert(guild.id, Arc::new(Server::new(guild.id)));
         }
     }
 

@@ -60,7 +60,7 @@ pub struct Config {
     spotify:  Option<SpotifyConfig>,
     #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
-    servers:  RwLock<HashMap<GuildId, Server>>,
+    servers:  RwLock<HashMap<GuildId, Arc<Server>>>,
     #[cfg(feature = "music")]
     songbird: Arc<Songbird>,
 }
@@ -232,7 +232,7 @@ impl Config {
         Ok(())
     }
 
-    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> { &self.servers }
+    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Arc<Server>>> { &self.servers }
 
     #[cfg(feature = "music")]
     pub fn songbird(&self) -> Arc<Songbird> { Arc::clone(&self.songbird) }
