@@ -1,3 +1,13 @@
+//! This submodule keeps everything abuot playing audio except discord commands.
+//!
+//! If you cannot find the thing you are searching in this submodule, it is
+//! probably unsupported.
+//!
+//! If you want to check discord commands, go to
+//! [`bot::commands::music`].
+//!
+//! [`bot::commands::music`]: crate::bot::commands::music
+
 mod event;
 mod song;
 #[cfg(feature = "spotify")]
@@ -21,9 +31,9 @@ macro_rules! get_songbird_manager {
     };
 }
 
-/// Gets [`Songbird::Call`] for given guild id from [`Config`].
+/// Gets [`songbird::Call`] for given guild id from [`Config`].
 ///
-/// [`Songbird::Call`]: Songbird::Call
+///
 /// [`Config`]: crate::config::Config
 macro_rules! get_call_mutex {
     ($($guild_id:tt)+) => {
@@ -36,15 +46,20 @@ macro_rules! get_call_mutex {
 /// Manages the state of the player for one guild,
 #[non_exhaustive]
 pub struct Player {
+    /// Guild id that [`Player`] belongs to
     guild_id:     GuildId,
+    /// [`Song`] struct for current plaing song
     now_playing:  Mutex<Option<Song>>,
+    /// repeat mode of the player
     repeat_mode:  Mutex<Repeat>,
+    /// [`Song`] queue for the songs will be played
     song_queue:   Mutex<VecDeque<Song>>,
+    /// [`Song`] queue for the songs already played before
     repeat_queue: Mutex<VecDeque<Song>>,
 }
 
 impl Player {
-    /// Creats new Player struct.
+    /// Creats new [`Player`] struct.
     pub fn new(guild_id: GuildId) -> Self {
         Self {
             guild_id,
@@ -56,6 +71,8 @@ impl Player {
     }
 
     /// Connects to given voice channel id.
+    ///
+    /// WARNING: It does not chek whether it is already in a voice channel.
     pub async fn connect_to_voice_channel(&self, channel_id: &ChannelId) {
         let (call_mutex, result) = get_songbird_manager!()
             .join(self.guild_id, *channel_id)
@@ -87,8 +104,8 @@ impl Player {
         }
     }
 
-    /// Appends given songs to end of `Player::song_queue` and if there is
-    /// nothing playing it calls `Player::start_stream()`.
+    /// Appends given songs to end of [`Player::song_queue`] and if there is
+    /// nothing playing it calls [`Player::start_stream()`].
     pub async fn play(&self, songs: &mut VecDeque<Song>) {
         self.song_queue.lock().await.append(songs);
 
@@ -98,7 +115,7 @@ impl Player {
     }
 
     /// Creates new audio stream and start to play it. If there is nothing to
-    /// play it calls `Player::stop_stream()` and exits.
+    /// play it calls [`Player::stop_stream()`] and exits.
     ///
     /// WARNING: This function does not check if there is still playing audio in
     /// voice channel. If you should check for already playing audios
@@ -191,7 +208,7 @@ impl Player {
         }
     }
 
-    /// Sends song in `Player::now_playing` to `Player::repeat_queue`.
+    /// Sends song in [`Player::now_playing`] to [`Player::repeat_queue`].
     pub async fn move_to_repeat_queue(&self) {
         // TODO: make now_playing None
         if self.now_playing.lock().await.is_some() {
@@ -202,13 +219,14 @@ impl Player {
         }
     }
 
-    /// Clears both `Player::song_queue` and `Player::repeat_queue`.
+    /// Clears both [`Player::song_queue`] and [`Player::repeat_queue`].
     pub async fn clear_the_queues(&self) {
         mem::take(&mut *self.song_queue.lock().await);
         mem::take(&mut *self.repeat_queue.lock().await);
     }
 
-    /// Shuffles the `Player::song_queue` using Fisher–Yates shuffle algorithm.
+    /// Shuffles the [`Player::song_queue`] using Fisher–Yates shuffle
+    /// algorithm.
     ///
     /// For more information: <https://www.wikiwand.com/en/Fisher%E2%80%93Yates_shuffle>
     pub async fn shuffle_song_queue(&self) {
@@ -272,7 +290,7 @@ impl Player {
         message!(normal, ctx, ("Queue"); ("{}", s); false);
     }
 
-    /// Creates string for given `player::Song`.
+    /// Creates string for given [`Song`].
     fn add_to_queue_string(s: &mut String, song: &Song, num: usize, selected: bool) {
         let selected_char = "➤";
         let selected_whitespace = "  ";
@@ -314,16 +332,19 @@ impl Player {
     }
 }
 
-/// Enum for available repeat modes for `Player` class.
+/// Enum for available repeat modes for [`Player`] class.
 #[derive(poise::ChoiceParameter, Copy, Clone, Eq, PartialEq)]
 pub enum Repeat {
+    /// Do not repeat
     Off,
+    /// Repeat only current playing song
     One,
+    /// Repeat all of the song queue
     All,
 }
 
 impl Repeat {
-    /// Returns all possible variants for `Repeat` enum
+    /// Returns all possible variants for [`Repeat`] enum
     pub fn variants() -> Iter<'static, Self> {
         static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
         V.iter()
