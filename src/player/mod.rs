@@ -70,7 +70,7 @@ impl Player {
 
             call.leave()
                 .await
-                .expect("There shold be no error while leaving the call");
+                .expect("There should be no error while leaving the call");
         }
     }
 
