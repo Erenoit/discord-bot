@@ -44,4 +44,6 @@ impl DatabaseConfig {
     }
 
     pub const fn pool(&self) -> &SqlitePool { &self.pool }
+
+    pub const fn url(&self) -> &String { &self.url }
 }
