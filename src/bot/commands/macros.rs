@@ -9,6 +9,11 @@ macro_rules! get_common {
     }};
 }
 
+/// Gives [`PoolConnection<Sqlite>`] and sending `Discord` messages for errors.
+/// Needs [`bot::commands::Context`] to be able to send error messages.
+///
+/// [`PoolConnection<Sqlite>`]: sqlx::pool::PoolConnection
+/// [`Bot::commands::Context`]: crate::bot::commands::Context
 #[cfg(feature = "database")]
 macro_rules! db_connection {
     ($ctx: ident) => {{
