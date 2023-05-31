@@ -1,3 +1,11 @@
+//! Main module for the bot.
+//!
+//! This module contains the main struct for the bot, which is `Bot`. It also
+//! handles everything related to discord except music. For music see
+//! [`Player`].
+//!
+//! [`Player`]: crate::music::Player
+
 mod commands;
 mod event;
 
@@ -8,12 +16,17 @@ use songbird::SerenityInit;
 
 pub use crate::bot::commands::Context;
 
+/// The main struct for the bot.
+///
+/// Every interaction with `Discord` is done through this struct.
 #[non_exhaustive]
 pub struct Bot;
 
 impl Bot {
+    /// Creates a new instance of the bot.
     pub const fn new() -> Self { Self }
 
+    /// Runs the bot.
     pub async fn run(&mut self) {
         #[cfg(feature = "database")]
         get_config!()

@@ -11,6 +11,9 @@ use serenity::{
 
 use crate::server::Server;
 
+/// Struct for handling `Discord` events.
+///
+/// It currently handles `Ready`, `GuildCreate` and `GuildDelete` events.
 pub struct Handler;
 impl Handler {
     pub const fn new() -> Self { Self }
