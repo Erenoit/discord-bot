@@ -1,3 +1,5 @@
+//! `Spotify` Configuration.
+
 use std::time::Instant;
 
 use anyhow::Result;
@@ -10,15 +12,20 @@ use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {
+    /// Client ID for Spotify API.
     client_id:     String,
+    /// Client secret for Spotify API.
     client_secret: String,
+    /// Token for Spotify API.
     token:         RwLock<Option<String>>,
+    /// Last time token was refreshed.
     last_refresh:  RwLock<Option<Instant>>,
 }
 
 impl SpotifyConfig {
     const REFRESH_TIME: u64 = 3500;
 
+    /// Generate a new `SpotifyConfig` from the config file.
     pub fn generate(config_file: &Node) -> Result<Self> {
         let client_id = get_value!(config_file, String, "BOT_SP_CLIENT_ID", "spotify"=>"client_id",
                                    "For Spotify support client ID is requared. Either set your client ID on the config file or disable Spotify support")?;
@@ -35,8 +42,11 @@ impl SpotifyConfig {
         })
     }
 
+    /// Returns the client ID and client secret.
     pub const fn client(&self) -> (&String, &String) { (&self.client_id, &self.client_secret) }
 
+    /// Returns the current token if it is not expired, otherwise it requests a
+    /// new one and return that.
     pub async fn token(&self) -> String {
         if self.token.read().await.is_none()
             || self
@@ -60,6 +70,7 @@ impl SpotifyConfig {
             .to_string()
     }
 
+    /// Request a new token from Spotify API.
     #[allow(clippy::significant_drop_tightening)]
     async fn refresh_token(&self) {
         let mut write_lock_token = self.token.write().await;

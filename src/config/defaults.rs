@@ -1,3 +1,9 @@
+//! Default values for the config.
+//!
+//! This file contains the default values for the config. These values are used
+//! when the config file is not present or when a value is missing from the
+//! config file.
+
 pub(super) const PREFIX: &str = "-";
 pub(super) const AUTO_REGISTER_COMMANDS: bool = true;
 #[cfg(feature = "music")]
