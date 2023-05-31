@@ -114,7 +114,7 @@ impl Player {
             Repeat::One => {
                 let mut now_playing = self.now_playing.lock().await;
                 if now_playing.is_some() {
-                    mem::replace(&mut *now_playing, None).expect("Cannot be None at this point")
+                    (*now_playing).take().expect("Cannot be None at this point")
                 } else {
                     let Some(song) = self.song_queue
                         .lock()
@@ -181,12 +181,14 @@ impl Player {
 
     pub async fn shuffle_song_queue(&self) {
         let mut queue = self.song_queue.lock().await;
+        #[allow(clippy::significant_drop_in_scrutinee)]
         for i in 0 ..= queue.len() - 2 {
             let j = rand::random::<usize>() % (queue.len() - i) + i;
             queue.swap(i, j);
         }
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     pub async fn print_queue(&self, ctx: &Context<'_>) {
         if self.now_playing.lock().await.is_none() {
             message!(error, ctx, ("Nothings playing :unamused:"); true);

@@ -60,6 +60,7 @@ impl SpotifyConfig {
             .to_string()
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     async fn refresh_token(&self) {
         let mut write_lock_token = self.token.write().await;
         let mut write_lock_last_refresh = self.last_refresh.write().await;
