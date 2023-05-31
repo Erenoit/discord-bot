@@ -1,3 +1,27 @@
+/// Sends cheat message or interaction reply based on `$ctx`.
+///
+/// Types:
+/// - normal: sends text message (uses `normal_color` if `always_ambed` is true)
+///     - params: [`Context`], (title); (messgae); epehemeral
+/// - success: sends text message (uses `success_color` if `always_ambed` is
+///   true)
+///     - params: [`Context`], (messgae); epehemeral
+/// - error: sends text message (uses `error_color` if `always_ambed` is true)
+///     - params: [`Context`], (messgae); epehemeral
+/// - embed: sends message contains an embed
+///     - params: [`Context`], embed, epehemeral
+/// - file: sends file(s) (i.e. document, image, executable) with custom
+///   message.
+///     - params: [`Context`], messgae, file(s);, epehemeral
+/// - custom: basically same as first three, but color for `always_embed` option
+///   should be assigned manually and also extra embed can be added.
+///     - params: [`Context`], title, message, color, ephemeral, embed
+///
+/// [`Context`]: crate::bot::Context
+///
+/// Difference between normal, success, and error is only visisble if
+/// `always_embed` is `true` in `Config`.
+#[macro_export]
 macro_rules! message {
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx
@@ -89,6 +113,20 @@ macro_rules! message {
     };
 }
 
+/// Sends user some message contains the selections and buttons for answer.
+///
+/// Types:
+/// - confirm: Sends yes/no question.
+///     - params: [`Context`], message
+/// - normal: Sends list of buttons which eachch button has name of one
+///   selection
+///     - params: [`Context`], message, list of options (name, id, disabled)
+/// - list: Sends enumarated list as a message and buttons which have
+///   corresponding numbers for each element
+///     - params: [`Context`], message, list of options (list name, button id)
+///
+/// [`Context`]: crate::bot::Context
+#[macro_export]
 macro_rules! selection {
     (confirm, $ctx:expr, $($msg:tt)*) => {
         'confirm_selection: {
@@ -172,6 +210,7 @@ macro_rules! selection {
     };
 }
 
+/// This is an inner function for `selection!()` macro. Do not use!
 macro_rules! selection_inner {
     (clear, $ctx:expr, $interaction:ident) => {
         _ = $interaction
@@ -243,6 +282,22 @@ macro_rules! selection_inner {
     };
 }
 
+/// Creates `serenity::builder::CreateButton` with given properties.
+///
+/// Types and required fields:
+/// - normal: name, id, disabled
+/// - secondary: name
+/// - secondary: name, id, disabled
+/// - danger: name
+/// - danger: name, id, disabled
+/// - link: name, url
+///
+/// After type there should be `,`.
+/// name, id and url has same syntax as `format!()` macro.
+/// Differen fields (i.e. between name and id) should be seperated with `;`.
+///
+/// For more info: <https://discord.com/developers/docs/interactions/message-components#buttons>
+#[macro_export]
 macro_rules! button {
     (normal, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::component::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)
@@ -267,6 +322,7 @@ macro_rules! button {
     };
 }
 
+/// This is an inner function for `button!()` macro. Do not use!
 macro_rules! btn_generic {
     ($t:expr, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         {
