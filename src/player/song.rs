@@ -85,13 +85,7 @@ impl Song {
             .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
             .collect::<Vec<_>>();
 
-        let answer = selection!(
-            list,
-            *ctx,
-            "Search",
-            list.iter().map(|e| (&e.0, &e.1)).collect::<Vec<_>>(),
-            true
-        );
+        let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
             Ok(list
                 .into_iter()

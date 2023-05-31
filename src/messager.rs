@@ -159,7 +159,7 @@ macro_rules! selection {
                 msg.push('\n');
             }
 
-            let new_list = $list.into_iter().enumerate().map(|(i, e)| (i + 1, e.1, false)).collect::<Vec<_>>();
+            let new_list = $list.iter().enumerate().map(|(i, e, ..)| (i + 1, &e.1, false)).collect::<Vec<_>>();
 
             let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none);
 
