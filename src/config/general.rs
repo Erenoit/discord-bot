@@ -34,16 +34,12 @@ impl GeneralConfig {
         })
     }
 
-    #[inline(always)]
     pub const fn token(&self) -> &String { &self.token }
 
-    #[inline(always)]
     pub const fn prefix(&self) -> &String { &self.prefix }
 
-    #[inline(always)]
     pub const fn auto_register_commands(&self) -> bool { self.auto_register_commands }
 
     #[cfg(feature = "music")]
-    #[inline(always)]
     pub const fn vc_auto_change(&self) -> bool { self.vc_auto_change }
 }

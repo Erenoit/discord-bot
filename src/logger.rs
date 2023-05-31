@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! log {
     (info,  ; $($($secondary_message: tt),*);*) => { log_common!(blue,    "", $($($secondary_message),*);*); };
     (warn,  ; $($($secondary_message: tt),*);*) => { log_common!(cyan,    "", $($($secondary_message),*);*); };

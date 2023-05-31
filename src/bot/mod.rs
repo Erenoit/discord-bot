@@ -7,7 +7,6 @@ use serenity::model::{application::command::Command, gateway::GatewayIntents};
 use songbird::SerenityInit;
 
 pub use crate::bot::commands::Context;
-use crate::get_config;
 
 #[non_exhaustive]
 pub struct Bot;
@@ -17,7 +16,7 @@ impl Bot {
 
     pub async fn run(&mut self) {
         #[cfg(feature = "database")]
-        get_config()
+        get_config!()
             .run_database_migrations()
             .await
             .expect("Couldn't setup the database");
@@ -52,7 +51,7 @@ impl Bot {
             ],
 
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(get_config().prefix().to_string()),
+                prefix: Some(get_config!().prefix().to_string()),
                 mention_as_prefix: false,
                 execute_self_messages: false,
                 ignore_bots: true,
@@ -64,14 +63,14 @@ impl Bot {
         };
 
         poise::Framework::builder()
-            .token(get_config().token())
+            .token(get_config!().token())
             .intents(GatewayIntents::all())
             .options(options)
             .client_settings(move |c| {
                 #[cfg(feature = "music")]
                 {
                     c.event_handler(Handler::new())
-                        .register_songbird_with(get_config().songbird())
+                        .register_songbird_with(get_config!().songbird())
                 }
 
                 #[cfg(not(feature = "music"))]
@@ -79,7 +78,7 @@ impl Bot {
             })
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
-                    if !get_config().auto_register_commands() {
+                    if !get_config!().auto_register_commands() {
                         log!(warn, "Slash Command Autogeneration Is Disabled");
                         return Ok(commands::Data);
                     }

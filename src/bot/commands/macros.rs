@@ -1,6 +1,18 @@
+macro_rules! get_common {
+    ($ctx:ident) => {{
+        use std::sync::Arc;
+
+        let guild = $ctx.guild().unwrap();
+        let server = Arc::clone(get_config!().servers().read().await.get(&guild.id).unwrap());
+
+        (guild, server)
+    }};
+}
+
+#[cfg(feature = "database")]
 macro_rules! db_connection {
     ($ctx: ident) => {{
-        let Some(db) = get_config().database_pool() else {
+        let Some(db) = get_config!().database_pool() else {
                         message!(error, $ctx, ("Database option is not enabled on this bot. So, you
                  cannot use music command."); true);
                         return Ok(());

@@ -1,6 +1,5 @@
 use crate::{
     bot::commands::{music::handle_vc_connection, Context, Error},
-    get_config,
     player::Song,
 };
 
@@ -18,11 +17,9 @@ pub async fn play(
     #[rest]
     song: String,
 ) -> Result<(), Error> {
-    let guild = ctx.guild().expect("Guild should be Some");
-    let servers = get_config().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
-    handle_vc_connection(&ctx, server).await?;
+    handle_vc_connection(&ctx, &server).await?;
 
     ctx.defer().await?;
 

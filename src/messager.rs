@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! message {
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx
@@ -23,9 +22,9 @@ macro_rules! message {
             $ctx,
             format!($($title)+),
             format!($($message)+),
-            $crate::get_config().message_normal_color(),
+            get_config!().message_normal_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (success, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
@@ -34,9 +33,9 @@ macro_rules! message {
             $ctx,
             "Success",
             format!($($message)+),
-            $crate::get_config().message_success_color(),
+            get_config!().message_success_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (error, $ctx:expr, ($($message:tt)+); $ephemeral:expr) => {
@@ -45,9 +44,9 @@ macro_rules! message {
             $ctx,
             "Error",
             format!($($message)+),
-            $crate::get_config().message_error_color(),
+            get_config!().message_error_color(),
             $ephemeral,
-            $crate::get_config().message_always_embed()
+            get_config!().message_always_embed()
         )
     };
     (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
@@ -56,7 +55,7 @@ macro_rules! message {
                 .send(|m| {
                     if $embed {
                         m.embed(|e| e.color(
-                                    if $crate::get_config()
+                                    if get_config!()
                                     .message_random_embed_colors()
                                     {
                                         rand::random::<u32>() & 0x00FFFFFF
@@ -90,7 +89,6 @@ macro_rules! message {
     };
 }
 
-#[macro_export]
 macro_rules! selection {
     (confirm, $ctx:expr, $($msg:tt)*) => {
         'confirm_selection: {
@@ -161,7 +159,7 @@ macro_rules! selection {
                 msg.push('\n');
             }
 
-            let new_list = $list.into_iter().enumerate().map(|(i, e)| (i + 1, e.1, false)).collect::<Vec<_>>();
+            let new_list = $list.iter().enumerate().map(|(i, e, ..)| (i + 1, &e.1, false)).collect::<Vec<_>>();
 
             let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none);
 
@@ -198,7 +196,7 @@ macro_rules! selection_inner {
             let Some(interaction) = handle.message().await.unwrap()
                 .await_component_interaction($ctx.serenity_context())
                 .timeout(
-                    std::time::Duration::from_secs(get_config().message_interaction_time_limit())
+                    std::time::Duration::from_secs(get_config!().message_interaction_time_limit())
                 ).await else
                 {
                     _ = handle.edit($ctx, |m| {
@@ -245,7 +243,6 @@ macro_rules! selection_inner {
     };
 }
 
-#[macro_export]
 macro_rules! button {
     (normal, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::component::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)

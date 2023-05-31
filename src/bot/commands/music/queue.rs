@@ -1,7 +1,4 @@
-use crate::{
-    bot::commands::{Context, Error},
-    get_config,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Prints song queue
 #[poise::command(
@@ -12,9 +9,7 @@ use crate::{
     guild_only
 )]
 pub async fn queue(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
     if server.player.is_queues_empty().await {
         message!(error, ctx, ("Queue is empty"); true);

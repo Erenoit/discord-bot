@@ -2,6 +2,7 @@
 mod cmd_arguments;
 mod defaults;
 #[macro_use]
+#[allow(unused_macros)]
 mod macros;
 
 #[cfg(feature = "database")]
@@ -19,7 +20,9 @@ use std::sync::Arc;
 #[cfg(feature = "config_file")]
 use std::{fs, io::Write};
 
-use anyhow::{anyhow, Result};
+#[cfg(any(feature = "config_file", feature = "database"))]
+use anyhow::anyhow;
+use anyhow::Result;
 #[cfg(feature = "cmd")]
 use clap::Parser;
 #[cfg(any(feature = "config_file", feature = "database"))]
@@ -57,7 +60,7 @@ pub struct Config {
     spotify:  Option<SpotifyConfig>,
     #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
-    servers:  RwLock<HashMap<GuildId, Server>>,
+    servers:  RwLock<HashMap<GuildId, Arc<Server>>>,
     #[cfg(feature = "music")]
     songbird: Arc<Songbird>,
 }
@@ -169,17 +172,13 @@ impl Config {
         })
     }
 
-    #[inline(always)]
     pub const fn token(&self) -> &String { self.general.token() }
 
-    #[inline(always)]
     pub const fn prefix(&self) -> &String { self.general.prefix() }
 
-    #[inline(always)]
     pub const fn auto_register_commands(&self) -> bool { self.general.auto_register_commands() }
 
     #[cfg(feature = "music")]
-    #[inline(always)]
     pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
 
     pub const fn message_always_embed(&self) -> bool { self.message.always_embed() }
@@ -197,34 +196,37 @@ impl Config {
     }
 
     #[cfg(feature = "music")]
-    #[inline(always)]
     pub const fn youtube_search_count(&self) -> u8 { self.youtube.search_count() }
 
     #[cfg(feature = "music")]
-    #[inline(always)]
     pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     pub const fn is_spotify_initialized(&self) -> bool { self.spotify.is_some() }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
         Some(self.spotify.as_ref()?.client())
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
     pub async fn spotify_token(&self) -> Option<String> {
         Some(self.spotify.as_ref()?.token().await)
     }
 
     #[cfg(feature = "database")]
-    #[inline(always)]
     pub const fn database_pool(&self) -> Option<&SqlitePool> {
         if let Some(db) = &self.database {
             Some(db.pool())
+        } else {
+            None
+        }
+    }
+
+    #[cfg(feature = "database")]
+    pub const fn database_url(&self) -> Option<&String> {
+        if let Some(db) = &self.database {
+            Some(db.url())
         } else {
             None
         }
@@ -239,10 +241,8 @@ impl Config {
         Ok(())
     }
 
-    #[inline(always)]
-    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Server>> { &self.servers }
+    pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Arc<Server>>> { &self.servers }
 
     #[cfg(feature = "music")]
-    #[inline(always)]
     pub fn songbird(&self) -> Arc<Songbird> { Arc::clone(&self.songbird) }
 }

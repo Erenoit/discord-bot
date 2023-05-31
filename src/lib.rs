@@ -4,8 +4,6 @@
 #![deny(clippy::correctness)]
 #![warn(clippy::nursery)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::inline_always)] // Should learn more about inline
-#![allow(clippy::let_underscore_drop)] // Not understand why shouldn't I drop immediately
 #![allow(clippy::missing_errors_doc)] // Not documenting
 #![allow(clippy::missing_panics_doc)] // Not documenting
 #![allow(clippy::must_use_candidate)] // No idea what it means
@@ -32,18 +30,14 @@
 //#![warn(clippy::unwrap_used)]
 #![warn(clippy::style)]
 #![warn(clippy::suspicious)]
+#![feature(iter_array_chunks)]
 
 #[macro_use]
+#[allow(unused_macros)]
 mod logger;
 #[macro_use]
+#[allow(unused_macros)]
 mod messager;
-
-mod bot;
-mod config;
-mod database_tables;
-#[cfg(feature = "music")]
-mod player;
-mod server;
 
 use anyhow::{anyhow, Result};
 use config::Config;
@@ -51,9 +45,8 @@ use tokio::sync::OnceCell;
 
 pub use crate::bot::Bot;
 
-pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
+static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
-#[inline(always)]
 pub fn init_config() -> Result<()> {
     CONFIG.set(Config::generate()?).map_or_else(
         |_| Err(anyhow!("Couldn't set the config in OnceCell")),
@@ -61,5 +54,21 @@ pub fn init_config() -> Result<()> {
     )
 }
 
-#[inline(always)]
-fn get_config() -> &'static Config { CONFIG.get().expect("CONFIG should be initialized at start") }
+#[macro_use]
+mod dummy_module {
+    macro_rules! get_config {
+        () => {{
+            use crate::CONFIG;
+
+            CONFIG.get().expect("CONFIG should be initialized at start")
+        }};
+    }
+}
+
+mod bot;
+mod config;
+#[cfg(feature = "database")]
+mod database_tables;
+#[cfg(feature = "music")]
+mod player;
+mod server;

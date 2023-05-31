@@ -1,7 +1,4 @@
-use crate::{
-    bot::commands::{Context, Error},
-    get_config,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Leaves the voice channel
 #[poise::command(
@@ -12,9 +9,7 @@ use crate::{
     guild_only
 )]
 pub async fn leave(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
     server.player.leave_voice_channel(&ctx).await;
     message!(success, ctx, ("Left the voice channel"); true);

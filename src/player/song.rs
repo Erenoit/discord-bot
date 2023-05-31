@@ -1,20 +1,34 @@
-use std::{collections::VecDeque, fmt::Display};
+use std::{collections::VecDeque, fmt::Display, iter};
 
 use anyhow::{anyhow, Result};
+use poise::futures_util::future::join_all;
 use tokio::process::Command;
-#[cfg(feature = "spotify")]
-use tokio::task::JoinSet;
 
+use crate::bot::Context;
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
     SpotifyArtistTopTracksResponse,
+    SpotifyError,
     SpotifyPlaylistResponse,
+    SpotifyTrackResponse,
 };
-use crate::{bot::Context, get_config};
 
+const USER_AGENT: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
+#[cfg(feature = "spotify")]
+const SP_BASE_URL: &str = "https://api.spotify.com/v1";
 #[cfg(feature = "spotify")]
 const SP_MARKET: &str = "US";
+
+macro_rules! get_id {
+    ($last_part:expr) => {
+        $last_part
+            .split('?')
+            .next()
+            .expect("At least one must be present")
+    };
+}
 
 #[derive(Clone)]
 #[non_exhaustive]
@@ -26,100 +40,77 @@ pub struct Song {
 }
 
 impl Song {
-    pub async fn new<S: Display + Send>(ctx: &Context<'_>, song: S) -> Result<VecDeque<Self>> {
-        let song = song.to_string();
+    pub async fn new(ctx: &Context<'_>, song: String) -> Result<VecDeque<Self>> {
+        let song = song.trim().to_owned();
         let user_name = ctx.author().name.clone();
 
-        if song.starts_with("http://") || song.starts_with("https://") {
+        if song.starts_with("https://") || song.starts_with("http://") {
             if song.contains("youtube") {
-                if song.contains("list") {
-                    Self::yt_url(song, user_name).await
-                } else {
-                    Self::yt_playlist(song, user_name).await
-                }
-            } else if song.contains("spotify") {
-                #[cfg(feature = "spotify")]
-                if song.contains("/track/") {
-                    Self::sp_url(song, user_name).await
-                } else if song.contains("/playlist/") {
-                    Self::sp_playlist(song, user_name).await
-                } else if song.contains("/artist/") {
-                    Self::sp_artist(song, user_name).await
-                } else if song.contains("/album/") {
-                    Self::sp_album(song, user_name).await
-                } else {
-                    message!(error, ctx, ("Unsupported spotify url"); true);
-                    Err(anyhow!("Unsupported spotify url"))
-                }
-
-                #[cfg(not(feature = "spotify"))]
-                Err(anyhow!("Unsupported music source"))
+                Self::youtube(song, user_name).await
+            } else if cfg!(feature = "spotify") && song.contains("spotify") {
+                Self::spotify(song, user_name).await
             } else {
                 message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            Self::yt_search(ctx, song, user_name).await
+            Self::search(ctx, song, user_name).await
         }
     }
 
-    #[inline(always)]
-    pub async fn yt_search(
-        ctx: &Context<'_>,
-        song: String,
-        user_name: String,
-    ) -> Result<VecDeque<Self>> {
-        // TODO: change something faster than yt-dlp
-        // TODO: clean this code
-        let search_count = 5;
-        let out = Command::new("yt-dlp")
+    async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let res = Command::new("yt-dlp")
             .args([
                 "--no-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &format!("ytsearch{search_count}:{song}"),
+                &format!(
+                    "ytsearch{}:{}",
+                    get_config!().youtube_search_count(),
+                    song
+                ),
             ])
             .output()
             .await?;
 
-        let list = String::from_utf8(out.stdout).unwrap();
-        let list_seperated = list.split('\n').collect::<Vec<_>>();
-
-        let mut l: Vec<(String, String)> = Vec::with_capacity(search_count);
-        for i in 0 .. search_count {
-            l.push((
-                list_seperated[i * 3].to_owned(),
-                list_seperated[i * 3 + 1].to_owned(),
-            ));
+        if !res.status.success() {
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            return Err(anyhow!("yt-dlp failed"));
         }
 
-        let answer = selection!(list, *ctx, "Search", l, true);
+        let list = String::from_utf8_lossy(&res.stdout)
+            .lines()
+            .array_chunks::<3>()
+            .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
+            .collect::<Vec<_>>();
+
+        let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
-            let mut return_vec = VecDeque::with_capacity(search_count);
-            for i in 0 .. search_count {
-                return_vec.push_back(Self {
-                    title:     list_seperated[i * 3].to_owned(),
-                    id:        list_seperated[i * 3].to_owned(),
-                    duration:  list_seperated[i * 3].to_owned(),
-                    user_name: user_name.clone(),
-                });
-            }
-            Ok(return_vec)
+            Ok(list
+                .into_iter()
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.clone(),
+                    }
+                })
+                .collect::<VecDeque<_>>())
         } else if answer != "danger" {
-            let mut return_vec = VecDeque::with_capacity(1);
-            for i in 0 .. search_count {
-                if *list_seperated[i * 3 + 1] == answer {
-                    return_vec.push_back(Self {
-                        title: list_seperated[i * 3].to_owned(),
-                        id: list_seperated[i * 3 + 1].to_owned(),
-                        duration: list_seperated[i * 3 + 2].to_owned(),
-                        user_name,
-                    });
-                    break;
-                }
-            }
-            Ok(return_vec)
+            Ok(list
+                .into_iter()
+                .filter(|e| e.1 == answer)
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.clone(),
+                    }
+                })
+                .collect::<VecDeque<_>>())
         } else {
             Err(anyhow!("Selection failed/canceled"))
         }
@@ -127,50 +118,8 @@ impl Song {
 
     // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
-    #[inline(always)]
-    async fn yt_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("yt-dlp")
-            .args(["--get-title", "--get-id", "--get-duration", &song])
-            .output()
-            .await
-        {
-            if !res.status.success() {
-                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
-                return Err(anyhow!("yt-dlp failed"));
-            }
-
-            let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                .expect("Output must be valid UTF-8")
-                .split('\n')
-                .map(std::string::ToString::to_string)
-                .collect();
-
-            let title = splited_res.get(0);
-            let id = splited_res.get(1);
-            let duration = splited_res.get(2);
-
-            if title.is_none() || id.is_none() || duration.is_none() {
-                log!(error, "Somehow yt-dlp returned less data");
-                return Err(anyhow!("yt-dlp failed"));
-            }
-
-            let mut return_vec = VecDeque::with_capacity(1);
-            return_vec.push_back(Self {
-                title: title.unwrap().clone(),
-                id: id.unwrap().clone(),
-                duration: duration.unwrap().clone(),
-                user_name,
-            });
-            Ok(return_vec)
-        } else {
-            log!(error, "Command creation for yt-dlp failed");
-            Err(anyhow!("yt-dlp failed"))
-        }
-    }
-
-    #[inline(always)]
-    async fn yt_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Command::new("yt-dlp")
+    async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
@@ -179,305 +128,127 @@ impl Song {
                 &song,
             ])
             .output()
-            .await
-        {
-            if !res.status.success() {
-                log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            .await else {
+                log!(error, "Command creation for yt-dlp failed");
                 return Err(anyhow!("yt-dlp failed"));
-            }
+            };
 
-            let splited_res: Vec<String> = String::from_utf8(res.stdout)
-                .expect("Output must be valid UTF-8")
-                .split('\n')
-                .filter(|e| !e.is_empty())
-                .map(std::string::ToString::to_string)
-                .collect();
+        if !res.status.success() {
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            return Err(anyhow!("yt-dlp failed"));
+        }
 
-            if splited_res.len() % 3 != 0 {
-                log!(error, "yt-dlp returned wrong number of arguments");
-                return Err(anyhow!("Output must be dividable by 3"));
-            }
-
-            let mut return_vec: VecDeque<Self> = VecDeque::with_capacity(splited_res.len() / 3);
-
-            for i in 0 .. splited_res.len() / 3 {
-                return_vec.push_back(Self {
-                    title:     splited_res.get(i * 3).unwrap().to_string(),
-                    id:        splited_res.get(i * 3 + 1).unwrap().to_string(),
-                    duration:  splited_res.get(i * 3 + 2).unwrap().to_string(),
+        Ok(String::from_utf8_lossy(&res.stdout)
+            .split('\n')
+            .array_chunks::<3>()
+            .map(|e| {
+                Self {
+                    title:     e[0].to_owned(),
+                    id:        e[1].to_owned(),
+                    duration:  e[2].to_owned(),
                     user_name: user_name.clone(),
-                });
-            }
-
-            Ok(return_vec)
-        } else {
-            log!(error, "Command creation for yt-dlp failed");
-            Err(anyhow!("yt-dlp failed"))
-        }
-    }
-
-    #[cfg(feature = "spotify")]
-    #[inline(always)]
-    async fn sp_url(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/track/").collect::<Vec<_>>()[1]
-            .split('?')
-            .collect::<Vec<_>>()[0];
-        let token = get_config()
-            .spotify_token()
-            .await
-            .expect("Token should be initialized");
-
-        let res = reqwest::Client::new()
-            .get(format!("{base_url}/tracks/{track_id}"))
-            .bearer_auth(token)
-            .send()
-            .await;
-
-        match res {
-            Ok(r) => {
-                let j = json::parse(&r.text().await?)?;
-                let title = &j["name"];
-
-                let out = Command::new("yt-dlp")
-                    .args([
-                        "--no-playlist",
-                        "--get-title",
-                        "--get-id",
-                        &format!("ytsearch:{title} lyrics"),
-                    ])
-                    .output()
-                    .await?;
-
-                let out_str = String::from_utf8(out.stdout)?;
-                let mut song = out_str.split('\n');
-
-                let title = song.next();
-                let id = song.next();
-                let duration = song.next();
-
-                if title.is_some() && id.is_some() && duration.is_some() {
-                    let mut return_vec = VecDeque::with_capacity(1);
-                    return_vec.push_back(Self {
-                        title: title.unwrap().to_owned(),
-                        id: id.unwrap().to_owned(),
-                        duration: duration.unwrap().to_owned(),
-                        user_name,
-                    });
-                    Ok(return_vec)
-                } else {
-                    Err(anyhow!("coudn't find the song on youtube"))
                 }
-            },
-            Err(why) => {
-                log!(error, "Spotify request failed"; "{why}");
-                Err(anyhow!("Spotify request failed"))
-            },
-        }
+            })
+            .collect())
     }
 
     #[cfg(feature = "spotify")]
-    #[inline(always)]
-    async fn sp_playlist(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/playlist/").collect::<Vec<_>>()[1]
-            .split('?')
-            .collect::<Vec<_>>()[0];
-        let token = get_config()
-            .spotify_token()
-            .await
-            .expect("Token should be initialized");
+    pub async fn spotify(song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let Some(token) = get_config!().spotify_token().await else {
+            return Err(anyhow!("Spotify token is not initialized"));
+        };
 
-        let res = reqwest::Client::new()
-            .get(format!("{base_url}/playlists/{track_id}"))
-            .bearer_auth(token)
-            .send()
-            .await;
+        let (url_type, id, extra) = match song.split('/').take(5).collect::<Vec<_>>().as_slice() {
+            ["https:", "", "open.spotify.com", "track", last] => ("tracks", get_id!(last), ""),
+            ["https:", "", "open.spotify.com", "playlist", last] =>
+                ("playlists", get_id!(last), ""),
+            ["https:", "", "open.spotify.com", "album", last] => ("albums", get_id!(last), ""),
+            ["https:", "", "open.spotify.com", "artist", last] =>
+                ("artists", get_id!(last), "/top-tracks"),
+            _ => return Err(anyhow!("Unsupported Spotify URL type")),
+        };
 
-        match res {
-            Ok(r) => {
-                let j = r.json::<SpotifyPlaylistResponse>().await?;
-
-                let mut join_set = JoinSet::new();
-
-                j.tracks.items.iter().for_each(|track| {
-                    let title = track.track.name.clone();
-
-                    join_set.spawn(async move {
-                        Command::new("yt-dlp")
-                            .args([
-                                "--no-playlist",
-                                "--get-title",
-                                "--get-id",
-                                &format!("ytsearch:{title} lyrics"),
-                            ])
-                            .output()
-                            .await
-                    });
-                });
-
-                let mut tracklist = VecDeque::with_capacity(j.tracks.items.len());
-
-                while let Some(Ok(Ok(track))) = join_set.join_next().await {
-                    let res = String::from_utf8(track.stdout).unwrap();
-                    let mut res_split = res.split('\n');
-
-                    tracklist.push_back(Self {
-                        title:     res_split.next().unwrap().to_owned(),
-                        id:        res_split.next().unwrap().to_owned(),
-                        duration:  res_split.next().unwrap().to_owned(),
-                        user_name: user_name.clone(),
-                    });
-                }
-
-                Ok(tracklist)
-            },
-            Err(why) => {
-                log!(error, "Spotify request failed"; "{why}");
-                Err(anyhow!("Spotify request failed"))
-            },
-        }
-    }
-
-    #[cfg(feature = "spotify")]
-    #[inline(always)]
-    async fn sp_artist(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/artist/").collect::<Vec<_>>()[1]
-            .split('?')
-            .collect::<Vec<_>>()[0];
-        let token = get_config()
-            .spotify_token()
-            .await
-            .expect("Token should be initialized");
-
-        let res = reqwest::Client::new()
-            .get(format!(
-                "{base_url}/artists/{track_id}/top-tracks"
-            ))
+        let Ok(res) = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .build()?
+            .get(format!("{SP_BASE_URL}/{url_type}/{id}{extra}"))
             .bearer_auth(token)
             .query(&[("market", SP_MARKET)])
             .send()
-            .await;
+            .await else {
+                return Err(anyhow!("Couldn't connect to Spotify"));
+            };
 
-        match res {
-            Ok(r) => {
-                let j = r.json::<SpotifyArtistTopTracksResponse>().await?;
-
-                let mut join_set = JoinSet::new();
-
-                j.tracks.iter().for_each(|track| {
-                    let title = track.name.clone();
-
-                    join_set.spawn(async move {
-                        Command::new("yt-dlp")
-                            .args([
-                                "--no-playlist",
-                                "--get-title",
-                                "--get-id",
-                                &format!("ytsearch:{title} lyrics"),
-                            ])
-                            .output()
-                            .await
-                    });
-                });
-
-                let mut tracklist = VecDeque::with_capacity(j.tracks.len());
-
-                while let Some(Ok(Ok(track))) = join_set.join_next().await {
-                    let res = String::from_utf8(track.stdout).unwrap();
-                    let mut res_split = res.split('\n');
-
-                    tracklist.push_back(Self {
-                        title:     res_split.next().unwrap().to_owned(),
-                        id:        res_split.next().unwrap().to_owned(),
-                        duration:  res_split.next().unwrap().to_owned(),
-                        user_name: user_name.clone(),
-                    });
-                }
-
-                Ok(tracklist)
-            },
-            Err(why) => {
-                log!(error, "Spotify request failed"; "{why}");
-                Err(anyhow!("Spotify request failed"))
-            },
+        if !res.status().is_success() {
+            log!(error, "Spotify data fetch failed:"; "{}", (res.json::<SpotifyError>().await?.message));
+            return Err(anyhow!("Couldn't connect to Spotify"));
         }
+
+        let list = match url_type {
+            "tracks" =>
+                iter::once(res.json::<SpotifyTrackResponse>().await?)
+                    .map(|track| track.name)
+                    .collect::<Vec<_>>(),
+            "playlists" =>
+                res.json::<SpotifyPlaylistResponse>()
+                    .await?
+                    .tracks
+                    .items
+                    .into_iter()
+                    .map(|track| track.track.name)
+                    .collect::<Vec<_>>(),
+            "albums" =>
+                res.json::<SpotifyAlbumResponse>()
+                    .await?
+                    .tracks
+                    .items
+                    .into_iter()
+                    .map(|track| track.name)
+                    .collect::<Vec<_>>(),
+            "artists" =>
+                res.json::<SpotifyArtistTopTracksResponse>()
+                    .await?
+                    .tracks
+                    .into_iter()
+                    .map(|track| track.name)
+                    .collect::<Vec<_>>(),
+            _ => unreachable!("url_type cannot be anything else"),
+        };
+
+        Ok(join_all(list.into_iter().map(|song| {
+            Command::new("yt-dlp")
+                .args([
+                    "--no-playlist",
+                    "--get-title",
+                    "--get-id",
+                    "--get-duration",
+                    &format!("ytsearch1:{song} lyrics"),
+                ])
+                .output()
+        }))
+        .await
+        .into_iter()
+        .filter(Result::is_ok)
+        .map(|song| String::from_utf8_lossy(&song.expect("all is Ok").stdout).into_owned())
+        .map(|song| {
+            let mut sliced = song.split('\n').take(3);
+
+            Self {
+                title:     sliced.next().expect("Has 3 elements").to_owned(),
+                id:        sliced.next().expect("Has 3 elements").to_owned(),
+                duration:  sliced.next().expect("Has 3 elements").to_owned(),
+                user_name: user_name.clone(),
+            }
+        })
+        .collect())
     }
 
-    #[cfg(feature = "spotify")]
-    #[inline(always)]
-    async fn sp_album(song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let base_url = "https://api.spotify.com/v1";
-        let track_id = song.split("/album/").collect::<Vec<_>>()[1]
-            .split('?')
-            .collect::<Vec<_>>()[0];
-        let token = get_config()
-            .spotify_token()
-            .await
-            .expect("Token should be initialized");
-
-        let res = reqwest::Client::new()
-            .get(format!("{base_url}/albums/{track_id}"))
-            .bearer_auth(token)
-            .send()
-            .await;
-
-        match res {
-            Ok(r) => {
-                let j = r.json::<SpotifyAlbumResponse>().await?;
-
-                let mut join_set = JoinSet::new();
-
-                j.tracks.items.iter().for_each(|track| {
-                    let title = track.name.clone();
-
-                    join_set.spawn(async move {
-                        Command::new("yt-dlp")
-                            .args([
-                                "--no-playlist",
-                                "--get-title",
-                                "--get-id",
-                                &format!("ytsearch:{title} lyrics"),
-                            ])
-                            .output()
-                            .await
-                    });
-                });
-
-                let mut tracklist = VecDeque::with_capacity(j.tracks.items.len());
-
-                while let Some(Ok(Ok(track))) = join_set.join_next().await {
-                    let res = String::from_utf8(track.stdout).unwrap();
-                    let mut res_split = res.split('\n');
-
-                    tracklist.push_back(Self {
-                        title:     res_split.next().unwrap().to_owned(),
-                        id:        res_split.next().unwrap().to_owned(),
-                        duration:  res_split.next().unwrap().to_owned(),
-                        user_name: user_name.clone(),
-                    });
-                }
-
-                Ok(tracklist)
-            },
-            Err(why) => {
-                log!(error, "Spotify request failed"; "{why}");
-                Err(anyhow!("Spotify request failed"))
-            },
-        }
-    }
-
-    #[inline(always)]
     pub fn title(&self) -> String { self.title.clone() }
 
-    #[inline(always)]
     pub fn url(&self) -> String { self.id.clone() }
 
-    #[inline(always)]
     pub fn duration(&self) -> String { self.duration.clone() }
 
-    #[inline(always)]
     pub fn user_name(&self) -> String { self.user_name.clone() }
 }
 

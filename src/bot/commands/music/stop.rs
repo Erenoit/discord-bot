@@ -1,7 +1,4 @@
-use crate::{
-    bot::commands::{Context, Error},
-    get_config,
-};
+use crate::bot::commands::{Context, Error};
 
 /// Stops the song stream and clears the queue
 #[poise::command(
@@ -12,9 +9,7 @@ use crate::{
     guild_only
 )]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let servers = get_config().servers().read().await;
-    let server = servers.get(&guild.id).unwrap();
+    let (_guild, server) = get_common!(ctx);
 
     // TODO: add chack for already stopped bot
     server.player.clear_the_queues().await;
