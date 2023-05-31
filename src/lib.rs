@@ -4,8 +4,6 @@
 #![deny(clippy::correctness)]
 #![warn(clippy::nursery)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::missing_errors_doc)] // Not documenting
-#![allow(clippy::missing_panics_doc)] // Not documenting
 #![allow(clippy::must_use_candidate)] // No idea what it means
 #![allow(clippy::unreadable_literal)] // Only used for colors
 #![warn(clippy::perf)]
