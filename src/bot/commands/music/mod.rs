@@ -1,3 +1,5 @@
+//! Contains all the music commands.
+
 pub mod clear;
 pub mod join;
 pub mod leave;

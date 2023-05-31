@@ -1,3 +1,11 @@
+/// Gives [`Server`] and [`Guild`] for the given [`Context`].
+///
+/// Most of the commands need these two, so this macro is used to reduce code
+/// repetition.
+///
+/// [`Server`]: crate::server::Server
+/// [`Guild`]: serenity::model::guild::Guild
+/// [`Context`]: crate::bot::commands::Context
 macro_rules! get_common {
     ($ctx:ident) => {{
         use std::sync::Arc;
