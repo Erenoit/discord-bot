@@ -1,3 +1,14 @@
+//! The module containing all the commands for the bot.
+//!
+//! The commands are split into categories, which are then split into their
+//! individual modules. This is done to make it easier to find commands and to
+//! make it easier to add new commands.
+//!
+//! The categories are:
+//! - Entertainment
+//! - Music
+//! - Others
+
 #[macro_use]
 mod macros;
 

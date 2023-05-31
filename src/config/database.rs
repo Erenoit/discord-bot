@@ -1,3 +1,5 @@
+//! Database Configuration
+
 use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Result};
@@ -10,11 +12,14 @@ use crate::config::Node;
 
 #[non_exhaustive]
 pub(super) struct DatabaseConfig {
+    /// Database pool.
     pool: SqlitePool,
+    /// Database URL/location.
     url:  String,
 }
 
 impl DatabaseConfig {
+    /// Generate a new `DatabaseConfig` from the config file.
     pub fn generate(config_file: &Node, default_path: PathBuf) -> Result<Self> {
         // TODO: make cmd argument priority over config file one
         let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path)?;
@@ -38,12 +43,15 @@ impl DatabaseConfig {
         Ok(Self { pool, url })
     }
 
+    /// Run database migrations.
     pub async fn run_migrations(&self) -> Result<()> {
         sqlx::migrate!().run(&self.pool).await?;
         Ok(())
     }
 
+    /// Returns the database pool.
     pub const fn pool(&self) -> &SqlitePool { &self.pool }
 
+    /// Returns the database URL.
     pub const fn url(&self) -> &String { &self.url }
 }

@@ -1,6 +1,8 @@
 use serenity::model::id::GuildId;
 use songbird::{Event, EventContext, EventHandler};
 
+/// Struct for cathing `songbird::events::track::TrackEvent::End`
+/// When a track end it calls `Player::start_stream()` to start next song
 pub struct SongEnd {
     pub guild_id: GuildId,
 }

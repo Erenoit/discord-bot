@@ -1,3 +1,24 @@
+//! This module keeps state of the bot
+//!
+//! Even though it started as storing configuration about bot, now it is
+//! responsible to store everything from configuration to music player state and
+//! probably the most confusing file/module in this project yet it is
+//! surprisingly straightforward.
+//!
+//! Main [`Config`] struct is divided into substructs/submodules. Each submodule
+//! is responsible for storing configuration about a specific part of the bot.
+//! Every struct is its own file to make it easier to find them.
+//!
+//! Also to not make every struct public their functions are re-exported in the
+//! main [`Config`] struct.
+//!
+//! ## Why constructer is named `generate()`?
+//! Every struct in config module and its submodules use `generate()` function
+//! to generate their struct. This is because this structs only created once and
+//! third party resources such as config files and environmental variables used
+//! in their creation. Using different name for the constructor other than
+//! `new()` is to make it clear that it is not a normal constructor.
+
 #[cfg(feature = "cmd")]
 mod cmd_arguments;
 mod defaults;
@@ -47,9 +68,13 @@ use crate::{
     server::Server,
 };
 
+/// Dummy type to use when `config_file` feature is not enabled. When
+/// `config_file` feature is disabled, [`taplo`] crate is disabled. therefore,
+/// there is no Node type, and this creates a compilation error.
 #[cfg(not(feature = "config_file"))]
 struct Node;
 
+/// Main struct to store everything
 #[non_exhaustive]
 pub struct Config {
     general:  GeneralConfig,
@@ -66,6 +91,7 @@ pub struct Config {
 }
 
 impl Config {
+    /// Generate [`Config`] from config sources
     pub fn generate() -> Result<Self> {
         #[cfg(feature = "cmd")]
         let cmd_arguments = CMDArguments::parse();
@@ -172,48 +198,95 @@ impl Config {
         })
     }
 
+    /// Get `Discord` token for bot
     pub const fn token(&self) -> &String { self.general.token() }
 
+    /// Get prefix for `prefix commands`
     pub const fn prefix(&self) -> &String { self.general.prefix() }
 
+    /// Register `slash commands` to `Discord`
     pub const fn auto_register_commands(&self) -> bool { self.general.auto_register_commands() }
 
+    /// Get `vc_auto_change` setting
     #[cfg(feature = "music")]
     pub const fn vc_auto_change(&self) -> bool { self.general.vc_auto_change() }
 
+    /// Get `message_always_embed` setting
+    ///
+    /// WARNING: You do not need to use this setting. [`message!()`] macro
+    /// already obeys this setting.
+    ///
+    /// [`message!()`]: crate::messager::message!()
     pub const fn message_always_embed(&self) -> bool { self.message.always_embed() }
 
+    /// Get `message_randowm_colors` setting
+    ///
+    /// WARNING: You do not need to use this setting. [`message!()`] macro
+    /// already obeys this setting.
+    ///
+    /// [`message!()`]: crate::messager::message!()
     pub const fn message_random_embed_colors(&self) -> bool { self.message.random_embed_colors() }
 
+    /// Get `message_success_color` setting
+    ///
+    /// WARNING: You do not need to use this setting. [`message!()`] macro
+    /// already obeys this setting.
+    ///
+    /// [`message!()`]: crate::messager::message!()
     pub const fn message_success_color(&self) -> u32 { self.message.success_color() }
 
+    /// Get `message_normal_color` setting
+    ///
+    /// WARNING: You do not need to use this setting. [`message!()`] macro
+    /// already obeys this setting.
+    ///
+    /// [`message!()`]: crate::messager::message!()
     pub const fn message_normal_color(&self) -> u32 { self.message.normal_color() }
 
+    /// Get `message_error_color` setting
+    ///
+    /// WARNING: You do not need to use this setting. [`message!()`] macro
+    /// already obeys this setting.
+    ///
+    /// [`message!()`]: crate::messager::message!()
     pub const fn message_error_color(&self) -> u32 { self.message.error_color() }
 
+    /// Get `message_interaction_time_limit` setting
     pub const fn message_interaction_time_limit(&self) -> u64 {
         self.message.interaction_time_limit()
     }
 
+    /// Get `youtube_search_count` setting
     #[cfg(feature = "music")]
     pub const fn youtube_search_count(&self) -> u8 { self.youtube.search_count() }
 
+    /// Get `youtube_age_resricted` setting
     #[cfg(feature = "music")]
     pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
+    /// Chack if `Spotify` enabled
     #[cfg(feature = "spotify")]
     pub const fn is_spotify_initialized(&self) -> bool { self.spotify.is_some() }
 
+    /// Get `Spotify` client credentials
     #[cfg(feature = "spotify")]
     pub fn spotify_client(&self) -> Option<(&String, &String)> {
         Some(self.spotify.as_ref()?.client())
     }
 
+    /// Get `Spotify` token
     #[cfg(feature = "spotify")]
     pub async fn spotify_token(&self) -> Option<String> {
         Some(self.spotify.as_ref()?.token().await)
     }
 
+    /// Get databse pool to interact with database
+    ///
+    /// WARNING: use [`bot::commands::macros::db_connection!()`] instead of this
+    /// if you want database connection in [bot command].
+    ///
+    /// [`bot::commands::macros::db_connection!()`]: crate::bot::commands::macros::db_connection!()
+    /// [bot_command]: crate::bot::commands
     #[cfg(feature = "database")]
     pub const fn database_pool(&self) -> Option<&SqlitePool> {
         if let Some(db) = &self.database {
@@ -223,6 +296,7 @@ impl Config {
         }
     }
 
+    /// Get database URL
     #[cfg(feature = "database")]
     pub const fn database_url(&self) -> Option<&String> {
         if let Some(db) = &self.database {
@@ -232,6 +306,7 @@ impl Config {
         }
     }
 
+    /// Run database migrations to setup database
     #[cfg(feature = "database")]
     pub async fn run_database_migrations(&self) -> Result<()> {
         if let Some(db) = &self.database {
@@ -241,8 +316,10 @@ impl Config {
         Ok(())
     }
 
+    /// Get connected servers
     pub const fn servers(&self) -> &RwLock<HashMap<GuildId, Arc<Server>>> { &self.servers }
 
+    /// Get main [`Songbird`] strcut
     #[cfg(feature = "music")]
     pub fn songbird(&self) -> Arc<Songbird> { Arc::clone(&self.songbird) }
 }
