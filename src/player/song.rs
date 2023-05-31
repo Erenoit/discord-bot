@@ -21,6 +21,8 @@ const SP_BASE_URL: &str = "https://api.spotify.com/v1";
 #[cfg(feature = "spotify")]
 const SP_MARKET: &str = "US";
 
+/// Internal macro for getting id of the `YouTube` video URL. The main purpose
+/// is reducing amount of copy paste code.
 macro_rules! get_id {
     ($last_part:expr) => {
         $last_part
@@ -30,6 +32,12 @@ macro_rules! get_id {
     };
 }
 
+/// A uniform interface for getting song data from surce(s).
+///
+/// It also hadles when user input -such as choosing a song from search results-
+/// needed.
+///
+/// Only supported sources are `YouTube` and `Spotify` at the moment.
 #[derive(Clone)]
 #[non_exhaustive]
 pub struct Song {
@@ -40,6 +48,11 @@ pub struct Song {
 }
 
 impl Song {
+    /// Creates Song struct from given URL.
+    ///
+    /// Only `YouTube` and `Spotify` URLs are supported.
+    ///
+    /// If you want to search in in `YouTube` use [`Song::yt_search()`] instead.
     pub async fn new(ctx: &Context<'_>, song: String) -> Result<VecDeque<Self>> {
         let song = song.trim().to_owned();
         let user_name = ctx.author().name.clone();
@@ -58,6 +71,8 @@ impl Song {
         }
     }
 
+    /// Takes search resoults for given string from `YouTube` and sends user to
+    /// select one/all/none of them. Then returns the selected song(s).
     async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
         let res = Command::new("yt-dlp")
             .args([
@@ -118,6 +133,7 @@ impl Song {
 
     // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
+    /// Takes `YouTube` URL and gets the song(s)
     async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([
@@ -152,6 +168,14 @@ impl Song {
             .collect())
     }
 
+    /// Takes `Spotify` URL and finds song(s) on `YouTube`.
+    ///
+    /// Adds ` lyrics` to the song name while searching on `YouTube` to avoid
+    /// from the `official music video` version of the song. `official music
+    /// video` versions generally has other parts in the video which
+    /// is not relevant to the music.
+    ///
+    /// Artist, album and playlist, and track URLs are also supported.
     #[cfg(feature = "spotify")]
     pub async fn spotify(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let Some(token) = get_config!().spotify_token().await else {
@@ -243,12 +267,16 @@ impl Song {
         .collect())
     }
 
+    /// Get title of the song.
     pub fn title(&self) -> String { self.title.clone() }
 
+    /// Get `YouTube` URL of the song.
     pub fn url(&self) -> String { self.id.clone() }
 
+    /// Get duration of the song.
     pub fn duration(&self) -> String { self.duration.clone() }
 
+    /// Get `Discord` user name of the person who requested the song.
     pub fn user_name(&self) -> String { self.user_name.clone() }
 }
 
