@@ -1,3 +1,21 @@
+/// Gets config value from config sources for given parameters
+///
+/// # Parameters
+/// - `config_file`: config file read by taplo
+/// - `ttype`: type of the config value
+/// - `env_name`: environmental variable name to get the config from
+/// - `toml config file path`: path to the variable inside config file,
+///   seperated with arrows.
+/// - for the last part you have two options:
+///     - `default_value`: default value if value is not given either
+///       environmental variable or config file
+///     - `err_message`: error message will be displayed in [`anyhow::Result`]
+///       if not value is given either in environment variable or config file
+///
+/// For examples you can check [`Config::generate()`]
+///
+/// [`Config::generate()`]: crate::config::Config::generate()
+#[macro_export]
 macro_rules! get_value {
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $default_value: ident) => {
         get_value_common!($config_file, $ttype, $env_name, $($p)=>+, { anyhow::Ok(<$ttype>::from($default_value)) })
@@ -10,6 +28,7 @@ macro_rules! get_value {
     }
 }
 
+/// This is an inner function for [`get_value!()`] macro. Do not use!
 macro_rules! get_value_common {
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $else: block) => {
         {
@@ -35,6 +54,7 @@ macro_rules! get_value_common {
     }
 }
 
+/// This is an inner function for [`get_value!()`] macro. Do not use!
 macro_rules! get_as {
     (String, $node:expr) => {
         $node.as_str()
@@ -56,6 +76,7 @@ macro_rules! get_as {
     };
 }
 
+/// This is an inner function for [`get_value!()`] macro. Do not use!
 macro_rules! convert_value {
     (String, $value:expr) => {
         Ok($value.to_owned())
