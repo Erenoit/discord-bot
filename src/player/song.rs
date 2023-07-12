@@ -6,7 +6,6 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use tokio::process::Command;
 
-use crate::bot::Context;
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -15,6 +14,7 @@ use crate::player::sp_structs::{
     SpotifyPlaylistResponse,
     SpotifyTrackResponse,
 };
+use crate::{bot::Context, player::yt_structs::YoutubeSearchResult};
 
 /// User agent to use in requests
 const USER_AGENT: &str =
@@ -82,59 +82,84 @@ impl Song {
 
     /// Takes search resoults for given string from `YouTube` and sends user to
     /// select one/all/none of them. Then returns the selected song(s).
+    // TODO: Fallback to youtube-dl if no results found.
     async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let res = Command::new("yt-dlp")
-            .args([
-                "--no-playlist",
-                "--get-title",
-                "--get-id",
-                "--get-duration",
-                &format!(
-                    "ytsearch{}:{}",
-                    get_config!().youtube_search_count(),
-                    song
-                ),
-            ])
-            .output()
+        let res = reqwest::Client::builder()
+            .user_agent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0",
+            )
+            .build()?
+            .get(format!(
+                "https://www.youtube.com/results?search_query={song}&sp=EgIQAQ%253D%253D"
+            ))
+            .send()
+            .await?
+            .text()
             .await?;
 
-        if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
-            return Err(anyhow!("yt-dlp failed"));
-        }
+        let mut search_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
+        search_res = &search_res[.. search_res.find("</script>").unwrap() - ";".len()];
 
-        let list = String::from_utf8_lossy(&res.stdout)
-            .lines()
-            .array_chunks::<3>()
-            .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
+        let list = serde_json::from_str::<YoutubeSearchResult>(search_res)?
+            .contents
+            .two_column_search_results_renderer
+            .primary_contents
+            .section_list_renderer
+            .contents
+            .into_iter()
+            .filter_map(|contents| {
+                contents.item_section_renderer.map(|item_renderer| {
+                    item_renderer
+                        .contents
+                        .into_iter()
+                        .filter_map(|item| {
+                            item.video_renderer.map(|mut video| {
+                                (
+                                    video
+                                        .title
+                                        .runs
+                                        .pop_front()
+                                        .expect("At least one title should exist")
+                                        .text,
+                                    video.video_id,
+                                    video.length_text.simple_text,
+                                )
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                })
+            })
+            .flatten()
+            .take(get_config!().youtube_search_count().into())
             .collect::<Vec<_>>();
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
             Ok(list
                 .into_iter()
-                .map(|e| {
+                .map(|(title, id, duration)| {
                     Self {
-                        title:     e.0,
-                        id:        e.1,
-                        duration:  e.2,
+                        title,
+                        id,
+                        duration,
                         user_name: user_name.clone(),
                     }
                 })
-                .collect::<VecDeque<_>>())
+                .collect())
         } else if answer != "danger" {
             Ok(list
                 .into_iter()
-                .filter(|e| e.1 == answer)
-                .map(|e| {
+                .filter(|(_, id, _)| id == &answer)
+                .take(1)
+                .map(|(title, id, duration)| {
                     Self {
-                        title:     e.0,
-                        id:        e.1,
-                        duration:  e.2,
+                        title,
+                        id,
+                        duration,
                         user_name: user_name.clone(),
                     }
                 })
-                .collect::<VecDeque<_>>())
+                .collect())
         } else {
             Err(anyhow!("Selection failed/canceled"))
         }
