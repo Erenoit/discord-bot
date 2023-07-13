@@ -50,6 +50,7 @@
 //#![warn(clippy::unwrap_used)]
 #![warn(clippy::style)]
 #![warn(clippy::suspicious)]
+#![allow(rustdoc::private_intra_doc_links)]
 #![feature(iter_array_chunks)]
 
 #[macro_use]
