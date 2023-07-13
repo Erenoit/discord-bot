@@ -70,7 +70,12 @@ impl Song {
             if song.contains("youtube") {
                 Self::youtube(song, user_name).await
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
-                Self::spotify(song, user_name).await
+                if get_config!().is_spotify_initialized() {
+                    Self::spotify(song, user_name).await
+                } else {
+                    message!(error, ctx, ("Spotify is not initialized"); true);
+                    Err(anyhow!("Spotify is not initialized"))
+                }
             } else {
                 message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
@@ -82,8 +87,26 @@ impl Song {
 
     /// Takes search resoults for given string from `YouTube` and sends user to
     /// select one/all/none of them. Then returns the selected song(s).
-    // TODO: Fallback to youtube-dl if no results found.
+    ///
+    /// Uses new `YouTube` scrapper, but falls back to `yt-dlp` if new one
+    /// fails.
     async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
+        if let Ok(res) = Self::search_new(ctx, &song, &user_name).await {
+            res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
+        } else if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
+            res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
+        } else {
+            Err(anyhow!("An error happened in search"))
+        }
+    }
+
+    /// Sends GET request to `YouTube` as if it was searched in browser and
+    /// scrapes the results.
+    async fn search_new(
+        ctx: &Context<'_>,
+        song: &str,
+        user_name: &str,
+    ) -> Result<Option<VecDeque<Self>>> {
         let res = reqwest::Client::builder()
             .user_agent(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0",
@@ -135,33 +158,100 @@ impl Song {
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
-            Ok(list
-                .into_iter()
-                .map(|(title, id, duration)| {
-                    Self {
-                        title,
-                        id,
-                        duration,
-                        user_name: user_name.clone(),
-                    }
-                })
-                .collect())
+            Ok(Some(
+                list.into_iter()
+                    .map(|(title, id, duration)| {
+                        Self {
+                            title,
+                            id,
+                            duration,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
         } else if answer != "danger" {
-            Ok(list
-                .into_iter()
-                .filter(|(_, id, _)| id == &answer)
-                .take(1)
-                .map(|(title, id, duration)| {
-                    Self {
-                        title,
-                        id,
-                        duration,
-                        user_name: user_name.clone(),
-                    }
-                })
-                .collect())
+            Ok(Some(
+                list.into_iter()
+                    .filter(|(_, id, _)| id == &answer)
+                    .take(1)
+                    .map(|(title, id, duration)| {
+                        Self {
+                            title,
+                            id,
+                            duration,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
         } else {
-            Err(anyhow!("Selection failed/canceled"))
+            Ok(None)
+        }
+    }
+
+    /// Uses old `yt-dlp` to search for given string in `YouTube`.
+    async fn search_old(
+        ctx: &Context<'_>,
+        song: &str,
+        user_name: &str,
+    ) -> Result<Option<VecDeque<Self>>> {
+        let Ok(res) = Command::new("yt-dlp")
+            .args([
+                "--flat-playlist",
+                "--get-title",
+                "--get-id",
+                "--get-duration",
+                song,
+            ])
+            .output()
+            .await
+        else {
+            log!(error, "Command creation for yt-dlp failed");
+            return Err(anyhow!("yt-dlp failed"));
+        };
+
+        if !res.status.success() {
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            return Err(anyhow!("yt-dlp failed"));
+        }
+
+        let list = String::from_utf8_lossy(&res.stdout)
+            .lines()
+            .array_chunks::<3>()
+            .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
+            .collect::<Vec<_>>();
+
+        let answer = selection!(list, *ctx, "Search", list, true);
+        if answer == "success" {
+            Ok(Some(
+                list.into_iter()
+                    .map(|e| {
+                        Self {
+                            title:     e.0,
+                            id:        e.1,
+                            duration:  e.2,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
+        } else if answer != "danger" {
+            Ok(Some(
+                list.into_iter()
+                    .filter(|e| e.1 == answer)
+                    .map(|e| {
+                        Self {
+                            title:     e.0,
+                            id:        e.1,
+                            duration:  e.2,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
+        } else {
+            Ok(None)
         }
     }
 
