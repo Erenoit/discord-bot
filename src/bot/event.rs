@@ -35,6 +35,7 @@ impl EventHandler for Handler {
         }
 
         log!(info, "{} is online!", (ready.user.name.magenta()));
+        drop(servers);
     }
 
     async fn guild_create(&self, _ctx: Context, guild: Guild, is_new: bool) {

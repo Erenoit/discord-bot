@@ -191,10 +191,10 @@ macro_rules! selection {
 
             let mut msg = String::with_capacity(1024);
 
-            _ = writeln!(msg, "**{}**", $title);
+            writeln!(msg, "**{}**", $title).ok();
 
             for (i, element) in $list.iter().enumerate() {
-                _ = write!(msg, "{}) ", i + 1);
+                write!(msg, "{}) ", i + 1).ok();
                 msg.push_str(&element.0);
                 msg.push('\n');
             }
@@ -215,7 +215,7 @@ macro_rules! selection {
 /// This is an inner function for `selection!()` macro. Do not use!
 macro_rules! selection_inner {
     (clear, $ctx:expr, $interaction:ident) => {
-        _ = $interaction
+        $interaction
             .create_interaction_response($ctx.serenity_context(), |r| {
                 r.kind(serenity::model::application::interaction::InteractionResponseType::UpdateMessage)
                     .interaction_response_data(|d| {
@@ -223,7 +223,7 @@ macro_rules! selection_inner {
                             .set_components(serenity::builder::CreateComponents::default())
                     })
             })
-            .await;
+            .await.ok();
     };
     (get_interaction, $ctx:expr, $res:ident, $n:lifetime, $def_return:expr) => {
         {
@@ -240,11 +240,11 @@ macro_rules! selection_inner {
                     std::time::Duration::from_secs(get_config!().message_interaction_time_limit())
                 ).await else
                 {
-                    _ = handle.edit($ctx, |m| {
+                    handle.edit($ctx, |m| {
                         m.content("Interaction timed out.").components(|c| {
                             c.create_action_row(|row| row)
                         })
-                    }).await;
+                    }).await.ok();
                     break $n $def_return;
             };
 

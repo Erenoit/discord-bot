@@ -24,6 +24,7 @@ pub struct Bot;
 
 impl Bot {
     /// Creates a new instance of the bot.
+    #[must_use]
     pub const fn new() -> Self { Self }
 
     /// Runs the bot.
