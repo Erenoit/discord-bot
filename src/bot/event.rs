@@ -1,3 +1,5 @@
+//! Struct for handling `Discord` events.
+
 use std::sync::Arc;
 
 use serenity::{
@@ -16,6 +18,7 @@ use crate::server::Server;
 /// It currently handles `Ready`, `GuildCreate` and `GuildDelete` events.
 pub struct Handler;
 impl Handler {
+    /// Creates new [`Handler`] struct.
     pub const fn new() -> Self { Self }
 }
 

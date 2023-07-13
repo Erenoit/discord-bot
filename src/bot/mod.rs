@@ -27,6 +27,11 @@ impl Bot {
     pub const fn new() -> Self { Self }
 
     /// Runs the bot.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if it cannot run database mitigations or cannot
+    /// connects to the `Discord`
     pub async fn run(&mut self) {
         #[cfg(feature = "database")]
         get_config!()

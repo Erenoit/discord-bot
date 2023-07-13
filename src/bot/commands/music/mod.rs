@@ -1,20 +1,31 @@
 //! Contains all the music commands.
 
+/// clear command
 pub mod clear;
+/// join command
 pub mod join;
+/// leave command
 pub mod leave;
+/// music command
 #[allow(clippy::module_inception)]
 #[cfg(feature = "database")]
 pub mod music;
+/// play command
 pub mod play;
+/// queue command
 pub mod queue;
+/// repeat command
 pub mod repeat;
+/// shuffle command
 pub mod shuffle;
+/// skip command
 pub mod skip;
+/// stop command
 pub mod stop;
 
 use crate::{bot::commands::Context, server::Server};
 
+/// Gets the voice channel id from the context.
 fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id::ChannelId> {
     ctx.guild()
         .expect("Guild should be Some")
@@ -23,6 +34,7 @@ fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id:
         .and_then(|voice_state| voice_state.channel_id)
 }
 
+/// Handles the voice channel connection.
 async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Result<()> {
     let bot_vc = server.player.connected_vc().await;
     if bot_vc.is_none() {

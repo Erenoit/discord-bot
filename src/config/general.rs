@@ -10,6 +10,7 @@ use crate::config::defaults::{AUTO_REGISTER_COMMANDS, PREFIX};
 #[cfg(not(feature = "config_file"))]
 use crate::config::Node;
 
+/// General configuration.
 #[non_exhaustive]
 pub(super) struct GeneralConfig {
     /// Discord token.

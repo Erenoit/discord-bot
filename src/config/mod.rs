@@ -19,6 +19,7 @@
 //! in their creation. Using different name for the constructor other than
 //! `new()` is to make it clear that it is not a normal constructor.
 
+/// Command line arguments for the bot
 #[cfg(feature = "cmd")]
 mod cmd_arguments;
 mod defaults;
@@ -77,15 +78,22 @@ struct Node;
 /// Main struct to store everything
 #[non_exhaustive]
 pub struct Config {
+    /// General configuration
     general:  GeneralConfig,
+    /// Message configuration
     message:  MessageConfig,
+    /// `YouTube` configuration
     #[cfg(feature = "music")]
     youtube:  YouTubeConfig,
+    /// `Spotify` configuration
     #[cfg(feature = "spotify")]
     spotify:  Option<SpotifyConfig>,
+    /// Database configuration
     #[cfg(feature = "database")]
     database: Option<DatabaseConfig>,
+    /// Connected servers
     servers:  RwLock<HashMap<GuildId, Arc<Server>>>,
+    /// Songbird client
     #[cfg(feature = "music")]
     songbird: Arc<Songbird>,
 }

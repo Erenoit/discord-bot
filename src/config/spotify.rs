@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 #[cfg(not(feature = "config_file"))]
 use crate::config::Node;
 
+/// `Spotify` configuration.
 #[non_exhaustive]
 pub(super) struct SpotifyConfig {
     /// Client ID for Spotify API.
@@ -23,6 +24,7 @@ pub(super) struct SpotifyConfig {
 }
 
 impl SpotifyConfig {
+    /// Refresh time for token.
     const REFRESH_TIME: u64 = 3500;
 
     /// Generate a new `SpotifyConfig` from the config file.

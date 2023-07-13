@@ -1,3 +1,5 @@
+//! Contains macros for sending messages and selections.
+
 /// Sends cheat message or interaction reply based on `$ctx`.
 ///
 /// Types:

@@ -1,3 +1,5 @@
+//! This module contains a simple logger macro.
+
 /// Main macro for logging.
 ///
 /// The output is colorful to make log type more distinguishable

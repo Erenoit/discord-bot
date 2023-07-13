@@ -15,6 +15,7 @@ use crate::config::defaults::{
 #[cfg(not(feature = "config_file"))]
 use crate::config::Node;
 
+/// Message configuration.
 #[non_exhaustive]
 pub(super) struct MessageConfig {
     /// Whether to always use embed messages.

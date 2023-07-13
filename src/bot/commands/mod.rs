@@ -17,7 +17,10 @@ pub mod entertainment;
 pub mod music;
 pub mod others;
 
+/// Error type for the bot.
 type Error = Box<dyn std::error::Error + Send + Sync>;
+/// Context type for the bot.
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
+/// The data type for the bot.
 pub struct Data;

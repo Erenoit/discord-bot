@@ -346,6 +346,7 @@ pub enum Repeat {
 impl Repeat {
     /// Returns all possible variants for [`Repeat`] enum
     pub fn variants() -> Iter<'static, Self> {
+        /// Array for all possible variants for [`Repeat`] enum
         static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
         V.iter()
     }

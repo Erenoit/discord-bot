@@ -1,3 +1,5 @@
+//! Macros for the commands.
+
 /// Gives [`Server`] and [`Guild`] for the given [`Context`].
 ///
 /// Most of the commands need these two, so this macro is used to reduce code
