@@ -1,3 +1,5 @@
+//! The module that contains the `Server` struct.
+
 use serenity::model::id::GuildId;
 
 #[cfg(feature = "music")]
@@ -7,6 +9,7 @@ use crate::player::Player;
 /// The struct that contains all the information needed for one guild.
 #[non_exhaustive]
 pub struct Server {
+    /// The player for the server.
     #[cfg(feature = "music")]
     pub player: Player,
 }

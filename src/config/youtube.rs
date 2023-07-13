@@ -10,6 +10,7 @@ use crate::config::Node;
 
 // TODO add more options
 // TODO: implement this configs
+/// `YouTube` configuration.
 #[non_exhaustive]
 pub(super) struct YouTubeConfig {
     /// Number of results to show when searching for a song.

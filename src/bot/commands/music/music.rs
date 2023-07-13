@@ -207,7 +207,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .await?
         .iter()
         .for_each(|result| {
-            _ = writeln!(
+            writeln!(
                 msg,
                 "**{}**: <{}>",
                 result
@@ -216,7 +216,8 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
                     .expect("There is a `-` in prefix. This cannot fail.")
                     .1,
                 result.value
-            );
+            )
+            .ok();
         });
 
         msg += "\n";

@@ -1,3 +1,5 @@
+//! This is the main file of the project.
+
 // Clippy lints (last check 1.70.0)
 #![warn(clippy::cargo)]
 #![allow(clippy::cargo_common_metadata)] // Not going tp release on crates.io

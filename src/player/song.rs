@@ -1,3 +1,5 @@
+//! Song struct and its methods.
+
 use std::{collections::VecDeque, fmt::Display, iter};
 
 use anyhow::{anyhow, Result};
@@ -14,10 +16,13 @@ use crate::player::sp_structs::{
     SpotifyTrackResponse,
 };
 
+/// User agent to use in requests
 const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
+/// Base URL for spotify API
 #[cfg(feature = "spotify")]
 const SP_BASE_URL: &str = "https://api.spotify.com/v1";
+/// Spotify market to use in Spotify API
 #[cfg(feature = "spotify")]
 const SP_MARKET: &str = "US";
 
@@ -41,9 +46,13 @@ macro_rules! get_id {
 #[derive(Clone)]
 #[non_exhaustive]
 pub struct Song {
+    /// Title of the song.
     title:     String,
+    /// YouTube video ID of the song.
     id:        String,
+    /// Duration of the song.
     duration:  String,
+    /// Username of the user who requested the song.
     user_name: String,
 }
 

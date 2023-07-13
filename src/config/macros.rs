@@ -1,3 +1,5 @@
+//! This module contains macros for config module
+
 /// Gets config value from config sources for given parameters
 ///
 /// # Parameters

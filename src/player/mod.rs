@@ -96,9 +96,10 @@ impl Player {
         }
 
         if let Some(call_mutex) = get_call_mutex!(self.guild_id) {
-            let mut call = call_mutex.lock().await;
-
-            call.leave()
+            call_mutex
+                .lock()
+                .await
+                .leave()
                 .await
                 .expect("There should be no error while leaving the call");
         }
@@ -154,13 +155,10 @@ impl Player {
                 if now_playing.is_some() {
                     (*now_playing).take().expect("Cannot be None at this point")
                 } else {
-                    let Some(song) = self.song_queue
-                        .lock()
-                        .await
-                        .pop_front() else {
-                            self.stop_stream().await;
-                            return;
-                        };
+                    let Some(song) = self.song_queue.lock().await.pop_front() else {
+                        self.stop_stream().await;
+                        return;
+                    };
                     song
                 }
             },
@@ -174,20 +172,21 @@ impl Player {
             },
         };
 
-        let mut call = call_mutex.lock().await;
-        _ = call
+        call_mutex
+            .lock()
+            .await
             .play_source(source)
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
-            });
+            })
+            .ok();
         *self.now_playing.lock().await = Some(next_song);
     }
 
     /// Stops all playing songs.
     pub async fn stop_stream(&self) {
         if let Some(call_mutex) = get_call_mutex!(self.guild_id) {
-            let mut call = call_mutex.lock().await;
-            call.stop();
+            call_mutex.lock().await.stop();
             *self.now_playing.lock().await = None;
         }
     }
@@ -299,12 +298,13 @@ impl Player {
         let song_str = song.to_string();
 
         if selected {
-            _ = writeln!(
+            writeln!(
                 s,
                 "**{selected_char}{selected_whitespace}{number_style}{song_str}**"
-            );
+            )
+            .ok();
         } else {
-            _ = writeln!(s, "{normal_whitespace}{number_style}{song_str}");
+            writeln!(s, "{normal_whitespace}{number_style}{song_str}").ok();
         }
     }
 
@@ -346,6 +346,7 @@ pub enum Repeat {
 impl Repeat {
     /// Returns all possible variants for [`Repeat`] enum
     pub fn variants() -> Iter<'static, Self> {
+        /// Array for all possible variants for [`Repeat`] enum
         static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
         V.iter()
     }
