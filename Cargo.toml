@@ -40,6 +40,8 @@ tokio = { version = "1.29", features = [
     "rt-multi-thread",
     "parking_lot",
 ] }
+tuirealm = { version = "1.8", optional = true }
+tui-realm-stdlib = { version = "1.2", optional = true }
 
 [build-dependencies]
 clap = { version = "4.3", features = ["derive"], optional = true }
@@ -52,11 +54,19 @@ panic = 'abort'
 overflow-checks = false
 
 [features]
-
-default = ["cmd", "config_file", "database", "dotenv", "music", "spotify"]
+default = [
+    "cmd",
+    "config_file",
+    "database",
+    "dotenv",
+    "music",
+    "spotify",
+    "tui",
+]
 cmd = ["dep:clap", "dep:clap_complete"]
 config_file = ["dep:directories", "dep:taplo"]
 database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenv"]
 music = ["dep:songbird"]
 spotify = ["dep:serde", "music"]
+tui = ["dep:tuirealm", "dep:tui-realm-stdlib"]

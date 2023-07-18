@@ -71,14 +71,17 @@ macro_rules! log_common_wrapper {
 }
 
 // TODO: add time and some other extra info
+// TODO: redirect to `Tui`s log window if enabled
 /// This is an inner function for `log!()` macro. Do not use!
 macro_rules! print_log {
     (main, $color: ident, $symbol: literal, $($message: tt),*) => {
+        #[cfg(not(feature = "tui"))]
         eprint!("{} {}\n", $symbol.$color(), format!($($message),*).$color());
     };
     (secondary, $color: ident, $($($message: tt),*);*) => {
         $(
             format!($($message),*).split('\n').for_each(|line| {
+                #[cfg(not(feature = "tui"))]
                 eprint!("\t{}\n", line.$color());
             });
         );*

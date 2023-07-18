@@ -64,7 +64,7 @@ use anyhow::{anyhow, Result};
 use config::Config;
 use tokio::sync::OnceCell;
 
-pub use crate::bot::Bot;
+pub use crate::{bot::Bot, tui::Tui};
 
 /// This variable keeps everything about discord bot.
 ///
@@ -117,3 +117,5 @@ mod database_tables;
 #[cfg(feature = "music")]
 mod player;
 mod server;
+#[cfg(feature = "tui")]
+mod tui;
