@@ -1,9 +1,8 @@
 import { ActionRowData, ActionRowComponentData, APIActionRowComponentTypes,
          APIEmbed, ButtonComponentData, ButtonInteraction, ButtonStyle,
-         Interaction, InteractionReplyOptions, Message,
+         Collection, Interaction, InteractionReplyOptions, Message,
          MessageComponentInteraction, BaseMessageOptions, TextBasedChannel,
          ComponentType, JSONEncodable} from "discord.js"
-import { Collection } from "typescript";
 import { Variables } from "../Interfaces";
 import Logger from "../Logger";
 
@@ -303,7 +302,7 @@ class Messager {
                                  filter?: (interaction: MessageComponentInteraction) => boolean,
                                  max_interaction?: number,
                                  end_text?: string,
-                                 custom_end_func?: (collection: Collection<Interaction>, reason: string) => void
+                                 custom_end_func?: (collection: Collection<string, Interaction>, reason: string) => void
                                 ): Promise<Message> {
     const sent_msg = await this.send(variables, message);
 

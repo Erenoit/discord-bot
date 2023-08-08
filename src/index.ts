@@ -3,7 +3,6 @@ import Client from "./Client";
 
 const intents = GatewayIntentBits.Guilds
               | GatewayIntentBits.GuildMembers
-              | GatewayIntentBits.GuildBans
               | GatewayIntentBits.GuildEmojisAndStickers
               | GatewayIntentBits.GuildIntegrations
               | GatewayIntentBits.GuildWebhooks
