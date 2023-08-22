@@ -136,7 +136,7 @@ impl Config {
 
         log!(info, "Registering Configs");
         #[cfg(feature = "dotenv")]
-        drop(dotenv::dotenv()); // It doesn't matter even if it fails
+        dotenvy::dotenv().ok();
         #[cfg(feature = "config_file")]
         let config_file =
             taplo::parser::parse(fs::read_to_string(config_file_path)?.as_str()).into_dom();
