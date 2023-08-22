@@ -35,7 +35,7 @@ sqlx = { version = "0.6", features = [
     "sqlite",
 ], optional = true }
 taplo = { version = "0.12", optional = true }
-tokio = { version = "1.29", features = [
+tokio = { version = "1.32", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
