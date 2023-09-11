@@ -52,7 +52,6 @@ panic = 'abort'
 overflow-checks = false
 
 [features]
-
 default = ["cmd", "config_file", "database", "dotenv", "music", "spotify"]
 cmd = ["dep:clap", "dep:clap_complete"]
 config_file = ["dep:directories", "dep:taplo"]
@@ -60,3 +59,63 @@ database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenvy"]
 music = ["dep:songbird"]
 spotify = ["dep:serde", "music"]
+
+# Clippy lints (last check 1.70.0)
+# The ones commented with forbit are waiting for clippy to ignore external crate
+# macros when checking for them
+[lints.clippy]
+cargo = "warn"
+cargo_common_metadata = "allow"          # Not going tp release on crates.io
+complexity = "warn"
+correctness = "deny"
+nursery = "warn"
+pedantic = "warn"
+unreadable_literal = "allow"             # Only used for colors
+perf = "warn"
+restriction = "allow"                    # Enabling everything is not recomanded
+allow_attributes_without_reason = "warn" # Not stable yet # force
+allow_attributes = "warn"                # Not stable yet # force
+as_underscore = "warn"                   # forbid
+clone_on_ref_ptr = "warn"
+deref_by_slicing = "warn"
+dbg_macro = "warn"                       # forbid
+disallowed_script_idents = "warn"
+empty_drop = "warn"                      # forbid
+empty_structs_with_brackets = "warn"
+exhaustive_structs = "warn"
+exit = "warn"
+#expect_used = "warn"
+format_push_string = "warn"
+fn_to_numeric_cast_any = "warn"
+if_then_some_else_none = "warn"
+impl_trait_in_params = "warn"            # forbid
+large_include_file = "warn"
+large_stack_arrays = "warn"
+let_underscore_must_use = "warn"
+lossy_float_literal = "warn"
+map_err_ignore = "warn"                  # forbid
+min_ident_chars = "warn"                 # forbid
+missing_docs_in_private_items = "warn"
+mixed_read_write_in_expression = "warn"
+multiple_inherent_impl = "warn"
+mutex_atomic = "warn"
+pub_without_shorthand = "warn"           # forbid
+rc_mutex = "warn"                        # forbid
+redundant_type_annotations = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+same_name_method = "warn"
+self_named_module_files = "warn"
+str_to_string = "warn"                   # forbid
+string_to_string = "warn"                # forbid
+tests_outside_test_module = "warn"       # forbid
+undocumented_unsafe_blocks = "warn"      # forbid
+unnecessary_self_imports = "warn"
+unneeded_field_pattern = "warn"
+unseparated_literal_suffix = "warn"      # forbid
+unwrap_in_result = "warn"
+#unwrap_used = "warn"
+style = "warn"
+suspicious = "warn"
+
+[lints.rustdoc]
+private_intra_doc_links = "allow"
