@@ -9,91 +9,138 @@ use serde::{Deserialize, Serialize};
 /// Entry of `ytInitialData` variable in the HTML source code.
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResult {
+pub struct YoutubeSearch {
     /// `contents` of `ytInitialData` variable in the HTML source code.
-    pub contents: YoutubeSearchResultContents,
+    pub contents: YoutubeContentsSearch,
 }
 
-/// `contents` of `ytInitialData` variable in the HTML source code.
+/// Entry of `ytInitialData` variable in the HTML source code.
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultContents {
+pub struct YoutubeLink {
+    /// `contents` of `ytInitialData` variable in the HTML source code.
+    pub contents: YoutubeContentsWatch,
+}
+
+/// Container
+///
+/// Only difference from `YoutubeContentsSearch` is the field name
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeContentsWatch {
     /// Container
-    pub two_column_search_results_renderer: YoutubeSearchResultRenderer,
+    pub two_column_watch_next_results: YoutubeTwoColumnSelection,
+}
+
+/// Container
+///
+/// Only difference from `YoutubeContentsWatch` is the field name
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeContentsSearch {
+    /// Container
+    pub two_column_search_results_renderer: YoutubeTwoColumnSection,
+}
+
+/// Container
+///
+/// Only difference from `YoutubeTwoColumnSection` is the type of
+/// `primary_contents` Yes, it was way aesier to create neew type instead of
+/// using generics because [`eserialize`](serde::Deserilize) has a lifetime.
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeTwoColumnSelection {
+    /// Container
+    pub primary_contents: YoutubePrimaryContentsSelection,
+}
+
+/// Container
+///
+/// Only difference from `YoutubeTwoColumnSelection` is the type of
+/// `primary_contents` Yes, it was way aesier to create neew type instead of
+/// using generics because [`eserialize`](serde::Deserilize) has a lifetime.
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeTwoColumnSection {
+    /// Container
+    pub primary_contents: YoutubePrimaryContentsSection,
+}
+/// Container
+///
+/// Only difference from `YoutubePrimaryContentsSection` is the field name
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubePrimaryContentsSelection {
+    /// Container
+    pub selection_list_renderer: YoutubeSectionListRenderer,
+}
+
+/// Container
+///
+/// Only difference from `YoutubePrimaryContentsSelection` is the field name
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubePrimaryContentsSection {
+    /// Container
+    pub section_list_renderer: YoutubeSectionListRenderer,
 }
 
 /// Container
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultRenderer {
+pub struct YoutubeSectionListRenderer {
     /// Container
-    pub primary_contents: YoutubeSearchResultPrimaryContents,
+    pub contents: Vec<YoutubeSectionListRendererContents>,
 }
 
 /// Container
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultPrimaryContents {
+pub struct YoutubeSectionListRendererContents {
     /// Container
-    pub section_list_renderer: YoutubeSearchResultSectionListRenderer,
-}
-
-/// Container
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultSectionListRenderer {
-    /// Container
-    pub contents: Vec<YoutubeSearchResultSectionListRendererContents>,
-}
-
-/// Container
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultSectionListRendererContents {
-    /// Container
-    pub item_section_renderer: Option<YoutubeSearchResultItemSectionRenderer>,
+    pub item_section_renderer: Option<YoutubeItemSectionRenderer>,
 }
 
 /// A struct that holds list of videos
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultItemSectionRenderer {
+pub struct YoutubeItemSectionRenderer {
     /// A list of videos
-    pub contents: Vec<YoutubeSearchResultItemSectionRendererContents>,
+    pub contents: Vec<YoutubeItemSectionRendererContents>,
 }
 
 /// Struct that hold a single video
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultItemSectionRendererContents {
+pub struct YoutubeItemSectionRendererContents {
     /// A single video
-    pub video_renderer: Option<YoutubeSearchResultVideoRenderer>,
+    pub video_renderer: Option<YoutubeVideoRenderer>,
 }
 
 /// Information about a video
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultVideoRenderer {
+pub struct YoutubeVideoRenderer {
     /// Id of the video
     pub video_id:    String,
     /// Title of the video
-    pub title:       YoutubeSearchResultTitle,
+    pub title:       YoutubeTitle,
     /// Length of the video
-    pub length_text: YoutubeSearchResultLengthText,
+    pub length_text: YoutubeLengthText,
 }
 
 /// List of titles of a videa
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultTitle {
+pub struct YoutubeTitle {
     /// List of titles of a videa
-    pub runs: VecDeque<YoutubeSearchResultTitleRun>,
+    pub runs: VecDeque<YoutubeTitleRun>,
 }
 
 /// Single title of a video
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultTitleRun {
+pub struct YoutubeTitleRun {
     /// Single title of a video
     pub text: String,
 }
@@ -101,83 +148,7 @@ pub struct YoutubeSearchResultTitleRun {
 /// Length of a video
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeSearchResultLengthText {
+pub struct YoutubeLengthText {
     /// length of the song as string
-    pub simple_text: String,
-}
-
-/// Entry of `ytInitialData` variable in the HTML source code.
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResult {
-    /// `contents` of `ytInitialData` variable in the HTML source code.
-    pub contents: YoutubeLinkResultContents,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultContents {
-    pub two_column_watch_next_results: YoutubeLinkResultTwoColumnWatchNextResults,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultTwoColumnWatchNextResults {
-    pub primary_contents: YoutubeLinkResultPrimaryContents,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultPrimaryContents {
-    pub selection_list_renderer: YoutubeLinkResultSelectionListRenderer,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultSelectionListRenderer {
-    pub contents: Vec<YoutubeLinkResultSelectionListRendererContents>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultSelectionListRendererContents {
-    pub item_section_renderer: Option<YoutubeLinkResultItemSectionRenderer>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultItemSectionRenderer {
-    pub contents: Vec<YoutubeLinkResultItemSectionRendererContents>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultItemSectionRendererContents {
-    pub video_renderer: Option<YoutubeLinkResultVideoRenderer>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultVideoRenderer {
-    pub title:       YoutubeLinkResultTitle,
-    pub video_id:    String,
-    pub length_text: YoutubeLinkResultLengthText,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultTitle {
-    pub runs: VecDeque<YoutubeLinkResultTitleRun>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultTitleRun {
-    pub text: String,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
-pub struct YoutubeLinkResultLengthText {
     pub simple_text: String,
 }

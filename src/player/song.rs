@@ -16,7 +16,7 @@ use crate::player::sp_structs::{
 };
 use crate::{
     bot::Context,
-    player::yt_structs::{YoutubeLinkResult, YoutubeSearchResult},
+    player::yt_structs::{YoutubeLink, YoutubeSearch},
 };
 
 /// User agent to use in requests
@@ -126,7 +126,7 @@ impl Song {
         let mut search_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
         search_res = &search_res[.. search_res.find("</script>").unwrap() - ";".len()];
 
-        let list = serde_json::from_str::<YoutubeSearchResult>(search_res)?
+        let list = serde_json::from_str::<YoutubeSearch>(search_res)?
             .contents
             .two_column_search_results_renderer
             .primary_contents
@@ -290,7 +290,7 @@ impl Song {
         let mut link_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
         link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
 
-        let Some(video) = serde_json::from_str::<YoutubeLinkResult>(link_res)?
+        let Some(video) = serde_json::from_str::<YoutubeLink>(link_res)?
             .contents
             .two_column_watch_next_results
             .primary_contents
