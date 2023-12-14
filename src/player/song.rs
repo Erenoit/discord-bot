@@ -71,7 +71,15 @@ impl Song {
 
         if song.starts_with("https://") || song.starts_with("http://") {
             if song.contains("youtube") {
-                Self::youtube(song, user_name).await
+                #[cfg(feature = "yt-dlp-fallback")]
+                {
+                    Self::youtube(song, user_name).await
+                }
+
+                #[cfg(not(feature = "yt-dlp-fallback"))]
+                {
+                    Self::youtube_new(song.as_str(), user_name.as_str()).await
+                }
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
                 if get_config!().is_spotify_initialized() {
                     Self::spotify(song, user_name).await
@@ -84,7 +92,15 @@ impl Song {
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            Self::search(ctx, song, user_name).await
+            #[cfg(feature = "yt-dlp-fallback")]
+            {
+                Self::search(ctx, song, user_name).await
+            }
+
+            #[cfg(not(feature = "yt-dlp-fallback"))]
+            {
+                Self::search_new(ctx, song.as_str(), user_name.as_str()).await
+            }
         }
     }
 
@@ -198,6 +214,7 @@ impl Song {
     }
 
     /// Uses old `yt-dlp` to search for given string in `YouTube`.
+    #[cfg(feature = "yt-dlp-fallback")]
     async fn search_old(
         ctx: &Context<'_>,
         song: &str,
@@ -335,6 +352,7 @@ impl Song {
     }
 
     /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
+    #[cfg(feature = "yt-dlp-fallback")]
     async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([

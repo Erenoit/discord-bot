@@ -60,13 +60,22 @@ overflow-checks = false
 strip = "symbols"
 
 [features]
-default = ["cmd", "config_file", "database", "dotenv", "music", "spotify"]
+default = [
+    "cmd",
+    "config_file",
+    "database",
+    "dotenv",
+    "music",
+    "spotify",
+    "yt-dlp-fallback",
+]
 cmd = ["dep:clap", "dep:clap_complete"]
 config_file = ["dep:directories", "dep:taplo"]
 database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenvy"]
 music = ["dep:serde", "dep:serde_json", "dep:songbird"]
 spotify = ["music"]
+yt-dlp-fallback = ["music"]
 
 
 # Clippy Lints Last Checked For 0.1.78
