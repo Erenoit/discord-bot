@@ -105,3 +105,79 @@ pub struct YoutubeSearchResultLengthText {
     /// length of the song as string
     pub simple_text: String,
 }
+
+/// Entry of `ytInitialData` variable in the HTML source code.
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResult {
+    /// `contents` of `ytInitialData` variable in the HTML source code.
+    pub contents: YoutubeLinkResultContents,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultContents {
+    pub two_column_watch_next_results: YoutubeLinkResultTwoColumnWatchNextResults,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultTwoColumnWatchNextResults {
+    pub primary_contents: YoutubeLinkResultPrimaryContents,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultPrimaryContents {
+    pub selection_list_renderer: YoutubeLinkResultSelectionListRenderer,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultSelectionListRenderer {
+    pub contents: Vec<YoutubeLinkResultSelectionListRendererContents>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultSelectionListRendererContents {
+    pub item_section_renderer: Option<YoutubeLinkResultItemSectionRenderer>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultItemSectionRenderer {
+    pub contents: Vec<YoutubeLinkResultItemSectionRendererContents>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultItemSectionRendererContents {
+    pub video_renderer: Option<YoutubeLinkResultVideoRenderer>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultVideoRenderer {
+    pub title:       YoutubeLinkResultTitle,
+    pub video_id:    String,
+    pub length_text: YoutubeLinkResultLengthText,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultTitle {
+    pub runs: VecDeque<YoutubeLinkResultTitleRun>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultTitleRun {
+    pub text: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubeLinkResultLengthText {
+    pub simple_text: String,
+}
