@@ -14,7 +14,10 @@ use crate::player::sp_structs::{
     SpotifyPlaylistResponse,
     SpotifyTrackResponse,
 };
-use crate::{bot::Context, player::yt_structs::YoutubeSearchResult};
+use crate::{
+    bot::Context,
+    player::yt_structs::{YoutubeLinkResult, YoutubeSearchResult},
+};
 
 /// User agent to use in requests
 const USER_AGENT: &str =
@@ -255,17 +258,83 @@ impl Song {
         }
     }
 
-    // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
     /// Takes `YouTube` URL and gets the song(s)
     async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let res_new = Self::youtube_new(&song, &user_name).await;
+
+        if res_new.is_err()
+            && let Ok(res_old) = Self::youtube_old(&song, &user_name).await
+        {
+            return Ok(res_old);
+        }
+
+        res_new
+    }
+
+    // TODO: Playlist links
+    /// Sends GET request to `YouTube` as if it was requested from a browser and
+    /// scrapes the result.
+    async fn youtube_new(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
+        let res = reqwest::Client::builder()
+            .user_agent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0",
+            )
+            .build()?
+            .get(song)
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let mut link_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
+        link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
+
+        let Some(video) = serde_json::from_str::<YoutubeLinkResult>(link_res)?
+            .contents
+            .two_column_watch_next_results
+            .primary_contents
+            .selection_list_renderer
+            .contents
+            .into_iter()
+            .next()
+            .unwrap()
+            .item_section_renderer
+            .expect("At least one item should exist")
+            .contents
+            .into_iter()
+            .next()
+            .unwrap()
+            .video_renderer
+            .map(|mut video| {
+                Self {
+                    title:     video
+                        .title
+                        .runs
+                        .pop_front()
+                        .expect("At least one title should exist")
+                        .text,
+                    id:        video.video_id,
+                    duration:  video.length_text.simple_text,
+                    user_name: user_name.to_owned(),
+                }
+            })
+        else {
+            return Err(anyhow!("Couldn't find video"));
+        };
+
+        Ok(vec![video].into())
+    }
+
+    /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
+    async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &song,
+                song,
             ])
             .output()
             .await
@@ -287,7 +356,7 @@ impl Song {
                     title:     e[0].to_owned(),
                     id:        e[1].to_owned(),
                     duration:  e[2].to_owned(),
-                    user_name: user_name.clone(),
+                    user_name: user_name.to_owned(),
                 }
             })
             .collect())
