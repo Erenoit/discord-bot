@@ -97,6 +97,10 @@ impl Song {
         if let Ok(res) = Self::search_new(ctx, &song, &user_name).await {
             res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
         } else if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
+            log!(
+                warn,
+                "new scrapper failed, falling back to yt-dlp"
+            );
             res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
         } else {
             Err(anyhow!("An error happened in search"))
@@ -266,6 +270,10 @@ impl Song {
         if res_new.is_err()
             && let Ok(res_old) = Self::youtube_old(&song, &user_name).await
         {
+            log!(
+                warn,
+                "new scrapper failed, falling back to yt-dlp"
+            );
             return Ok(res_old);
         }
 
