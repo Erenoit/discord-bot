@@ -289,7 +289,8 @@ impl Song {
         {
             log!(
                 warn,
-                "new scrapper failed, falling back to yt-dlp"
+                "new scrapper failed, falling back to yt-dlp";
+                "{}", (res_new.err().unwrap())
             );
             return Ok(res_old);
         }
@@ -297,7 +298,8 @@ impl Song {
         res_new
     }
 
-    // TODO: Playlist links
+    // TODO: Fix non-Playlist links
+    // TODO: Playlist only links
     /// Sends GET request to `YouTube` as if it was requested from a browser and
     /// scrapes the result.
     async fn youtube_new(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
@@ -315,40 +317,27 @@ impl Song {
         let mut link_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
         link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
 
-        let Some(video) = serde_json::from_str::<YoutubeLink>(link_res)?
+        let video_two_col = serde_json::from_str::<YoutubeLink>(link_res)?
             .contents
-            .two_column_watch_next_results
-            .primary_contents
-            .selection_list_renderer
-            .contents
-            .into_iter()
-            .next()
-            .unwrap()
-            .item_section_renderer
-            .expect("At least one item should exist")
-            .contents
-            .into_iter()
-            .next()
-            .unwrap()
-            .video_renderer
-            .map(|mut video| {
-                Self {
-                    title:     video
-                        .title
-                        .runs
-                        .pop_front()
-                        .expect("At least one title should exist")
-                        .text,
-                    id:        video.video_id,
-                    duration:  video.length_text.simple_text,
-                    user_name: user_name.to_owned(),
-                }
-            })
-        else {
-            return Err(anyhow!("Couldn't find video"));
-        };
+            .two_column_watch_next_results;
 
-        Ok(vec![video].into())
+        if let Some(playlist) = video_two_col.playlist {
+            Ok(playlist
+                .playlist
+                .contents
+                .into_iter()
+                .map(|video| {
+                    Self {
+                        title:     video.title.simple_text,
+                        id:        video.watch_endpoint.video_id,
+                        duration:  video.length_text.simple_text,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .collect())
+        } else {
+            todo!("Single video links are not supported yet")
+        }
     }
 
     /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
