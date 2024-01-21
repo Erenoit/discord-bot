@@ -22,18 +22,17 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             message!(
                 embed,
                 ctx,
-                |e| {
-                    e.color(0xE0AF68)
-                        .title(&post["title"])
-                        .url(format!("{link}{}", post["permalink"]))
-                        .image(&post["url_overridden_by_dest"])
-                        .footer(|f| {
-                            f.text(format!(
-                                "👍 {} | 💬 {}",
-                                &post["ups"], &post["num_comments"]
-                            ))
-                        })
-                },
+                vec![serenity::builder::CreateEmbed::new()
+                    .color(0xE0AF68)
+                    .title(post["title"].to_string())
+                    .url(format!("{link}{}", post["permalink"]))
+                    .image(post["url_overridden_by_dest"].to_string())
+                    .footer(serenity::builder::CreateEmbedFooter::new(
+                        format!(
+                            "👍 {} | 💬 {}",
+                            &post["ups"], &post["num_comments"]
+                        )
+                    ))],
                 false
             );
 

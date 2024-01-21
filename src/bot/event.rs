@@ -38,7 +38,8 @@ impl EventHandler for Handler {
         drop(servers);
     }
 
-    async fn guild_create(&self, _ctx: Context, guild: Guild, is_new: bool) {
+    async fn guild_create(&self, _ctx: Context, guild: Guild, is_new: Option<bool>) {
+        let is_new = is_new.is_some() && is_new.unwrap();
         if is_new {
             log!(info, "Joined to a new server."; "Guild id: {}", (guild.id));
             get_config!()

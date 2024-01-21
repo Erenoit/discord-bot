@@ -3,7 +3,7 @@ use crate::bot::commands::{Context, Error};
 /// Shuffles the queue
 #[poise::command(slash_command, prefix_command, category = "Music", guild_only)]
 pub async fn shuffle(ctx: Context<'_>) -> Result<(), Error> {
-    let (_guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     if server.player.is_queues_empty().await {
         message!(error, ctx, ("Queue is empty"); true);

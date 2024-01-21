@@ -9,7 +9,7 @@ use crate::bot::commands::{Context, Error};
     guild_only
 )]
 pub async fn stop(ctx: Context<'_>) -> Result<(), Error> {
-    let (_guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     // TODO: add chack for already stopped bot
     server.player.clear_the_queues().await;

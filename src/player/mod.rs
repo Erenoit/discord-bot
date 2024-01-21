@@ -13,10 +13,16 @@ mod song;
 #[cfg(feature = "spotify")]
 mod sp_structs;
 
-use std::{collections::VecDeque, fmt::Write, mem, slice::Iter};
+use std::{
+    collections::VecDeque,
+    fmt::{Display, Formatter, Write},
+    mem,
+    slice::Iter,
+    str::FromStr,
+};
 
 use serenity::model::id::{ChannelId, GuildId};
-use songbird::{Event, TrackEvent};
+use songbird::{input::YoutubeDl, Event, TrackEvent};
 use tokio::sync::Mutex;
 
 pub use crate::player::song::Song;
@@ -74,17 +80,17 @@ impl Player {
     ///
     /// WARNING: It does not chek whether it is already in a voice channel.
     pub async fn connect_to_voice_channel(&self, channel_id: &ChannelId) {
-        let (call_mutex, result) = get_songbird_manager!()
+        let Ok(call_mutex) = get_songbird_manager!()
             .join(self.guild_id, *channel_id)
-            .await;
+            .await
+        else {
+            log!(error, "Couldn't join the voice channel.");
+            return;
+        };
 
-        if let Err(why) = result {
-            log!(error, "Couldn't join the voice channel."; "{why}");
-        } else {
-            let mut call = call_mutex.lock().await;
-            if let Err(why) = call.deafen(true).await {
-                log!(error, "Couldn't deafen the bot."; "{why}");
-            }
+        let mut call = call_mutex.lock().await;
+        if let Err(why) = call.deafen(true).await {
+            log!(error, "Couldn't deafen the bot."; "{why}");
         }
     }
 
@@ -164,18 +170,13 @@ impl Player {
             },
         };
 
-        let source = match songbird::ytdl(next_song.url()).await {
-            Ok(source) => source,
-            Err(why) => {
-                log!(error, "Couldn't start source."; "{why}");
-                return;
-            },
-        };
+        // TODO: Use proper reqwest::Client once you handled reqwest system
+        let source = YoutubeDl::new(reqwest::Client::new(), next_song.url());
 
         call_mutex
             .lock()
             .await
-            .play_source(source)
+            .play_input(source.into())
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
             })
@@ -349,5 +350,32 @@ impl Repeat {
         /// Array for all possible variants for [`Repeat`] enum
         static V: [Repeat; 3] = [Repeat::Off, Repeat::One, Repeat::All];
         V.iter()
+    }
+}
+
+impl FromStr for Repeat {
+    type Err = std::io::ErrorKind;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "off" => Ok(Repeat::Off),
+            "one" => Ok(Repeat::One),
+            "all" => Ok(Repeat::All),
+            _ => return Err(std::io::ErrorKind::InvalidInput),
+        }
+    }
+}
+
+impl Display for Repeat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let s = match self {
+            Repeat::Off => "Off",
+            Repeat::One => "One",
+            Repeat::All => "All",
+        };
+
+        write!(f, "{}", s)?;
+
+        Ok(())
     }
 }
