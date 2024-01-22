@@ -19,7 +19,7 @@ pub async fn music(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String,
 ) -> Result<(), Error> {
-    let (guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     ctx.defer().await?;
 
@@ -28,7 +28,7 @@ pub async fn music(
     handle_vc_connection(&ctx, &server).await?;
 
     let keywords = [
-        guild.id.to_string() + "-" + &keyword,
+        get_guild!(ctx).id.to_string() + "-" + &keyword,
         "general-".to_string() + &keyword,
     ];
 
@@ -41,7 +41,7 @@ pub async fn music(
             "#,
             key
         )
-        .fetch_optional(&mut connection)
+        .fetch_optional(&mut *connection)
         .await?
         {
             server
@@ -64,8 +64,6 @@ pub async fn add(
     #[description = "Keyword for video/playlist"] keyword: String,
     #[description = "URL for video/playlist"] url: String,
 ) -> Result<(), Error> {
-    let guild = ctx.guild().expect("Guild should be Some");
-
     ctx.defer().await?;
 
     let mut connection = db_connection!(ctx);
@@ -75,7 +73,7 @@ pub async fn add(
         return Ok(());
     }
 
-    let key = guild.id.to_string() + "-" + &keyword;
+    let key = get_guild_id!(ctx).to_string() + "-" + &keyword;
 
     if !url.starts_with("https://www.youtube.com")
         && !url.starts_with("https://open.spotify.com")
@@ -94,7 +92,7 @@ pub async fn add(
         "#,
         key
     )
-    .fetch_optional(&mut connection)
+    .fetch_optional(&mut *connection)
     .await?
     .is_some()
     {
@@ -111,7 +109,7 @@ pub async fn add(
                 key,
                 url
             )
-            .execute(&mut connection)
+            .execute(&mut *connection)
             .await?;
 
             message!(success, ctx, ("{} is successfully changed.", keyword); true);
@@ -125,7 +123,7 @@ pub async fn add(
             key,
             url
         )
-        .execute(&mut connection)
+        .execute(&mut *connection)
         .await?;
 
         message!(success, ctx, ("{} is successfully added.", keyword); true);
@@ -140,13 +138,11 @@ pub async fn remove(
     ctx: Context<'_>,
     #[description = "Keyword to be deleted"] keyword: String,
 ) -> Result<(), Error> {
-    let guild = ctx.guild().expect("Guild should be Some");
-
     ctx.defer().await?;
 
     let mut connection = db_connection!(ctx);
 
-    let key = guild.id.to_string() + "-" + &keyword;
+    let key = get_guild_id!(ctx).to_string() + "-" + &keyword;
 
     if !selection!(
         confirm,
@@ -163,7 +159,7 @@ pub async fn remove(
         "#,
         key
     )
-    .execute(&mut connection)
+    .execute(&mut *connection)
     .await?;
 
     message!(success, ctx, ("{} is successfully deleted.", keyword); true);
@@ -174,8 +170,6 @@ pub async fn remove(
 /// Lists all available keyword-URL pairs
 #[poise::command(slash_command, prefix_command)]
 pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
-    let guild = ctx.guild().expect("Guild should be Some");
-
     ctx.defer().await?;
 
     let mut connection = db_connection!(ctx);
@@ -192,7 +186,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         let prefix = if group == 0 {
             "general-%".to_string()
         } else {
-            guild.id.to_string() + "-%"
+            get_guild_id!(ctx).to_string() + "-%"
         };
 
         sqlx::query_as!(
@@ -203,7 +197,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
             "#,
             prefix
         )
-        .fetch_all(&mut connection)
+        .fetch_all(&mut *connection)
         .await?
         .iter()
         .for_each(|result| {

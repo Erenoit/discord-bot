@@ -10,10 +10,11 @@ mod commands;
 mod event;
 
 use event::Handler;
-use serenity::model::{application::command::Command, gateway::GatewayIntents};
+use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
-use songbird::SerenityInit;
+use songbird::serenity::SerenityInit;
 
+#[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
 
 /// The main struct for the bot.
@@ -81,20 +82,8 @@ impl Bot {
             ..Default::default()
         };
 
-        poise::Framework::builder()
-            .token(get_config!().token())
-            .intents(GatewayIntents::all())
+        let framework = poise::Framework::builder()
             .options(options)
-            .client_settings(move |c| {
-                #[cfg(feature = "music")]
-                {
-                    c.event_handler(Handler::new())
-                        .register_songbird_with(get_config!().songbird())
-                }
-
-                #[cfg(not(feature = "music"))]
-                c.event_handler(Handler::new())
-            })
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
                     if !get_config!().auto_register_commands() {
@@ -103,9 +92,9 @@ impl Bot {
                     }
 
                     log!(info, "Registering Slash Commands:");
-                    Command::set_global_application_commands(ctx, |b| {
+                    Command::set_global_commands(ctx, {
                         let commands = &framework.options().commands;
-                        *b = poise::builtins::create_application_commands(commands);
+                        let b = poise::builtins::create_application_commands(commands);
                         for command in commands {
                             log!(info, ; "{}: {}", (command.name),
                                 (command
@@ -121,9 +110,31 @@ impl Bot {
                     Ok(commands::Data)
                 })
             })
-            .run_autosharded()
-            .await
-            .expect("Client error");
+            .build();
+
+        #[cfg(feature = "music")]
+        {
+            serenity::Client::builder(get_config!().token(), GatewayIntents::all())
+                .framework(framework)
+                .event_handler(Handler::new())
+                .register_songbird_with(get_config!().songbird())
+                .await
+                .expect("Couldn't create a Client")
+                .start()
+                .await
+                .expect("Couldn't start the Client");
+        }
+        #[cfg(not(feature = "music"))]
+        {
+            serenity::Client::builder(get_config!().token(), GatewayIntents::all())
+                .framework(framework)
+                .event_handler(Handler::new())
+                .await
+                .expect("Couldn't create a Client")
+                .start_autosharded()
+                .await
+                .expect("Couldn't start the Client");
+        }
     }
 }
 

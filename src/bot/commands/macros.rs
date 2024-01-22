@@ -1,22 +1,37 @@
 //! Macros for the commands.
 
-/// Gives [`Server`] and [`Guild`] for the given [`Context`].
-///
-/// Most of the commands need these two, so this macro is used to reduce code
-/// repetition.
+/// Gives [`Server`] for the given [`Context`].
 ///
 /// [`Server`]: crate::server::Server
-/// [`Guild`]: serenity::model::guild::Guild
 /// [`Context`]: crate::bot::commands::Context
-macro_rules! get_common {
+macro_rules! get_server {
     ($ctx:ident) => {{
         use std::sync::Arc;
 
-        let guild = $ctx.guild().unwrap();
-        let server = Arc::clone(get_config!().servers().read().await.get(&guild.id).unwrap());
-
-        (guild, server)
+        Arc::clone(
+            get_config!()
+                .servers()
+                .read()
+                .await
+                .get(&get_guild_id!($ctx))
+                .expect("Unregistered server. This should not happen."),
+        )
     }};
+}
+
+/// Gives [`GuildId`] for the given [`Context`].
+///
+/// This should be prefered over [`Context::guild`] if you only need
+/// [`GuildId`]. This is because [`GuildId`] is `Send` but [`Guild`] is not.
+///
+/// [`Guild`]: serenity::model::guild::Guild
+/// [`GuildId`]: serenity::model::id::GuildId
+/// [`Context`]: crate::bot::commands::Context
+/// [`Context::guild`]: crate::bot::commands::Context::guild
+macro_rules! get_guild_id {
+    ($ctx:ident) => {
+        $ctx.guild_id().expect("Guild only command")
+    };
 }
 
 /// Gives [`PoolConnection<Sqlite>`] and sending `Discord` messages for errors.

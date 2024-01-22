@@ -9,7 +9,7 @@ use crate::bot::commands::{Context, Error};
     guild_only
 )]
 pub async fn leave(ctx: Context<'_>) -> Result<(), Error> {
-    let (_guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     server.player.leave_voice_channel(&ctx).await;
     message!(success, ctx, ("Left the voice channel"); true);

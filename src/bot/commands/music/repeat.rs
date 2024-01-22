@@ -17,7 +17,7 @@ pub async fn repeat(
     ctx: Context<'_>,
     #[description = "Repeat mode"] repeat_mode: Option<Repeat>,
 ) -> Result<(), Error> {
-    let (_guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     if repeat_mode.is_some() {
         server

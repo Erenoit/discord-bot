@@ -26,17 +26,11 @@
 #[macro_export]
 macro_rules! message {
     (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
-        let res = $ctx
-            .send(|m| {
-                let mut last = m.content($message.to_string());
-
-                $(last = last.attachment(serenity::model::channel::AttachmentType::Path($file)));+;
-
-                last.ephemeral = $ephemeral;
-
-                last
-            })
-            .await;
+        let res = $ctx.send(poise::reply::CreateReply {
+            content: Some($message.to_owned()),
+            attachments: vec![$(serenity::builder::CreateAttachment::path($file).await.unwrap()),+],
+            ..Default::default()
+        }).await;
 
         if let Err(why) = res {
             log!(error, "Couldn't send message with file(s)."; "{why}");
@@ -75,37 +69,41 @@ macro_rules! message {
             get_config!().message_always_embed()
         )
     };
-    (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $embed:expr) => {
+    (custom, $ctx:expr, $title:expr, $content:expr, $color:expr, $ephemeral:expr, $is_embed:expr) => {
         {
-            let res = $ctx
-                .send(|m| {
-                    if $embed {
-                        m.embed(|e| e.color(
-                                    if get_config!()
-                                    .message_random_embed_colors()
-                                    {
-                                        rand::random::<u32>() & 0x00FFFFFF
-                                    } else { $color }
-                                )
-                                .title($title)
-                                .description($content)
-                        )
-                            .ephemeral($ephemeral)
-                    } else {
-                        m.content($content).ephemeral($ephemeral)
-                    }
-                })
-                .await;
+            let res = $ctx.send(if $is_embed {
+                poise::reply::CreateReply {
+                    embeds: vec![serenity::builder::CreateEmbed::new()
+                        .color(if get_config!().message_random_embed_colors() {
+                            rand::random::<u32>() & 0x00FFFFFF
+                        } else { $color })
+                        .title($title)
+                        .description($content)
+                    ],
+                    ephemeral: Some($ephemeral),
+                    ..Default::default()
+                }
+            } else {
+                poise::reply::CreateReply {
+                    content: Some($content),
+                    ephemeral: Some($ephemeral),
+                    ..Default::default()
+                }
+            }).await;
 
             if let Err(why) = res {
                 log!(error, "Couldn't send message."; "{why}");
             }
         }
     };
-    (embed, $ctx:expr, $b:expr, $ephemeral:expr) => {
+    (embed, $ctx:expr, $embeds:expr, $ephemeral:expr) => {
         {
             let res = $ctx
-                .send(|m| m.embed($b).ephemeral($ephemeral))
+                .send(poise::reply::CreateReply {
+                    embeds: $embeds,
+                    ephemeral: Some($ephemeral),
+                    ..Default::default()
+                })
                 .await;
 
             if let Err(why) = res {
@@ -132,24 +130,14 @@ macro_rules! message {
 macro_rules! selection {
     (confirm, $ctx:expr, $($msg:tt)*) => {
         'confirm_selection: {
-            //let msg_str = if msg.is_some() {
-            //    msg.unwrap().to_string()
-            //} else {
-            //    "Are you sure?".to_owned()
-            //};
-
-            let msg_str = format!($($msg)*);
-
-            let res = $ctx
-                .send(|m| {
-                    m.content(msg_str).components(|c| {
-                        c.create_action_row(|row| {
-                            row.add_button(button!(success, "Yes"));
-                            row.add_button(button!(danger, "No"))
-                        })
-                    })
-                })
-                .await;
+            let res = $ctx.send(poise::reply::CreateReply {
+                content: Some(format!($($msg)*)),
+                components: Some(vec![serenity::builder::CreateActionRow::Buttons(vec![
+                    button!(success, "Yes"),
+                    button!(danger, "No")
+                ])]),
+                ..Default::default()
+            }).await;
 
             let interaction = selection_inner!(get_interaction, $ctx, res, 'confirm_selection, false);
 
@@ -168,7 +156,7 @@ macro_rules! selection {
                 log!(error, "List cannot be empty");
             }
 
-            let res = selection_inner!(send_buttons, $ctx, format!($($msg)+), $list, false);
+            let res = selection_inner!(send_buttons, $ctx, format!($($msg)+), $list, false).await;
 
             let interaction = selection_inner!(get_interaction, $ctx, res, 'normal_selection, "DANGER".to_owned());
 
@@ -201,7 +189,7 @@ macro_rules! selection {
 
             let new_list = $list.iter().enumerate().map(|(i, e, ..)| (i + 1, &e.1, false)).collect::<Vec<_>>();
 
-            let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none);
+            let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none).await;
 
             let interaction = selection_inner!(get_interaction, $ctx, res, 'list_selection, "DANGER".to_owned());
 
@@ -215,15 +203,11 @@ macro_rules! selection {
 /// This is an inner function for `selection!()` macro. Do not use!
 macro_rules! selection_inner {
     (clear, $ctx:expr, $interaction:ident) => {
-        $interaction
-            .create_interaction_response($ctx.serenity_context(), |r| {
-                r.kind(serenity::model::application::interaction::InteractionResponseType::UpdateMessage)
-                    .interaction_response_data(|d| {
-                        d.content("An action has already been taken.")
-                            .set_components(serenity::builder::CreateComponents::default())
-                    })
-            })
-            .await.ok();
+        $interaction.create_response($ctx, serenity::builder::CreateInteractionResponse::UpdateMessage(
+            serenity::builder::CreateInteractionResponseMessage::default()
+                .content("An action has already been taken.")
+                .components(Vec::with_capacity(0))
+        )).await.ok();
     };
     (get_interaction, $ctx:expr, $res:ident, $n:lifetime, $def_return:expr) => {
         {
@@ -240,10 +224,10 @@ macro_rules! selection_inner {
                     std::time::Duration::from_secs(get_config!().message_interaction_time_limit())
                 ).await else
                 {
-                    handle.edit($ctx, |m| {
-                        m.content("Interaction timed out.").components(|c| {
-                            c.create_action_row(|row| row)
-                        })
+                    handle.edit($ctx, poise::reply::CreateReply {
+                        content: Some("Interaction timed out.".to_owned()),
+                        components: None,
+                        ..Default::default()
                     }).await.ok();
                     break $n $def_return;
             };
@@ -252,35 +236,29 @@ macro_rules! selection_inner {
         }
     };
     (send_buttons, $ctx:expr, $message:expr, $list:expr, $all_none: expr) => {
-        $ctx.send(|m| {
-            m.content($message).components(|c| {
-                c.create_action_row(|row| {
-                    for e in $list.iter().take(std::cmp::min(5, $list.len())) {
-                        row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                    }
-                    row
-                });
+        $ctx.send(poise::reply::CreateReply {
+            content: Some($message),
+            components: Some({
+                let iter = $list.into_iter()
+                    .map(|e| {button!(normal, "{}", (e.0); "{}", (e.1); e.2)})
+                    .array_chunks::<5>();
+                // FIXME: cloning here looks stupid.
+                let mut v = iter.clone().map(|group| serenity::builder::CreateActionRow::Buttons(Vec::from(group)))
+                    .collect::<Vec<_>>();
 
-                if $list.len() > 5 {
-                    c.create_action_row(|row| {
-                        for e in $list.iter().skip(5) {
-                            row.add_button(button!(normal, "{}", (e.0); "{}", (e.1); e.2));
-                        }
-                        row
-                    });
+                if let Some(rem) = iter.into_remainder() {
+                    v.push(serenity::builder::CreateActionRow::Buttons(rem.collect()));
                 }
 
-                if $all_none {
-                    c.create_action_row(|row| {
-                        row.add_button(button!(success, "All"));
-                        row.add_button(button!(danger, "None"))
-                    });
-                }
+                v.push(serenity::builder::CreateActionRow::Buttons(vec![
+                    button!(success, "All"),
+                    button!(danger, "None")
+                ]));
 
-                c
-            })
+                v
+            }),
+            ..Default::default()
         })
-        .await
     };
 }
 
@@ -302,22 +280,22 @@ macro_rules! selection_inner {
 #[macro_export]
 macro_rules! button {
     (normal, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)
+        btn_generic!(serenity::model::application::ButtonStyle::Primary, $($name),+; $($id),+; $disabled)
     };
     (secondary, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Secondary, $($name),+; $($id),+; $disabled)
+        btn_generic!(serenity::model::application::ButtonStyle::Secondary, $($name),+; $($id),+; $disabled)
     };
     (success, $($name:tt),+) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Success, $($name),+;  "SUCCESS"; false)
+        btn_generic!(serenity::model::application::ButtonStyle::Success, $($name),+;  "SUCCESS"; false)
     };
     (success, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Success, $($name),+; $($id),+; $disabled)
+        btn_generic!(serenity::model::application::ButtonStyle::Success, $($name),+; $($id),+; $disabled)
     };
     (danger, $($name:tt),+) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Danger, $($name),+;  "DANGER"; false)
+        btn_generic!(serenity::model::application::ButtonStyle::Danger, $($name),+;  "DANGER"; false)
     };
     (danger, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
-        btn_generic!(serenity::model::application::component::ButtonStyle::Danger, $($name),+; $($id),+; $disabled)
+        btn_generic!(serenity::model::application::ButtonStyle::Danger, $($name),+; $($id),+; $disabled)
     };
     (link, $($name:tt),+; $($url:tt),+) => {
         unimplemented!()
@@ -327,14 +305,10 @@ macro_rules! button {
 /// This is an inner function for `button!()` macro. Do not use!
 macro_rules! btn_generic {
     ($t:expr, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
-        {
-            let mut btn = serenity::builder::CreateButton::default();
-            btn.label(format!($($name),+));
-            btn.custom_id(format!($($id),+));
-            btn.style($t);
-            btn.disabled($disabled);
-
-            btn
-        }
+        serenity::builder::CreateButton::new(format!($($id),+))
+            .label(format!($($name),+))
+            .custom_id(format!($($id),+))
+            .style($t)
+            .disabled($disabled)
     };
 }

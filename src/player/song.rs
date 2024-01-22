@@ -153,10 +153,11 @@ impl Song {
                 &song,
             ])
             .output()
-            .await else {
-                log!(error, "Command creation for yt-dlp failed");
-                return Err(anyhow!("yt-dlp failed"));
-            };
+            .await
+        else {
+            log!(error, "Command creation for yt-dlp failed");
+            return Err(anyhow!("yt-dlp failed"));
+        };
 
         if !res.status.success() {
             log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
@@ -208,9 +209,10 @@ impl Song {
             .bearer_auth(token)
             .query(&[("market", SP_MARKET)])
             .send()
-            .await else {
-                return Err(anyhow!("Couldn't connect to Spotify"));
-            };
+            .await
+        else {
+            return Err(anyhow!("Couldn't connect to Spotify"));
+        };
 
         if !res.status().is_success() {
             log!(error, "Spotify data fetch failed:"; "{}", (res.json::<SpotifyError>().await?.message));

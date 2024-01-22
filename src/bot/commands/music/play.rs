@@ -17,7 +17,7 @@ pub async fn play(
     #[rest]
     song: String,
 ) -> Result<(), Error> {
-    let (_guild, server) = get_common!(ctx);
+    let server = get_server!(ctx);
 
     handle_vc_connection(&ctx, &server).await?;
 
