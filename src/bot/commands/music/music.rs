@@ -28,7 +28,7 @@ pub async fn music(
     handle_vc_connection(&ctx, &server).await?;
 
     let keywords = [
-        get_guild!(ctx).id.to_string() + "-" + &keyword,
+        get_guild_id!(ctx).to_string() + "-" + &keyword,
         "general-".to_string() + &keyword,
     ];
 
