@@ -1,9 +1,12 @@
 //! Database Configuration
 
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Result};
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+    SqlitePool,
+};
 #[cfg(feature = "config_file")]
 use taplo::dom::Node;
 
@@ -26,20 +29,19 @@ impl DatabaseConfig {
         let path = get_value!(config_file, PathBuf, "BOT_DATABASE_LOCATION", "database"=>"location", default_path)?;
 
         if !path.exists() {
-            fs::create_dir_all(path.parent().ok_or_else(|| {
-                anyhow!(
-                    "it is safe to assume that this will always have a parent because we used join",
-                )
-            })?)?;
+            fs::create_dir_all(&path)?;
         }
 
         let url = format!(
-            // create db file if not exists
-            // <https://github.com/launchbadge/sqlx/issues/1114#issuecomment-827815038>
-            "sqlite://{}/discord_bot.db?mode=rwc",
+            "sqlite://{}/discord_bot.db",
             path.to_string_lossy()
         );
-        let pool: SqlitePool = SqlitePoolOptions::new().connect_lazy(&url)?;
+
+        let conn_ops = SqliteConnectOptions::from_str(url.as_str())?
+            .create_if_missing(true)
+            .optimize_on_close(true, None)
+            .analysis_limit(400);
+        let pool: SqlitePool = SqlitePoolOptions::new().connect_lazy_with(conn_ops);
 
         Ok(Self { pool, url })
     }
