@@ -247,7 +247,10 @@ macro_rules! selection_inner {
                     .collect::<Vec<_>>();
 
                 if let Some(rem) = iter.into_remainder() {
-                    v.push(serenity::builder::CreateActionRow::Buttons(rem.collect()));
+                    let r = rem.collect::<Vec<_>>();
+                    if !r.is_empty() {
+                        v.push(serenity::builder::CreateActionRow::Buttons(r));
+                    }
                 }
 
                 v.push(serenity::builder::CreateActionRow::Buttons(vec![
