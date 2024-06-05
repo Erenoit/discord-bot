@@ -11,7 +11,7 @@ repository = "https://gitlab.com/Erenoit/discord-bot"
 [dependencies]
 anyhow = "1.0"
 colored = "2.1"
-clap = { version = "4.4", features = ["derive"], optional = true }
+clap = { version = "4.5", features = ["derive"], optional = true }
 directories = { version = "5.0", optional = true }
 dotenvy = { version = "0.15", optional = true }
 reqwest = { version = "0.11", features = ["json"] }
@@ -36,16 +36,16 @@ sqlx = { version = "0.7", features = [
     "sqlite",
 ], optional = true }
 symphonia = { version = "0.5", features = ["all-codecs", "all-formats"] }
-taplo = { version = "0.12", optional = true }
-tokio = { version = "1.35", features = [
+taplo = { version = "0.13", optional = true }
+tokio = { version = "1.38", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
 ] }
 
 [build-dependencies]
-clap = { version = "4.4", features = ["derive"], optional = true }
-clap_complete = { version = "4.4", optional = true }
+clap = { version = "4.5", features = ["derive"], optional = true }
+clap_complete = { version = "4.5", optional = true }
 
 [profile.release]
 opt-level = 3
@@ -68,23 +68,23 @@ spotify = ["dep:serde", "music"]
 # The ones commented with forbit are waiting for clippy to ignore external crate
 # macros when checking for them
 [lints.clippy]
-cargo = "warn"
-cargo_common_metadata = "allow"          # Not going tp release on crates.io
-complexity = "warn"
-correctness = "deny"
-nursery = "warn"
-pedantic = "warn"
-unreadable_literal = "allow"             # Only used for colors
-perf = "warn"
-restriction = "allow"                    # Enabling everything is not recomanded
-allow_attributes_without_reason = "warn" # Not stable yet # force
-allow_attributes = "warn"                # Not stable yet # force
-as_underscore = "warn"                   # forbid
+cargo = { level = "warn", priority = -1 }
+cargo_common_metadata = "allow"                  # Not going tp release on crates.io
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unreadable_literal = "allow"                     # Only used for colors
+perf = { level = "warn", priority = -1 }
+restriction = { level = "allow", priority = -1 } # Enabling everything is not recomanded
+allow_attributes_without_reason = "warn"         # Not stable yet # force
+allow_attributes = "warn"                        # Not stable yet # force
+as_underscore = "warn"                           # forbid
 clone_on_ref_ptr = "warn"
 deref_by_slicing = "warn"
-dbg_macro = "warn"                       # forbid
+dbg_macro = "warn"                               # forbid
 disallowed_script_idents = "warn"
-empty_drop = "warn"                      # forbid
+empty_drop = "warn"                              # forbid
 empty_structs_with_brackets = "warn"
 exhaustive_structs = "warn"
 exit = "warn"
@@ -92,13 +92,13 @@ exit = "warn"
 format_push_string = "warn"
 fn_to_numeric_cast_any = "warn"
 if_then_some_else_none = "warn"
-impl_trait_in_params = "warn"            # forbid
+impl_trait_in_params = "warn"    # forbid
 large_include_file = "warn"
 large_stack_arrays = "warn"
 let_underscore_must_use = "warn"
 lossy_float_literal = "warn"
-map_err_ignore = "warn"                  # forbid
-min_ident_chars = "warn"                 # forbid
+map_err_ignore = "warn"          # forbid
+#min_ident_chars = "warn"                 # forbid
 missing_docs_in_private_items = "warn"
 mixed_read_write_in_expression = "warn"
 multiple_inherent_impl = "warn"
@@ -118,8 +118,10 @@ unneeded_field_pattern = "warn"
 unseparated_literal_suffix = "warn"      # forbid
 unwrap_in_result = "warn"
 #unwrap_used = "warn"
-style = "warn"
-suspicious = "warn"
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+
+min_ident_chars = "allow"
 
 [lints.rustdoc]
 private_intra_doc_links = "allow"
