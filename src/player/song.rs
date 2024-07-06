@@ -6,7 +6,6 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use tokio::process::Command;
 
-use super::yt_structs_new::{YoutubePlaylist, YoutubeVideo, YoutubeVideoPlaylist};
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -17,7 +16,7 @@ use crate::player::sp_structs::{
 };
 use crate::{
     bot::Context,
-    player::yt_structs::{YoutubeLink, YoutubeSearch},
+    player::yt_structs::{YoutubePlaylist, YoutubeSearch, YoutubeVideo, YoutubeVideoPlaylist},
 };
 
 /// User agent to use in requests
@@ -71,16 +70,9 @@ impl Song {
         let user_name = ctx.author().name.clone();
 
         if song.starts_with("https://") || song.starts_with("http://") {
+            // TODO: short youtube links
             if song.contains("youtube") {
-                #[cfg(feature = "yt-dlp-fallback")]
-                {
-                    Self::youtube(song, user_name).await
-                }
-
-                #[cfg(not(feature = "yt-dlp-fallback"))]
-                {
-                    Self::youtube_new(song.as_str(), user_name.as_str()).await
-                }
+                Self::youtube(song, user_name).await
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
                 if get_config!().is_spotify_initialized() {
                     Self::spotify(song, user_name).await
@@ -93,15 +85,7 @@ impl Song {
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            #[cfg(feature = "yt-dlp-fallback")]
-            {
-                Self::search(ctx, song, user_name).await
-            }
-
-            #[cfg(not(feature = "yt-dlp-fallback"))]
-            {
-                Self::search_new(ctx, song.as_str(), user_name.as_str()).await
-            }
+            Self::search(ctx, song, user_name).await
         }
     }
 
@@ -112,16 +96,19 @@ impl Song {
     /// fails.
     async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
         if let Ok(res) = Self::search_new(ctx, &song, &user_name).await {
-            res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
-        } else if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
+            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
+        }
+
+        #[cfg(feature = "yt-dlp-fallback")]
+        if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp"
             );
-            res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok)
-        } else {
-            Err(anyhow!("An error happened in search"))
+            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
         }
+
+        Err(anyhow!("An error happened in search"))
     }
 
     /// Sends GET request to `YouTube` as if it was searched in browser and
@@ -132,9 +119,7 @@ impl Song {
         user_name: &str,
     ) -> Result<Option<VecDeque<Self>>> {
         let res = reqwest::Client::builder()
-            .user_agent(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0",
-            )
+            .user_agent(USER_AGENT)
             .build()?
             .get(format!(
                 "https://www.youtube.com/results?search_query={song}&sp=EgIQAQ%253D%253D"
@@ -154,30 +139,18 @@ impl Song {
             .section_list_renderer
             .contents
             .into_iter()
-            .filter_map(|contents| {
-                contents.item_section_renderer.map(|item_renderer| {
-                    item_renderer
-                        .contents
-                        .into_iter()
-                        .filter_map(|item| {
-                            item.video_renderer.map(|mut video| {
-                                (
-                                    video
-                                        .title
-                                        .runs
-                                        .pop_front()
-                                        .expect("At least one title should exist")
-                                        .text,
-                                    video.video_id,
-                                    video.length_text.simple_text,
-                                )
-                            })
-                        })
-                        .collect::<Vec<_>>()
-                })
-            })
+            .filter_map(|contents| contents.item_section_renderer)
+            .map(|item_renderer| item_renderer.contents)
             .flatten()
+            .filter_map(|item| item.video_renderer)
             .take(get_config!().youtube_search_count().into())
+            .map(|video| {
+                (
+                    video.title.runs[0].text.clone(),
+                    video.video_id,
+                    video.length_text.simple_text,
+                )
+            })
             .collect::<Vec<_>>();
 
         let answer = selection!(list, *ctx, "Search", list, true);
@@ -285,9 +258,12 @@ impl Song {
     async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
         let res_new = Self::youtube_new(&song, &user_name).await;
 
-        if res_new.is_err()
-            && let Ok(res_old) = Self::youtube_old(&song, &user_name).await
-        {
+        if let Ok(songs) = res_new {
+            return Ok(songs);
+        }
+
+        #[cfg(feature = "yt-dlp-fallback")]
+        if let Ok(res_old) = Self::youtube_old(&song, &user_name).await {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp";
@@ -296,18 +272,15 @@ impl Song {
             return Ok(res_old);
         }
 
+        // TODO: better error menagement
         res_new
     }
 
-    // TODO: Fix non-Playlist links
-    // TODO: Playlist only links
     /// Sends GET request to `YouTube` as if it was requested from a browser and
     /// scrapes the result.
     async fn youtube_new(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         let res = reqwest::Client::builder()
-            .user_agent(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0",
-            )
+            .user_agent(USER_AGENT)
             .build()?
             .get(song)
             .send()
@@ -316,9 +289,6 @@ impl Song {
             .await?;
 
         let mut song_list = VecDeque::new();
-
-        let mut link_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
-        link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
 
         if song.contains("/watch?") {
             if song.contains("&list=") {

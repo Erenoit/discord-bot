@@ -1,7 +1,6 @@
 //! This is the main file of the project.
 
 #![feature(iter_array_chunks)]
-#![feature(let_chains)]
 
 #[macro_use]
 #[allow(unused_macros)]
