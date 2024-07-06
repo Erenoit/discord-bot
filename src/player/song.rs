@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use tokio::process::Command;
 
-use super::yt_structs_new::{YoutubeVideo, YoutubeVideoPlaylist};
+use super::yt_structs_new::{YoutubePlaylist, YoutubeVideo, YoutubeVideoPlaylist};
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -368,30 +368,43 @@ impl Song {
 
             return Ok(song_list);
         } else if song.contains("/playlist?") {
-            todo!("only playlist");
+            let yt_initial_data =
+                &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
+            let yt_initial_data =
+                &yt_initial_data[.. yt_initial_data.find("</script>").unwrap() - ";".len()];
+
+            let playlist_content = serde_json::from_str::<YoutubePlaylist>(yt_initial_data)
+                .expect("couldn't parse the playlist")
+                .contents
+                .two_column_browse_results_renderer
+                .tabs
+                .into_iter()
+                .filter_map(|tab| tab.tab_renderer)
+                .map(|tab_renderer| tab_renderer.content.section_list_renderer.contents)
+                .flatten()
+                .filter_map(|contents| contents.item_section_renderer)
+                .map(|renderer| renderer.contents)
+                .flatten()
+                .filter_map(|content| content.playlist_video_list_renderer)
+                .map(|renderer| renderer.contents)
+                .flatten()
+                // FIXME: probably unnecessary allocation
+                .collect::<Vec<_>>();
+
+            song_list.reserve(playlist_content.len());
+            playlist_content.into_iter().for_each(|video| {
+                song_list.push_back(Song {
+                    // FIXME: unnecessary clone
+                    title:     video.playlist_video_renderer.title.runs[0].text.clone(),
+                    id:        video.playlist_video_renderer.video_id,
+                    duration:  video.playlist_video_renderer.length_text.simple_text,
+                    user_name: user_name.to_owned(),
+                });
+            });
+
+            return Ok(song_list);
         } else {
             return Err(anyhow!("Unsupported YouTube link type"));
-        }
-        let video_two_col = serde_json::from_str::<YoutubeLink>(link_res)?
-            .contents
-            .two_column_watch_next_results;
-
-        if let Some(playlist) = video_two_col.playlist {
-            Ok(playlist
-                .playlist
-                .contents
-                .into_iter()
-                .map(|video| {
-                    Self {
-                        title:     video.title.simple_text,
-                        id:        video.watch_endpoint.video_id,
-                        duration:  video.length_text.simple_text,
-                        user_name: user_name.to_owned(),
-                    }
-                })
-                .collect())
-        } else {
-            todo!("Single video links are not supported yet")
         }
     }
 
