@@ -321,21 +321,6 @@ impl Song {
         link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
 
         if song.contains("/watch?") {
-            let yt_initial_player_response = &res[res.find("ytInitialPlayerResponse").unwrap()
-                + "ytInitialPlayerResponse = ".len() ..];
-            let yt_initial_player_response =
-                &yt_initial_player_response[.. yt_initial_player_response.find(";var").unwrap()];
-
-            let video_details =
-                serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
-
-            song_list.push_back(Song {
-                title:     video_details.title,
-                id:        video_details.video_id,
-                duration:  video_details.length_seconds,
-                user_name: user_name.to_owned(),
-            });
-
             if song.contains("&list=") {
                 let yt_initial_data =
                     &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
@@ -350,8 +335,8 @@ impl Song {
                         .playlist
                         .contents;
 
-                song_list.reserve(playlist_content.len() - 1);
-                playlist_content.into_iter().skip(1).for_each(|video| {
+                song_list.reserve(playlist_content.len());
+                playlist_content.into_iter().for_each(|video| {
                     song_list.push_back(Song {
                         title:     video.playlist_panel_video_renderer.title.simple_text,
                         id:        video
@@ -362,6 +347,22 @@ impl Song {
                         duration:  video.playlist_panel_video_renderer.length_text.simple_text,
                         user_name: user_name.to_owned(),
                     });
+                });
+            } else {
+                let yt_initial_player_response =
+                    &res[res.find("ytInitialPlayerResponse").unwrap()
+                        + "ytInitialPlayerResponse = ".len() ..];
+                let yt_initial_player_response = &yt_initial_player_response
+                    [.. yt_initial_player_response.find(";var").unwrap()];
+
+                let video_details =
+                    serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
+
+                song_list.push_back(Song {
+                    title:     video_details.title,
+                    id:        video_details.video_id,
+                    duration:  video_details.length_seconds,
+                    user_name: user_name.to_owned(),
                 });
             }
 
