@@ -13,6 +13,7 @@ mod song;
 #[cfg(feature = "spotify")]
 mod sp_structs;
 mod yt_structs;
+mod yt_structs_new;
 
 use std::{
     collections::VecDeque,

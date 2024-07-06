@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use tokio::process::Command;
 
+use super::yt_structs_new::{YoutubeVideo, YoutubeVideoPlaylist};
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -314,9 +315,62 @@ impl Song {
             .text()
             .await?;
 
+        let mut song_list = VecDeque::new();
+
         let mut link_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
         link_res = &link_res[.. link_res.find("</script>").unwrap() - ";".len()];
 
+        if song.contains("/watch?") {
+            let yt_initial_player_response = &res[res.find("ytInitialPlayerResponse").unwrap()
+                + "ytInitialPlayerResponse = ".len() ..];
+            let yt_initial_player_response =
+                &yt_initial_player_response[.. yt_initial_player_response.find(";var").unwrap()];
+
+            let video_details =
+                serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
+
+            song_list.push_back(Song {
+                title:     video_details.title,
+                id:        video_details.video_id,
+                duration:  video_details.length_seconds,
+                user_name: user_name.to_owned(),
+            });
+
+            if song.contains("&list=") {
+                let yt_initial_data =
+                    &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
+                let yt_initial_data =
+                    &yt_initial_data[.. yt_initial_data.find("</script>").unwrap() - ";".len()];
+
+                let playlist_content =
+                    serde_json::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
+                        .contents
+                        .two_column_watch_next_results
+                        .playlist
+                        .playlist
+                        .contents;
+
+                song_list.reserve(playlist_content.len() - 1);
+                playlist_content.into_iter().skip(1).for_each(|video| {
+                    song_list.push_back(Song {
+                        title:     video.playlist_panel_video_renderer.title.simple_text,
+                        id:        video
+                            .playlist_panel_video_renderer
+                            .navigation_endpoint
+                            .watch_endpoint
+                            .video_id,
+                        duration:  video.playlist_panel_video_renderer.length_text.simple_text,
+                        user_name: user_name.to_owned(),
+                    });
+                });
+            }
+
+            return Ok(song_list);
+        } else if song.contains("/playlist?") {
+            todo!("only playlist");
+        } else {
+            return Err(anyhow!("Unsupported YouTube link type"));
+        }
         let video_two_col = serde_json::from_str::<YoutubeLink>(link_res)?
             .contents
             .two_column_watch_next_results;
