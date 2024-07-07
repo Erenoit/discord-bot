@@ -4,6 +4,7 @@ use std::{collections::VecDeque, fmt::Display, iter};
 
 use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
+use songbird::input::{HttpRequest, Input};
 use tokio::process::Command;
 
 #[cfg(feature = "spotify")]
@@ -16,7 +17,14 @@ use crate::player::sp_structs::{
 };
 use crate::{
     bot::Context,
-    player::yt_structs::{YoutubePlaylist, YoutubeSearch, YoutubeVideo, YoutubeVideoPlaylist},
+    player::yt_structs::{
+        Format,
+        YoutubePlayer,
+        YoutubePlaylist,
+        YoutubeSearch,
+        YoutubeVideo,
+        YoutubeVideoPlaylist,
+    },
 };
 
 /// User agent to use in requests
@@ -122,7 +130,7 @@ impl Song {
             .user_agent(USER_AGENT)
             .build()?
             .get(format!(
-                "https://www.youtube.com/results?search_query={song}&sp=EgIQAQ%253D%253D"
+                "https://www.youtube.com/results?search_query={song}"
             ))
             .send()
             .await?
@@ -525,11 +533,129 @@ impl Song {
         .collect())
     }
 
+    /// gets [`songbird::input::Input`] for music stream
+    pub async fn get_input(&self) -> Result<Input> {
+        let res_new = self.get_input_new().await;
+
+        if let Ok(input) = res_new {
+            return Ok(input);
+        }
+
+        if cfg!(feature = "yt-dlp-fallback") {
+            log!(
+                warn,
+                "new scrapper failed as input generation, falling back to yt-dlp";
+                "{}", (res_new.err().expect("Its already an error"))
+            );
+            return Ok(self.get_input_old().await);
+        } else {
+            res_new
+        }
+    }
+
+    /// Sends GET request to `YouTube` as if it was searched in browser and
+    /// scrapes the results.
+    async fn get_input_new(&self) -> Result<Input> {
+        let res = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .build()?
+            .get(format!(
+                "https://www.youtube.com/watch?v={}",
+                self.id
+            ))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let yt_initial_player_response = &res[res
+            .find("ytInitialPlayerResponse")
+            .ok_or(anyhow!("Parse error"))?
+            + "ytInitialPlayerResponse = ".len() ..];
+        let yt_initial_player_response = &yt_initial_player_response[.. yt_initial_player_response
+            .find(";var")
+            .ok_or(anyhow!("Parse error"))?];
+
+        let streaming_data =
+            serde_json::from_str::<YoutubePlayer>(yt_initial_player_response)?.streaming_data;
+        let (mut audio_formats, mut video_formats) =
+            [streaming_data.formats, streaming_data.adaptive_formats]
+                .into_iter()
+                .flatten()
+                .fold(
+                    (Vec::new(), Vec::new()),
+                    |(mut audio, mut video), format| {
+                        if format.mime_type.contains("audio/") {
+                            audio.push(format);
+                        } else {
+                            video.push(format);
+                        }
+
+                        (audio, video)
+                    },
+                );
+
+        let selected_format = if !audio_formats.is_empty() {
+            audio_formats.sort_by(|a, b| a.bitrate.cmp(&b.bitrate));
+
+            // get best bitrate
+            audio_formats
+                .pop()
+                .expect("Allready check for at least one element")
+        } else {
+            video_formats.sort_by(|a, b| b.bitrate.cmp(&a.bitrate));
+
+            // get worst bitrate
+            video_formats
+                .pop()
+                .expect("Always has at least one element")
+        };
+
+        let (client, url) = self.url_extractor(selected_format)?;
+
+        Ok(HttpRequest::new(client, url).into())
+    }
+
+    /// Solves the `signature_cipher` for getting the URL
+    ///
+    /// `YouTube` changes `signature_cipher` logic very frequently; so, this has
+    /// very high possibility to fail in the future.
+    fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
+        let (s, sp, url) = format
+            .signature_cipher
+            .split('\u{0026}')
+            .map(|part| part.split_once('=').expect("Always has '='"))
+            .fold(
+                (String::new(), String::new(), String::new()),
+                |(mut s, mut sp, mut url), (key, value)| {
+                    match key {
+                        "s" => s.push_str(value),
+                        "sp" => sp.push_str(value),
+                        "url" => url.push_str(value),
+                        _ => (),
+                    }
+
+                    (s, sp, url)
+                },
+            );
+
+        Err(anyhow!("URL extractor is incomplete"))
+    }
+
+    /// Uses old `yt-dlp` to get the song stream.
+    #[cfg(feature = "yt-dlp-fallback")]
+    async fn get_input_old(&self) -> Input {
+        use songbird::input::YoutubeDl;
+
+        // TODO: Use proper reqwest::Client once you handled reqwest system
+        YoutubeDl::new(reqwest::Client::new(), self.id.clone()).into()
+    }
+
     /// Get title of the song.
     pub fn title(&self) -> String { self.title.clone() }
 
     /// Get `YouTube` URL of the song.
-    pub fn url(&self) -> String { self.id.clone() }
+    pub fn id(&self) -> String { self.id.clone() }
 
     /// Get duration of the song.
     pub fn duration(&self) -> String { self.duration.clone() }

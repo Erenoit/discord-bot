@@ -277,3 +277,29 @@ pub struct PlaylistVideoTitleRun {
 pub struct PlaylistVideoLengthText {
     pub simple_text: String,
 }
+
+// -----------------------------------------------------------------------
+// Streaming Data Section
+// -----------------------------------------------------------------------
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct YoutubePlayer {
+    pub streaming_data: StreamingData,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct StreamingData {
+    pub formats:          Vec<Format>,
+    pub adaptive_formats: Vec<Format>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct Format {
+    pub itag:             u32,
+    pub mime_type:        String,
+    pub bitrate:          u32,
+    pub signature_cipher: String,
+}
