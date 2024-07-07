@@ -129,8 +129,10 @@ impl Song {
             .text()
             .await?;
 
-        let mut search_res = &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
-        search_res = &search_res[.. search_res.find("</script>").unwrap() - ";".len()];
+        let mut search_res = &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+            + "ytInitialData = ".len() ..];
+        search_res =
+            &search_res[.. search_res.find("</script>").ok_or(anyhow!("Parse error"))? - ";".len()];
 
         let list = serde_json::from_str::<YoutubeSearch>(search_res)?
             .contents
@@ -210,7 +212,7 @@ impl Song {
         };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
             return Err(anyhow!("yt-dlp failed"));
         }
 
@@ -267,7 +269,7 @@ impl Song {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp";
-                "{}", (res_new.err().unwrap())
+                "{}", (res_new.err().expect("Its already an error"))
             );
             return Ok(res_old);
         }
@@ -293,9 +295,12 @@ impl Song {
         if song.contains("/watch?") {
             if song.contains("&list=") {
                 let yt_initial_data =
-                    &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
-                let yt_initial_data =
-                    &yt_initial_data[.. yt_initial_data.find("</script>").unwrap() - ";".len()];
+                    &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+                        + "ytInitialData = ".len() ..];
+                let yt_initial_data = &yt_initial_data[.. yt_initial_data
+                    .find("</script>")
+                    .ok_or(anyhow!("Parse error"))?
+                    - ";".len()];
 
                 let playlist_content =
                     serde_json::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
@@ -319,11 +324,14 @@ impl Song {
                     });
                 });
             } else {
-                let yt_initial_player_response =
-                    &res[res.find("ytInitialPlayerResponse").unwrap()
-                        + "ytInitialPlayerResponse = ".len() ..];
+                let yt_initial_player_response = &res[res
+                    .find("ytInitialPlayerResponse")
+                    .ok_or(anyhow!("Parse error"))?
+                    + "ytInitialPlayerResponse = ".len() ..];
                 let yt_initial_player_response = &yt_initial_player_response
-                    [.. yt_initial_player_response.find(";var").unwrap()];
+                    [.. yt_initial_player_response
+                        .find(";var")
+                        .ok_or(anyhow!("Parse error"))?];
 
                 let video_details =
                     serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
@@ -339,12 +347,14 @@ impl Song {
             return Ok(song_list);
         } else if song.contains("/playlist?") {
             let yt_initial_data =
-                &res[res.find("ytInitialData").unwrap() + "ytInitialData = ".len() ..];
-            let yt_initial_data =
-                &yt_initial_data[.. yt_initial_data.find("</script>").unwrap() - ";".len()];
+                &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+                    + "ytInitialData = ".len() ..];
+            let yt_initial_data = &yt_initial_data[.. yt_initial_data
+                .find("</script>")
+                .ok_or(anyhow!("Parse error"))?
+                - ";".len()];
 
-            let playlist_content = serde_json::from_str::<YoutubePlaylist>(yt_initial_data)
-                .expect("couldn't parse the playlist")
+            let playlist_content = serde_json::from_str::<YoutubePlaylist>(yt_initial_data)?
                 .contents
                 .two_column_browse_results_renderer
                 .tabs
@@ -397,7 +407,7 @@ impl Song {
         };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
             return Err(anyhow!("yt-dlp failed"));
         }
 
