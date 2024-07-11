@@ -49,8 +49,8 @@ impl Bot {
             .expect("Couldn't setup the database");
 
         let reqwest_client = Self::create_reqwest_client();
-        // Somehow Arc is moved inside the closure so, we need to clone it beforehand.
-        let req_cli_clone = Arc::clone(&reqwest_client);
+        // Somehow it is moved inside the closure so, we need to clone it beforehand.
+        let req_cli_clone = reqwest_client.clone();
 
         let options = poise::FrameworkOptions {
             commands: vec![
@@ -148,7 +148,7 @@ impl Bot {
         }
     }
 
-    fn create_reqwest_client() -> Arc<Client> {
+    fn create_reqwest_client() -> Client {
         let reqwest_client_builder = Client::builder()
             .user_agent(USER_AGENT)
             .use_rustls_tls()
@@ -172,11 +172,9 @@ impl Bot {
 
         let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_store));
 
-        Arc::new(
-            reqwest_client_builder
-                .build()
-                .expect("TLS backend cannot be initialized"),
-        )
+        reqwest_client_builder
+            .build()
+            .expect("TLS backend cannot be initialized")
     }
 }
 

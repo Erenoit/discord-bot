@@ -18,12 +18,12 @@ use crate::server::Server;
 ///
 /// It currently handles `Ready`, `GuildCreate` and `GuildDelete` events.
 pub struct Handler {
-    reqwest_client: Arc<Client>,
+    reqwest_client: Client,
 }
 
 impl Handler {
     /// Creates new [`Handler`] struct.
-    pub fn new(reqwest_client: Arc<Client>) -> Self { Self { reqwest_client } }
+    pub fn new(reqwest_client: Client) -> Self { Self { reqwest_client } }
 }
 
 #[async_trait]
@@ -37,10 +37,7 @@ impl EventHandler for Handler {
             log!(info, ; "{}", (g.id));
             servers.insert(
                 g.id,
-                Arc::new(Server::new(
-                    g.id,
-                    Arc::clone(&self.reqwest_client),
-                )),
+                Arc::new(Server::new(g.id, self.reqwest_client.clone())),
             );
         }
 
@@ -54,10 +51,7 @@ impl EventHandler for Handler {
             log!(info, "Joined to a new server."; "Guild id: {}", (guild.id));
             get_config!().servers().write().await.insert(
                 guild.id,
-                Arc::new(Server::new(
-                    guild.id,
-                    Arc::clone(&self.reqwest_client),
-                )),
+                Arc::new(Server::new(guild.id, self.reqwest_client.clone())),
             );
         }
     }
