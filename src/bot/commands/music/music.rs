@@ -46,7 +46,7 @@ pub async fn music(
         {
             server
                 .player
-                .play(&mut Song::new(&ctx, res.value).await?)
+                .play(&mut Song::new(&ctx, &ctx.data().reqwest_client, res.value).await?)
                 .await;
             return Ok(());
         }

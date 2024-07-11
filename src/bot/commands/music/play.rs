@@ -23,7 +23,7 @@ pub async fn play(
 
     ctx.defer().await?;
 
-    let mut songs = Song::new(&ctx, song).await?;
+    let mut songs = Song::new(&ctx, &ctx.data().reqwest_client, song).await?;
     match songs.len() {
         0 => {
             message!(error, ctx, ("An error happened please try again later"); false);

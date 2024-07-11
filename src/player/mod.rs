@@ -20,8 +20,10 @@ use std::{
     mem,
     slice::Iter,
     str::FromStr,
+    sync::Arc,
 };
 
+use reqwest::Client;
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Event, TrackEvent};
 use tokio::sync::Mutex;
@@ -63,17 +65,21 @@ pub struct Player {
     song_queue:   Mutex<VecDeque<Song>>,
     /// [`Song`] queue for the songs already played before
     repeat_queue: Mutex<VecDeque<Song>>,
+
+    reqwest_client: Arc<Client>,
 }
 
 impl Player {
     /// Creats new [`Player`] struct.
-    pub fn new(guild_id: GuildId) -> Self {
+    pub fn new(guild_id: GuildId, reqwest_client: Arc<Client>) -> Self {
         Self {
             guild_id,
             now_playing: Mutex::new(None),
             repeat_mode: Mutex::new(Repeat::Off),
             song_queue: Mutex::new(VecDeque::with_capacity(100)),
             repeat_queue: Mutex::new(VecDeque::with_capacity(100)),
+
+            reqwest_client,
         }
     }
 
@@ -175,7 +181,7 @@ impl Player {
             .lock()
             .await
             // TODO: remoce this unwrap
-            .play_input(next_song.get_input().await.unwrap())
+            .play_input(next_song.get_input(&self.reqwest_client).await.unwrap())
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
             })
