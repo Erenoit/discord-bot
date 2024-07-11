@@ -4,9 +4,9 @@ use std::{collections::VecDeque, fmt::Display, iter};
 
 use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
+use songbird::input::{HttpRequest, Input};
 use tokio::process::Command;
 
-use crate::bot::Context;
 #[cfg(feature = "spotify")]
 use crate::player::sp_structs::{
     SpotifyAlbumResponse,
@@ -14,6 +14,17 @@ use crate::player::sp_structs::{
     SpotifyError,
     SpotifyPlaylistResponse,
     SpotifyTrackResponse,
+};
+use crate::{
+    bot::Context,
+    player::yt_structs::{
+        Format,
+        YoutubePlayer,
+        YoutubePlaylist,
+        YoutubeSearch,
+        YoutubeVideo,
+        YoutubeVideoPlaylist,
+    },
 };
 
 /// User agent to use in requests
@@ -67,10 +78,16 @@ impl Song {
         let user_name = ctx.author().name.clone();
 
         if song.starts_with("https://") || song.starts_with("http://") {
+            // TODO: short youtube links
             if song.contains("youtube") {
                 Self::youtube(song, user_name).await
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
-                Self::spotify(song, user_name).await
+                if get_config!().is_spotify_initialized() {
+                    Self::spotify(song, user_name).await
+                } else {
+                    message!(error, ctx, ("Spotify is not initialized"); true);
+                    Err(anyhow!("Spotify is not initialized"))
+                }
             } else {
                 message!(error, ctx, ("Unsupported music source"); true);
                 Err(anyhow!("Unsupported music source"))
@@ -82,24 +99,128 @@ impl Song {
 
     /// Takes search resoults for given string from `YouTube` and sends user to
     /// select one/all/none of them. Then returns the selected song(s).
+    ///
+    /// Uses new `YouTube` scrapper, but falls back to `yt-dlp` if new one
+    /// fails.
     async fn search(ctx: &Context<'_>, song: String, user_name: String) -> Result<VecDeque<Self>> {
-        let res = Command::new("yt-dlp")
+        if let Ok(res) = Self::search_new(ctx, &song, &user_name).await {
+            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
+        }
+
+        #[cfg(feature = "yt-dlp-fallback")]
+        if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
+            log!(
+                warn,
+                "new scrapper failed, falling back to yt-dlp"
+            );
+            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
+        }
+
+        Err(anyhow!("An error happened in search"))
+    }
+
+    /// Sends GET request to `YouTube` as if it was searched in browser and
+    /// scrapes the results.
+    async fn search_new(
+        ctx: &Context<'_>,
+        song: &str,
+        user_name: &str,
+    ) -> Result<Option<VecDeque<Self>>> {
+        let res = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .build()?
+            .get(format!(
+                "https://www.youtube.com/results?search_query={song}"
+            ))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let mut search_res = &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+            + "ytInitialData = ".len() ..];
+        search_res =
+            &search_res[.. search_res.find("</script>").ok_or(anyhow!("Parse error"))? - ";".len()];
+
+        let list = serde_json::from_str::<YoutubeSearch>(search_res)?
+            .contents
+            .two_column_search_results_renderer
+            .primary_contents
+            .section_list_renderer
+            .contents
+            .into_iter()
+            .filter_map(|contents| contents.item_section_renderer)
+            .map(|item_renderer| item_renderer.contents)
+            .flatten()
+            .filter_map(|item| item.video_renderer)
+            .take(get_config!().youtube_search_count().into())
+            .map(|video| {
+                (
+                    video.title.runs[0].text.clone(),
+                    video.video_id,
+                    video.length_text.simple_text,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let answer = selection!(list, *ctx, "Search", list, true);
+        if answer == "success" {
+            Ok(Some(
+                list.into_iter()
+                    .map(|(title, id, duration)| {
+                        Self {
+                            title,
+                            id,
+                            duration,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
+        } else if answer != "danger" {
+            Ok(Some(
+                list.into_iter()
+                    .filter(|(_, id, _)| id == &answer)
+                    .take(1)
+                    .map(|(title, id, duration)| {
+                        Self {
+                            title,
+                            id,
+                            duration,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Uses old `yt-dlp` to search for given string in `YouTube`.
+    #[cfg(feature = "yt-dlp-fallback")]
+    async fn search_old(
+        ctx: &Context<'_>,
+        song: &str,
+        user_name: &str,
+    ) -> Result<Option<VecDeque<Self>>> {
+        let Ok(res) = Command::new("yt-dlp")
             .args([
-                "--no-playlist",
+                "--flat-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &format!(
-                    "ytsearch{}:{}",
-                    get_config!().youtube_search_count(),
-                    song
-                ),
+                song,
             ])
             .output()
-            .await?;
+            .await
+        else {
+            log!(error, "Command creation for yt-dlp failed");
+            return Err(anyhow!("yt-dlp failed"));
+        };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
             return Err(anyhow!("yt-dlp failed"));
         }
 
@@ -111,46 +232,180 @@ impl Song {
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
-            Ok(list
-                .into_iter()
-                .map(|e| {
-                    Self {
-                        title:     e.0,
-                        id:        e.1,
-                        duration:  e.2,
-                        user_name: user_name.clone(),
-                    }
-                })
-                .collect::<VecDeque<_>>())
+            Ok(Some(
+                list.into_iter()
+                    .map(|e| {
+                        Self {
+                            title:     e.0,
+                            id:        e.1,
+                            duration:  e.2,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
         } else if answer != "danger" {
-            Ok(list
-                .into_iter()
-                .filter(|e| e.1 == answer)
-                .map(|e| {
-                    Self {
-                        title:     e.0,
-                        id:        e.1,
-                        duration:  e.2,
-                        user_name: user_name.clone(),
-                    }
-                })
-                .collect::<VecDeque<_>>())
+            Ok(Some(
+                list.into_iter()
+                    .filter(|e| e.1 == answer)
+                    .map(|e| {
+                        Self {
+                            title:     e.0,
+                            id:        e.1,
+                            duration:  e.2,
+                            user_name: user_name.to_owned(),
+                        }
+                    })
+                    .collect(),
+            ))
         } else {
-            Err(anyhow!("Selection failed/canceled"))
+            Ok(None)
         }
     }
 
-    // TODO: yt-dlp is slow sometimes
     // TODO: cannot open age restricted videos
     /// Takes `YouTube` URL and gets the song(s)
     async fn youtube(song: String, user_name: String) -> Result<VecDeque<Self>> {
+        let res_new = Self::youtube_new(&song, &user_name).await;
+
+        if let Ok(songs) = res_new {
+            return Ok(songs);
+        }
+
+        #[cfg(feature = "yt-dlp-fallback")]
+        if let Ok(res_old) = Self::youtube_old(&song, &user_name).await {
+            log!(
+                warn,
+                "new scrapper failed, falling back to yt-dlp";
+                "{}", (res_new.err().expect("Its already an error"))
+            );
+            return Ok(res_old);
+        }
+
+        // TODO: better error menagement
+        res_new
+    }
+
+    /// Sends GET request to `YouTube` as if it was requested from a browser and
+    /// scrapes the result.
+    async fn youtube_new(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
+        let res = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .build()?
+            .get(song)
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let mut song_list = VecDeque::new();
+
+        if song.contains("/watch?") {
+            if song.contains("&list=") {
+                let yt_initial_data =
+                    &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+                        + "ytInitialData = ".len() ..];
+                let yt_initial_data = &yt_initial_data[.. yt_initial_data
+                    .find("</script>")
+                    .ok_or(anyhow!("Parse error"))?
+                    - ";".len()];
+
+                let playlist_content =
+                    serde_json::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
+                        .contents
+                        .two_column_watch_next_results
+                        .playlist
+                        .playlist
+                        .contents;
+
+                song_list.reserve(playlist_content.len());
+                playlist_content.into_iter().for_each(|video| {
+                    song_list.push_back(Song {
+                        title:     video.playlist_panel_video_renderer.title.simple_text,
+                        id:        video
+                            .playlist_panel_video_renderer
+                            .navigation_endpoint
+                            .watch_endpoint
+                            .video_id,
+                        duration:  video.playlist_panel_video_renderer.length_text.simple_text,
+                        user_name: user_name.to_owned(),
+                    });
+                });
+            } else {
+                let yt_initial_player_response = &res[res
+                    .find("ytInitialPlayerResponse")
+                    .ok_or(anyhow!("Parse error"))?
+                    + "ytInitialPlayerResponse = ".len() ..];
+                let yt_initial_player_response = &yt_initial_player_response
+                    [.. yt_initial_player_response
+                        .find(";var")
+                        .ok_or(anyhow!("Parse error"))?];
+
+                let video_details =
+                    serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
+
+                song_list.push_back(Song {
+                    title:     video_details.title,
+                    id:        video_details.video_id,
+                    duration:  video_details.length_seconds,
+                    user_name: user_name.to_owned(),
+                });
+            }
+
+            return Ok(song_list);
+        } else if song.contains("/playlist?") {
+            let yt_initial_data =
+                &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+                    + "ytInitialData = ".len() ..];
+            let yt_initial_data = &yt_initial_data[.. yt_initial_data
+                .find("</script>")
+                .ok_or(anyhow!("Parse error"))?
+                - ";".len()];
+
+            let playlist_content = serde_json::from_str::<YoutubePlaylist>(yt_initial_data)?
+                .contents
+                .two_column_browse_results_renderer
+                .tabs
+                .into_iter()
+                .filter_map(|tab| tab.tab_renderer)
+                .map(|tab_renderer| tab_renderer.content.section_list_renderer.contents)
+                .flatten()
+                .filter_map(|contents| contents.item_section_renderer)
+                .map(|renderer| renderer.contents)
+                .flatten()
+                .filter_map(|content| content.playlist_video_list_renderer)
+                .map(|renderer| renderer.contents)
+                .flatten()
+                // FIXME: probably unnecessary allocation
+                .collect::<Vec<_>>();
+
+            song_list.reserve(playlist_content.len());
+            playlist_content.into_iter().for_each(|video| {
+                song_list.push_back(Song {
+                    // FIXME: unnecessary clone
+                    title:     video.playlist_video_renderer.title.runs[0].text.clone(),
+                    id:        video.playlist_video_renderer.video_id,
+                    duration:  video.playlist_video_renderer.length_text.simple_text,
+                    user_name: user_name.to_owned(),
+                });
+            });
+
+            return Ok(song_list);
+        } else {
+            return Err(anyhow!("Unsupported YouTube link type"));
+        }
+    }
+
+    /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
+    #[cfg(feature = "yt-dlp-fallback")]
+    async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &song,
+                song,
             ])
             .output()
             .await
@@ -160,7 +415,7 @@ impl Song {
         };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8(res.stderr).expect("Output must be valid UTF-8")));
+            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
             return Err(anyhow!("yt-dlp failed"));
         }
 
@@ -172,7 +427,7 @@ impl Song {
                     title:     e[0].to_owned(),
                     id:        e[1].to_owned(),
                     duration:  e[2].to_owned(),
-                    user_name: user_name.clone(),
+                    user_name: user_name.to_owned(),
                 }
             })
             .collect())
@@ -278,11 +533,129 @@ impl Song {
         .collect())
     }
 
+    /// gets [`songbird::input::Input`] for music stream
+    pub async fn get_input(&self) -> Result<Input> {
+        let res_new = self.get_input_new().await;
+
+        if let Ok(input) = res_new {
+            return Ok(input);
+        }
+
+        if cfg!(feature = "yt-dlp-fallback") {
+            log!(
+                warn,
+                "new scrapper failed as input generation, falling back to yt-dlp";
+                "{}", (res_new.err().expect("Its already an error"))
+            );
+            return Ok(self.get_input_old().await);
+        } else {
+            res_new
+        }
+    }
+
+    /// Sends GET request to `YouTube` as if it was searched in browser and
+    /// scrapes the results.
+    async fn get_input_new(&self) -> Result<Input> {
+        let res = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .build()?
+            .get(format!(
+                "https://www.youtube.com/watch?v={}",
+                self.id
+            ))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let yt_initial_player_response = &res[res
+            .find("ytInitialPlayerResponse")
+            .ok_or(anyhow!("Parse error"))?
+            + "ytInitialPlayerResponse = ".len() ..];
+        let yt_initial_player_response = &yt_initial_player_response[.. yt_initial_player_response
+            .find(";var")
+            .ok_or(anyhow!("Parse error"))?];
+
+        let streaming_data =
+            serde_json::from_str::<YoutubePlayer>(yt_initial_player_response)?.streaming_data;
+        let (mut audio_formats, mut video_formats) =
+            [streaming_data.formats, streaming_data.adaptive_formats]
+                .into_iter()
+                .flatten()
+                .fold(
+                    (Vec::new(), Vec::new()),
+                    |(mut audio, mut video), format| {
+                        if format.mime_type.contains("audio/") {
+                            audio.push(format);
+                        } else {
+                            video.push(format);
+                        }
+
+                        (audio, video)
+                    },
+                );
+
+        let selected_format = if !audio_formats.is_empty() {
+            audio_formats.sort_by(|a, b| a.bitrate.cmp(&b.bitrate));
+
+            // get best bitrate
+            audio_formats
+                .pop()
+                .expect("Allready check for at least one element")
+        } else {
+            video_formats.sort_by(|a, b| b.bitrate.cmp(&a.bitrate));
+
+            // get worst bitrate
+            video_formats
+                .pop()
+                .expect("Always has at least one element")
+        };
+
+        let (client, url) = self.url_extractor(selected_format)?;
+
+        Ok(HttpRequest::new(client, url).into())
+    }
+
+    /// Solves the `signature_cipher` for getting the URL
+    ///
+    /// `YouTube` changes `signature_cipher` logic very frequently; so, this has
+    /// very high possibility to fail in the future.
+    fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
+        let (s, sp, url) = format
+            .signature_cipher
+            .split('\u{0026}')
+            .map(|part| part.split_once('=').expect("Always has '='"))
+            .fold(
+                (String::new(), String::new(), String::new()),
+                |(mut s, mut sp, mut url), (key, value)| {
+                    match key {
+                        "s" => s.push_str(value),
+                        "sp" => sp.push_str(value),
+                        "url" => url.push_str(value),
+                        _ => (),
+                    }
+
+                    (s, sp, url)
+                },
+            );
+
+        Err(anyhow!("URL extractor is incomplete"))
+    }
+
+    /// Uses old `yt-dlp` to get the song stream.
+    #[cfg(feature = "yt-dlp-fallback")]
+    async fn get_input_old(&self) -> Input {
+        use songbird::input::YoutubeDl;
+
+        // TODO: Use proper reqwest::Client once you handled reqwest system
+        YoutubeDl::new(reqwest::Client::new(), self.id.clone()).into()
+    }
+
     /// Get title of the song.
     pub fn title(&self) -> String { self.title.clone() }
 
     /// Get `YouTube` URL of the song.
-    pub fn url(&self) -> String { self.id.clone() }
+    pub fn id(&self) -> String { self.id.clone() }
 
     /// Get duration of the song.
     pub fn duration(&self) -> String { self.duration.clone() }

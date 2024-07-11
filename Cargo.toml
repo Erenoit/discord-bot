@@ -19,6 +19,7 @@ json = "0.12"
 poise = "0.6"
 rand = "0.8"
 serde = { version = "1.0", optional = true }
+serde_json = { version = "1.0", optional = true }
 serenity = { version = "0.12", default-features = false, features = [
     "builder",
     "client",
@@ -59,13 +60,22 @@ overflow-checks = false
 strip = "symbols"
 
 [features]
-default = ["cmd", "config_file", "database", "dotenv", "music", "spotify"]
+default = [
+    "cmd",
+    "config_file",
+    "database",
+    "dotenv",
+    "music",
+    "spotify",
+    "yt-dlp-fallback",
+]
 cmd = ["dep:clap", "dep:clap_complete"]
 config_file = ["dep:directories", "dep:taplo"]
 database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenvy"]
-music = ["dep:songbird"]
-spotify = ["dep:serde", "music"]
+music = ["dep:serde", "dep:serde_json", "dep:songbird"]
+spotify = ["music"]
+yt-dlp-fallback = ["music"]
 
 
 # Clippy Lints Last Checked For 0.1.78

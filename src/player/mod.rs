@@ -12,6 +12,7 @@ mod event;
 mod song;
 #[cfg(feature = "spotify")]
 mod sp_structs;
+mod yt_structs;
 
 use std::{
     collections::VecDeque,
@@ -22,7 +23,7 @@ use std::{
 };
 
 use serenity::model::id::{ChannelId, GuildId};
-use songbird::{input::YoutubeDl, Event, TrackEvent};
+use songbird::{Event, TrackEvent};
 use tokio::sync::Mutex;
 
 pub use crate::player::song::Song;
@@ -170,13 +171,11 @@ impl Player {
             },
         };
 
-        // TODO: Use proper reqwest::Client once you handled reqwest system
-        let source = YoutubeDl::new(reqwest::Client::new(), next_song.url());
-
         call_mutex
             .lock()
             .await
-            .play_input(source.into())
+            // TODO: remoce this unwrap
+            .play_input(next_song.get_input().await.unwrap())
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
             })
