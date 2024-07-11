@@ -20,6 +20,9 @@ pub(super) const YT_SEARCH_COUNT: u8 = 5;
 /// Default YT Age Restricted
 #[cfg(feature = "music")]
 pub(super) const YT_AGE_RESTRICTED: bool = false;
+/// Default YT Cookies
+#[cfg(feature = "music")]
+pub(super) const YT_COOKIES: String = String::new();
 /// Default Enable Database
 #[cfg(feature = "database")]
 pub(super) const ENABLE_DATABASE: bool = true;

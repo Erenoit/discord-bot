@@ -12,7 +12,7 @@ mod event;
 use std::sync::Arc;
 
 use event::Handler;
-use reqwest::Client;
+use reqwest::{cookie::Jar, Client, Url};
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
 use songbird::serenity::SerenityInit;
@@ -48,18 +48,7 @@ impl Bot {
             .await
             .expect("Couldn't setup the database");
 
-        let reqwest_client_builder = Client::builder()
-            .user_agent(USER_AGENT)
-            // TODO: use custom cookie store in the future
-            .cookie_store(true)
-            .use_rustls_tls()
-            .https_only(true);
-
-        let reqwest_client = Arc::new(
-            reqwest_client_builder
-                .build()
-                .expect("TLS backend cannot be initialized"),
-        );
+        let reqwest_client = Self::create_reqwest_client();
         // Somehow Arc is moved inside the closure so, we need to clone it beforehand.
         let req_cli_clone = Arc::clone(&reqwest_client);
 
@@ -157,6 +146,37 @@ impl Bot {
                 .await
                 .expect("Couldn't start the Client");
         }
+    }
+
+    fn create_reqwest_client() -> Arc<Client> {
+        let reqwest_client_builder = Client::builder()
+            .user_agent(USER_AGENT)
+            .use_rustls_tls()
+            .https_only(true);
+
+        let cookie_store = Jar::default();
+
+        let yt_cookies = get_config!().youtube_cookies();
+        if !yt_cookies.is_empty() {
+            let url = "https://www.youtube.com"
+                .parse::<Url>()
+                .expect("Always works");
+
+            // Even though it shows that sending all parameters at once works in the example
+            // code, in reality, it just reads the first cookie and ignores the
+            // rest. So, it is necessary to split the cookies and add them one by one.
+            yt_cookies.split(';').for_each(|cookie| {
+                cookie_store.add_cookie_str(cookie.trim(), &url);
+            });
+        }
+
+        let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_store));
+
+        Arc::new(
+            reqwest_client_builder
+                .build()
+                .expect("TLS backend cannot be initialized"),
+        )
     }
 }
 

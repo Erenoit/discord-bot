@@ -272,6 +272,10 @@ impl Config {
     #[cfg(feature = "music")]
     pub const fn youtube_age_restricted(&self) -> bool { self.youtube.age_restricted() }
 
+    /// Get `youtube_cookies` setting
+    #[cfg(feature = "music")]
+    pub fn youtube_cookies(&self) -> &str { self.youtube.cookies() }
+
     /// Chack if `Spotify` enabled
     #[cfg(feature = "spotify")]
     pub const fn is_spotify_initialized(&self) -> bool { self.spotify.is_some() }
