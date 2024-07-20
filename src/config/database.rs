@@ -2,7 +2,7 @@
 
 use std::{fs, path::PathBuf, str::FromStr};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     SqlitePool,

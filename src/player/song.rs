@@ -628,7 +628,7 @@ impl Song {
     /// `YouTube` changes `signature_cipher` logic very frequently; so, this has
     /// very high possibility to fail in the future.
     fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
-        let (s, sp, url) = format
+        let (_s, _sp, _url) = format
             .signature_cipher
             .split('\u{0026}')
             .map(|part| part.split_once('=').expect("Always has '='"))

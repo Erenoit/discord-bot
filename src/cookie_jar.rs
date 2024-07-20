@@ -28,6 +28,7 @@ use crate::database_tables::KeyValue;
 pub struct CookieJar {
     /// Thread that handles database operations.
     #[cfg(feature = "database")]
+    #[allow(dead_code)]
     thread: JoinHandle<()>,
     /// Channel sender to send events to the thread.
     #[cfg(feature = "database")]
