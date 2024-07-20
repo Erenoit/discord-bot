@@ -12,13 +12,14 @@ mod event;
 use std::sync::Arc;
 
 use event::Handler;
-use reqwest::{cookie::Jar, Client, Url};
+use reqwest::{Client, Url};
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
 use songbird::serenity::SerenityInit;
 
 #[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
+use crate::cookie_jar::CookieJar;
 
 /// User agent to use in requests
 const USER_AGENT: &str =
@@ -148,29 +149,29 @@ impl Bot {
         }
     }
 
+    /// Creates a new instance of [`reqwest::Client`] for global use.
     fn create_reqwest_client() -> Client {
+        use reqwest::cookie::CookieStore;
+
         let reqwest_client_builder = Client::builder()
             .user_agent(USER_AGENT)
             .use_rustls_tls()
             .https_only(true);
 
-        let cookie_store = Jar::default();
+        let cookie_jar = CookieJar::new();
+
+        let url = "https://www.youtube.com"
+            .parse::<Url>()
+            .expect("Always works");
 
         let yt_cookies = get_config!().youtube_cookies();
-        if !yt_cookies.is_empty() {
-            let url = "https://www.youtube.com"
-                .parse::<Url>()
-                .expect("Always works");
-
-            // Even though it shows that sending all parameters at once works in the example
-            // code, in reality, it just reads the first cookie and ignores the
-            // rest. So, it is necessary to split the cookies and add them one by one.
-            yt_cookies.split(';').for_each(|cookie| {
-                cookie_store.add_cookie_str(cookie.trim(), &url);
-            });
+        let saved_cookies = cookie_jar.cookies(&url);
+        if !yt_cookies.is_empty() && saved_cookies.is_none() {
+            let c = [reqwest::header::HeaderValue::from_str(yt_cookies).unwrap()];
+            cookie_jar.set_cookies(&mut c.iter(), &url);
         }
 
-        let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_store));
+        let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_jar));
 
         reqwest_client_builder
             .build()

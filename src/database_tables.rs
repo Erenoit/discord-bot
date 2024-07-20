@@ -2,7 +2,8 @@
 
 /// Stores key-value pairs for database.
 ///
-/// Generally used for storing link aliases in music command.
+/// Generally used for storing link aliases in music command and `reqwest`
+/// cookies.
 pub struct KeyValue {
     /// alias/search term to get actual value
     pub key:   String,

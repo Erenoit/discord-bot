@@ -61,6 +61,7 @@ mod dummy_module {
 
 mod bot;
 mod config;
+mod cookie_jar;
 #[cfg(feature = "database")]
 mod database_tables;
 #[cfg(feature = "music")]
