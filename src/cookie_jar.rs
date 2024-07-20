@@ -98,7 +98,7 @@ impl CookieJar {
             .filter_map(|header| header.split_once('='))
         {
             sqlx::query!(
-                "INSERT INTO cookies (site, key, value) VALUES (?, ?, ?)",
+                "INSERT OR REPLACE INTO cookiesv2 (key, value) VALUES (? || ',' || ?, ?)",
                 url,
                 key,
                 value
@@ -119,21 +119,22 @@ impl CookieJar {
 
         sqlx::query_as!(
             KeyValue,
-            "SELECT key, value FROM cookies WHERE site = ?",
+            "SELECT key, value FROM cookiesv2 WHERE key LIKE ? || ',%'",
             url
         )
         .fetch_all(database)
         .await
         .map(|cookies| {
             cookies.iter().fold(String::new(), |mut acc, cookie| {
-                let adding_length = cookie.key.len() + cookie.value.len() + 3;
+                let actual_key = cookie.key.split_once(',').expect("Cannot fail").1;
+                let adding_length = actual_key.len() + cookie.value.len() + 3;
 
                 acc.reserve(adding_length);
                 if !acc.is_empty() {
                     acc.push_str("; ");
                 }
 
-                acc.push_str(&cookie.key);
+                acc.push_str(actual_key);
                 acc.push('=');
                 acc.push_str(&cookie.value);
 
