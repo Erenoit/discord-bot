@@ -26,7 +26,7 @@ pub async fn play(
     let mut songs = Song::new(&ctx, &ctx.data().reqwest_client, song).await?;
     match songs.len() {
         0 => {
-            message!(error, ctx, ("An error happened please try again later"); false);
+            message!(error, ctx, ("Nothing has added to the queue."); false);
             return Ok(());
         },
         1 =>

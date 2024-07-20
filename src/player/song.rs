@@ -4,7 +4,7 @@ use std::{collections::VecDeque, fmt::Display, iter};
 
 use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use songbird::input::{HttpRequest, Input};
 use tokio::process::Command;
 
@@ -110,17 +110,20 @@ impl Song {
         song: String,
         user_name: String,
     ) -> Result<VecDeque<Self>> {
-        if let Ok(res) = Self::search_new(ctx, reqwest_client, &song, &user_name).await {
-            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
+        let res_new = Self::search_new(ctx, reqwest_client, &song, &user_name).await;
+
+        if let Ok(songs) = res_new {
+            return Ok(songs);
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
         if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
             log!(
                 warn,
-                "new scrapper failed, falling back to yt-dlp"
+                "new scrapper failed, falling back to yt-dlp";
+                "{}", (res_new.err().expect("Its already an error"))
             );
-            return res.map_or_else(|| Err(anyhow!("Selection failed/canceled")), Ok);
+            return Ok(res);
         }
 
         Err(anyhow!("An error happened in search"))
@@ -133,15 +136,13 @@ impl Song {
         reqwest_client: &Client,
         song: &str,
         user_name: &str,
-    ) -> Result<Option<VecDeque<Self>>> {
-        let res = reqwest_client
-            .get(format!(
-                "https://www.youtube.com/results?search_query={song}"
-            ))
-            .send()
-            .await?
-            .text()
-            .await?;
+    ) -> Result<VecDeque<Self>> {
+        let url = Url::parse_with_params("https://www.youtube.com/results", &[(
+            "search_query",
+            song,
+        )])?;
+
+        let res = reqwest_client.get(url).send().await?.text().await?;
 
         let mut search_res = &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
             + "ytInitialData = ".len() ..];
@@ -171,52 +172,50 @@ impl Song {
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
-            Ok(Some(
-                list.into_iter()
-                    .map(|(title, id, duration)| {
-                        Self {
-                            title,
-                            id,
-                            duration,
-                            user_name: user_name.to_owned(),
-                        }
-                    })
-                    .collect(),
-            ))
+            Ok(list
+                .into_iter()
+                .map(|(title, id, duration)| {
+                    Self {
+                        title,
+                        id,
+                        duration,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .collect())
         } else if answer != "danger" {
-            Ok(Some(
-                list.into_iter()
-                    .filter(|(_, id, _)| id == &answer)
-                    .take(1)
-                    .map(|(title, id, duration)| {
-                        Self {
-                            title,
-                            id,
-                            duration,
-                            user_name: user_name.to_owned(),
-                        }
-                    })
-                    .collect(),
-            ))
+            Ok(list
+                .into_iter()
+                .filter(|(_, id, _)| id == &answer)
+                .take(1)
+                .map(|(title, id, duration)| {
+                    Self {
+                        title,
+                        id,
+                        duration,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .collect())
         } else {
-            Ok(None)
+            Ok(VecDeque::new())
         }
     }
 
     /// Uses old `yt-dlp` to search for given string in `YouTube`.
     #[cfg(feature = "yt-dlp-fallback")]
-    async fn search_old(
-        ctx: &Context<'_>,
-        song: &str,
-        user_name: &str,
-    ) -> Result<Option<VecDeque<Self>>> {
+    async fn search_old(ctx: &Context<'_>, song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                song,
+                &format!(
+                    "ytsearch{}:{}",
+                    get_config!().youtube_search_count(),
+                    song,
+                ),
             ])
             .output()
             .await
@@ -238,34 +237,32 @@ impl Song {
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
-            Ok(Some(
-                list.into_iter()
-                    .map(|e| {
-                        Self {
-                            title:     e.0,
-                            id:        e.1,
-                            duration:  e.2,
-                            user_name: user_name.to_owned(),
-                        }
-                    })
-                    .collect(),
-            ))
+            Ok(list
+                .into_iter()
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .collect())
         } else if answer != "danger" {
-            Ok(Some(
-                list.into_iter()
-                    .filter(|e| e.1 == answer)
-                    .map(|e| {
-                        Self {
-                            title:     e.0,
-                            id:        e.1,
-                            duration:  e.2,
-                            user_name: user_name.to_owned(),
-                        }
-                    })
-                    .collect(),
-            ))
+            Ok(list
+                .into_iter()
+                .filter(|e| e.1 == answer)
+                .map(|e| {
+                    Self {
+                        title:     e.0,
+                        id:        e.1,
+                        duration:  e.2,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .collect())
         } else {
-            Ok(None)
+            Ok(VecDeque::new())
         }
     }
 
