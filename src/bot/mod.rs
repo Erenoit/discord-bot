@@ -22,8 +22,7 @@ pub use crate::bot::commands::Context;
 use crate::cookie_jar::CookieJar;
 
 /// User agent to use in requests
-const USER_AGENT: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
+const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
 
 /// The main struct for the bot.
 ///
