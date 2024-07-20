@@ -149,7 +149,7 @@ impl Song {
         search_res =
             &search_res[.. search_res.find("</script>").ok_or(anyhow!("Parse error"))? - ";".len()];
 
-        let list = serde_json::from_str::<YoutubeSearch>(search_res)?
+        let list = sonic_rs::from_str::<YoutubeSearch>(search_res)?
             .contents
             .two_column_search_results_renderer
             .primary_contents
@@ -314,13 +314,12 @@ impl Song {
                     .ok_or(anyhow!("Parse error"))?
                     - ";".len()];
 
-                let playlist_content =
-                    serde_json::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
-                        .contents
-                        .two_column_watch_next_results
-                        .playlist
-                        .playlist
-                        .contents;
+                let playlist_content = sonic_rs::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
+                    .contents
+                    .two_column_watch_next_results
+                    .playlist
+                    .playlist
+                    .contents;
 
                 song_list.reserve(playlist_content.len());
                 playlist_content.into_iter().for_each(|video| {
@@ -346,7 +345,7 @@ impl Song {
                         .ok_or(anyhow!("Parse error"))?];
 
                 let video_details =
-                    serde_json::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
+                    sonic_rs::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
 
                 song_list.push_back(Song {
                     title:     video_details.title,
@@ -366,7 +365,7 @@ impl Song {
                 .ok_or(anyhow!("Parse error"))?
                 - ";".len()];
 
-            let playlist_content = serde_json::from_str::<YoutubePlaylist>(yt_initial_data)?
+            let playlist_content = sonic_rs::from_str::<YoutubePlaylist>(yt_initial_data)?
                 .contents
                 .two_column_browse_results_renderer
                 .tabs
@@ -581,7 +580,7 @@ impl Song {
             .ok_or(anyhow!("Parse error"))?];
 
         let streaming_data =
-            serde_json::from_str::<YoutubePlayer>(yt_initial_player_response)?.streaming_data;
+            sonic_rs::from_str::<YoutubePlayer>(yt_initial_player_response)?.streaming_data;
         let (mut audio_formats, mut video_formats) =
             [streaming_data.formats, streaming_data.adaptive_formats]
                 .into_iter()

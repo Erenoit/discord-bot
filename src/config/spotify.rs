@@ -3,6 +3,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use sonic_rs::{JsonValueTrait, Value};
 #[cfg(feature = "config_file")]
 use taplo::dom::Node;
 use tokio::sync::RwLock;
@@ -89,9 +90,9 @@ impl SpotifyConfig {
 
         match res {
             Ok(r) =>
-                if let Ok(j) = json::parse(&r.text().await.unwrap()) {
+                if let Ok(j) = sonic_rs::from_str::<Value>(&r.text().await.unwrap()) {
                     *write_lock_last_refresh = Some(Instant::now());
-                    *write_lock_token = Some(j["access_token"].to_string());
+                    *write_lock_token = j["access_token"].as_str().map(String::from);
                 },
             Err(why) => {
                 log!(error, "Couldn't get spotify token"; "{why}");

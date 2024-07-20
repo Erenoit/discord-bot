@@ -1,3 +1,5 @@
+use sonic_rs::{JsonValueTrait, Value};
+
 use crate::bot::commands::{Context, Error};
 
 /// Sends random meme from r/memes.
@@ -17,20 +19,25 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
             return Ok(());
         };
 
-        if let Ok(res_last) = json::parse(&res_str) {
+        // TODO: create proper structs
+        if let Ok(res_last) = sonic_rs::from_str::<Value>(&res_str) {
             let post = &res_last[0]["data"]["children"][0]["data"];
             message!(
                 embed,
                 ctx,
                 vec![serenity::builder::CreateEmbed::new()
                     .color(0xE0AF68)
-                    .title(post["title"].to_string())
-                    .url(format!("{link}{}", post["permalink"]))
-                    .image(post["url_overridden_by_dest"].to_string())
+                    .title(post["title"].as_str().unwrap_or(""))
+                    .url(format!(
+                        "{link}{}",
+                        post["permalink"].as_str().unwrap_or("")
+                    ))
+                    .image(post["url_overridden_by_dest"].as_str().unwrap_or(""))
                     .footer(serenity::builder::CreateEmbedFooter::new(
                         format!(
                             "👍 {} | 💬 {}",
-                            &post["ups"], &post["num_comments"]
+                            &post["ups"].as_i64().unwrap_or(0),
+                            &post["num_comments"].as_i64().unwrap_or(0)
                         )
                     ))],
                 false
