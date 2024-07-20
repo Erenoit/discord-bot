@@ -89,11 +89,13 @@ impl CookieJar {
         let url = url.host_str().unwrap();
 
         for (key, value) in cookie_headers
-            .flat_map(|header| {
-                header
+            .map(|header| {
+                // TODO: store expiration date
+                let h_str = header
                     .to_str()
-                    .expect("Cannot fail unless reqwest sent invalid cookie")
-                    .split("; ")
+                    .expect("Cannot fail unless reqwest sent invalid cookie");
+
+                h_str.split("; ").next().unwrap_or(h_str)
             })
             .filter_map(|header| header.split_once('='))
         {

@@ -166,7 +166,10 @@ impl Bot {
         let yt_cookies = get_config!().youtube_cookies();
         let saved_cookies = cookie_jar.cookies(&url);
         if !yt_cookies.is_empty() && saved_cookies.is_none() {
-            let c = [reqwest::header::HeaderValue::from_str(yt_cookies).unwrap()];
+            let c = yt_cookies
+                .split("; ")
+                .map(|cookie| reqwest::header::HeaderValue::from_str(cookie).expect("Cannot fail"))
+                .collect::<Vec<_>>();
             cookie_jar.set_cookies(&mut c.iter(), &url);
         }
 
