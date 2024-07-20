@@ -9,13 +9,21 @@
 mod commands;
 mod event;
 
+use std::sync::Arc;
+
 use event::Handler;
+use reqwest::{Client, Url};
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
 use songbird::serenity::SerenityInit;
 
 #[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
+use crate::cookie_jar::CookieJar;
+
+/// User agent to use in requests
+const USER_AGENT: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0";
 
 /// The main struct for the bot.
 ///
@@ -40,6 +48,10 @@ impl Bot {
             .run_database_migrations()
             .await
             .expect("Couldn't setup the database");
+
+        let reqwest_client = Self::create_reqwest_client();
+        // Somehow it is moved inside the closure so, we need to clone it beforehand.
+        let req_cli_clone = reqwest_client.clone();
 
         let options = poise::FrameworkOptions {
             commands: vec![
@@ -88,7 +100,7 @@ impl Bot {
                 Box::pin(async move {
                     if !get_config!().auto_register_commands() {
                         log!(warn, "Slash Command Autogeneration Is Disabled");
-                        return Ok(commands::Data);
+                        return Ok(commands::Data { reqwest_client });
                     }
 
                     log!(info, "Registering Slash Commands:");
@@ -107,7 +119,7 @@ impl Bot {
                         b
                     })
                     .await?;
-                    Ok(commands::Data)
+                    Ok(commands::Data { reqwest_client })
                 })
             })
             .build();
@@ -116,7 +128,7 @@ impl Bot {
         {
             serenity::Client::builder(get_config!().token(), GatewayIntents::all())
                 .framework(framework)
-                .event_handler(Handler::new())
+                .event_handler(Handler::new(req_cli_clone))
                 .register_songbird_with(get_config!().songbird())
                 .await
                 .expect("Couldn't create a Client")
@@ -128,13 +140,42 @@ impl Bot {
         {
             serenity::Client::builder(get_config!().token(), GatewayIntents::all())
                 .framework(framework)
-                .event_handler(Handler::new())
+                .event_handler(Handler::new(req_cli_clone))
                 .await
                 .expect("Couldn't create a Client")
                 .start_autosharded()
                 .await
                 .expect("Couldn't start the Client");
         }
+    }
+
+    /// Creates a new instance of [`reqwest::Client`] for global use.
+    fn create_reqwest_client() -> Client {
+        use reqwest::cookie::CookieStore;
+
+        let reqwest_client_builder = Client::builder()
+            .user_agent(USER_AGENT)
+            .use_rustls_tls()
+            .https_only(true);
+
+        let cookie_jar = CookieJar::new();
+
+        let url = "https://www.youtube.com"
+            .parse::<Url>()
+            .expect("Always works");
+
+        let yt_cookies = get_config!().youtube_cookies();
+        let saved_cookies = cookie_jar.cookies(&url);
+        if !yt_cookies.is_empty() && saved_cookies.is_none() {
+            let c = [reqwest::header::HeaderValue::from_str(yt_cookies).unwrap()];
+            cookie_jar.set_cookies(&mut c.iter(), &url);
+        }
+
+        let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_jar));
+
+        reqwest_client_builder
+            .build()
+            .expect("TLS backend cannot be initialized")
     }
 }
 

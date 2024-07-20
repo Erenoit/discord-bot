@@ -10,7 +10,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     };
 
-    if let Ok(res) = reqwest::get(url).await {
+    if let Ok(res) = ctx.data().reqwest_client.get(url).send().await {
         let Ok(res_str) = res.text().await else {
             log!(error, "Couldn't get respoense.");
             message!(error, ctx, ("An error occured, please try again later."); false);

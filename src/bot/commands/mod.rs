@@ -17,10 +17,16 @@ pub mod entertainment;
 pub mod music;
 pub mod others;
 
+use reqwest::Client;
+
 /// Error type for the bot.
 type Error = Box<dyn std::error::Error + Send + Sync>;
 /// Context type for the bot.
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 /// The data type for the bot.
-pub struct Data;
+pub struct Data {
+    /// Common [`reqwest::Client`] for all commands. It does not need to be in
+    /// [`Arc`] because it already uses it internally.
+    pub reqwest_client: Client,
+}

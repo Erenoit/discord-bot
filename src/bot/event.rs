@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use reqwest::Client;
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
@@ -16,10 +17,13 @@ use crate::server::Server;
 /// Struct for handling `Discord` events.
 ///
 /// It currently handles `Ready`, `GuildCreate` and `GuildDelete` events.
-pub struct Handler;
+pub struct Handler {
+    reqwest_client: Client,
+}
+
 impl Handler {
     /// Creates new [`Handler`] struct.
-    pub const fn new() -> Self { Self }
+    pub fn new(reqwest_client: Client) -> Self { Self { reqwest_client } }
 }
 
 #[async_trait]
@@ -31,7 +35,10 @@ impl EventHandler for Handler {
 
         for g in ready.guilds {
             log!(info, ; "{}", (g.id));
-            servers.insert(g.id, Arc::new(Server::new(g.id)));
+            servers.insert(
+                g.id,
+                Arc::new(Server::new(g.id, self.reqwest_client.clone())),
+            );
         }
 
         log!(info, "{} is online!", (ready.user.name.magenta()));
@@ -42,11 +49,10 @@ impl EventHandler for Handler {
         let is_new = is_new.is_some() && is_new.unwrap();
         if is_new {
             log!(info, "Joined to a new server."; "Guild id: {}", (guild.id));
-            get_config!()
-                .servers()
-                .write()
-                .await
-                .insert(guild.id, Arc::new(Server::new(guild.id)));
+            get_config!().servers().write().await.insert(
+                guild.id,
+                Arc::new(Server::new(guild.id, self.reqwest_client.clone())),
+            );
         }
     }
 

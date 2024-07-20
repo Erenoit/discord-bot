@@ -22,6 +22,7 @@ use std::{
     str::FromStr,
 };
 
+use reqwest::Client;
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Event, TrackEvent};
 use tokio::sync::Mutex;
@@ -54,26 +55,29 @@ macro_rules! get_call_mutex {
 #[non_exhaustive]
 pub struct Player {
     /// Guild id that [`Player`] belongs to
-    guild_id:     GuildId,
+    guild_id:       GuildId,
     /// [`Song`] struct for current plaing song
-    now_playing:  Mutex<Option<Song>>,
+    now_playing:    Mutex<Option<Song>>,
     /// repeat mode of the player
-    repeat_mode:  Mutex<Repeat>,
+    repeat_mode:    Mutex<Repeat>,
     /// [`Song`] queue for the songs will be played
-    song_queue:   Mutex<VecDeque<Song>>,
+    song_queue:     Mutex<VecDeque<Song>>,
     /// [`Song`] queue for the songs already played before
-    repeat_queue: Mutex<VecDeque<Song>>,
+    repeat_queue:   Mutex<VecDeque<Song>>,
+    /// [`reqwest::Client`] for making requests
+    reqwest_client: Client,
 }
 
 impl Player {
     /// Creats new [`Player`] struct.
-    pub fn new(guild_id: GuildId) -> Self {
+    pub fn new(guild_id: GuildId, reqwest_client: Client) -> Self {
         Self {
             guild_id,
             now_playing: Mutex::new(None),
             repeat_mode: Mutex::new(Repeat::Off),
             song_queue: Mutex::new(VecDeque::with_capacity(100)),
             repeat_queue: Mutex::new(VecDeque::with_capacity(100)),
+            reqwest_client,
         }
     }
 
@@ -175,7 +179,7 @@ impl Player {
             .lock()
             .await
             // TODO: remoce this unwrap
-            .play_input(next_song.get_input().await.unwrap())
+            .play_input(next_song.get_input(&self.reqwest_client).await.unwrap())
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
             })

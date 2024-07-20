@@ -14,10 +14,10 @@ colored = "2.1"
 clap = { version = "4.5", features = ["derive"], optional = true }
 directories = { version = "5.0", optional = true }
 dotenvy = { version = "0.15", optional = true }
-reqwest = { version = "0.11", features = ["json"] }
 json = "0.12"
 poise = "0.6"
 rand = "0.8"
+reqwest = { version = "0.11", features = ["json", "cookies"] }
 serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0", optional = true }
 serenity = { version = "0.12", default-features = false, features = [
