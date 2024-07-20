@@ -22,6 +22,5 @@ $ ./target/release/discord-bot
 
 ## Dependencies
 - [Rust](https://www.rust-lang.org/)
-- [FFmpeg](https://www.ffmpeg.org/download.html)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - [Opus](https://opus-codec.org/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
