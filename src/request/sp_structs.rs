@@ -15,6 +15,15 @@ pub struct SpotifyError {
     pub message: String,
 }
 
+/// API key response from Spotify.
+#[derive(Deserialize, Serialize)]
+pub struct SpotifyTokenResponse {
+    /// Access token.
+    pub access_token: String,
+    /// Time to expire.
+    pub expires_in:   u64,
+}
+
 /// General track response from Spotify.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTrackResponse {
