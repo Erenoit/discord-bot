@@ -9,20 +9,14 @@
 mod commands;
 mod event;
 
-use std::sync::Arc;
-
 use event::Handler;
-use reqwest::{Client, Url};
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
 use songbird::serenity::SerenityInit;
 
 #[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
-use crate::cookie_jar::CookieJar;
-
-/// User agent to use in requests
-const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
+use crate::request::create_reqwest_client;
 
 /// The main struct for the bot.
 ///
@@ -48,7 +42,7 @@ impl Bot {
             .await
             .expect("Couldn't setup the database");
 
-        let reqwest_client = Self::create_reqwest_client();
+        let reqwest_client = create_reqwest_client();
         // Somehow it is moved inside the closure so, we need to clone it beforehand.
         let req_cli_clone = reqwest_client.clone();
 
@@ -146,38 +140,6 @@ impl Bot {
                 .await
                 .expect("Couldn't start the Client");
         }
-    }
-
-    /// Creates a new instance of [`reqwest::Client`] for global use.
-    fn create_reqwest_client() -> Client {
-        use reqwest::cookie::CookieStore;
-
-        let reqwest_client_builder = Client::builder()
-            .user_agent(USER_AGENT)
-            .use_rustls_tls()
-            .https_only(true);
-
-        let cookie_jar = CookieJar::new();
-
-        let url = "https://www.youtube.com"
-            .parse::<Url>()
-            .expect("Always works");
-
-        let yt_cookies = get_config!().youtube_cookies();
-        let saved_cookies = cookie_jar.cookies(&url);
-        if !yt_cookies.is_empty() && (saved_cookies.is_none() || saved_cookies.unwrap() == "") {
-            let c = yt_cookies
-                .split("; ")
-                .map(|cookie| reqwest::header::HeaderValue::from_str(cookie).expect("Cannot fail"))
-                .collect::<Vec<_>>();
-            cookie_jar.set_cookies(&mut c.iter(), &url);
-        }
-
-        let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_jar));
-
-        reqwest_client_builder
-            .build()
-            .expect("TLS backend cannot be initialized")
     }
 }
 

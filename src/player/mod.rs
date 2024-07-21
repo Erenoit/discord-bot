@@ -10,9 +10,6 @@
 
 mod event;
 mod song;
-#[cfg(feature = "spotify")]
-mod sp_structs;
-mod yt_structs;
 
 use std::{
     collections::VecDeque,

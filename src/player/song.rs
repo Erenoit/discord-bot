@@ -9,7 +9,7 @@ use songbird::input::{HttpRequest, Input};
 use tokio::process::Command;
 
 #[cfg(feature = "spotify")]
-use crate::player::sp_structs::{
+use crate::request::sp_structs::{
     SpotifyAlbumResponse,
     SpotifyArtistTopTracksResponse,
     SpotifyError,
@@ -18,7 +18,7 @@ use crate::player::sp_structs::{
 };
 use crate::{
     bot::Context,
-    player::yt_structs::{
+    request::yt_structs::{
         Format,
         YoutubePlayer,
         YoutubePlaylist,
