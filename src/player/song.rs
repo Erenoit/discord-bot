@@ -77,15 +77,15 @@ impl Song {
         song: String,
     ) -> Result<VecDeque<Self>> {
         let song = song.trim().to_owned();
-        let user_name = ctx.author().name.clone();
+        let user_name = &ctx.author().name;
 
         if song.starts_with("https://") || song.starts_with("http://") {
             // TODO: short youtube links
             if song.contains("youtube") {
-                Self::youtube(reqwest_client, song, user_name).await
+                Self::youtube(reqwest_client, song, &user_name).await
             } else if cfg!(feature = "spotify") && song.contains("spotify") {
                 if get_config!().is_spotify_initialized() {
-                    Self::spotify(reqwest_client, song, user_name).await
+                    Self::spotify(reqwest_client, song, &user_name).await
                 } else {
                     message!(error, ctx, ("Spotify is not initialized"); true);
                     Err(anyhow!("Spotify is not initialized"))
@@ -95,7 +95,7 @@ impl Song {
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            Self::search(ctx, reqwest_client, song, user_name).await
+            Self::search(ctx, reqwest_client, song, &user_name).await
         }
     }
 
@@ -108,16 +108,16 @@ impl Song {
         ctx: &Context<'_>,
         reqwest_client: &Client,
         song: String,
-        user_name: String,
+        user_name: &str,
     ) -> Result<VecDeque<Self>> {
-        let res_new = Self::search_new(ctx, reqwest_client, &song, &user_name).await;
+        let res_new = Self::search_new(ctx, reqwest_client, &song, user_name).await;
 
         if let Ok(songs) = res_new {
             return Ok(songs);
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
-        if let Ok(res) = Self::search_old(ctx, &song, &user_name).await {
+        if let Ok(res) = Self::search_old(ctx, &song, user_name).await {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp";
@@ -161,9 +161,9 @@ impl Song {
             .flatten()
             .filter_map(|item| item.video_renderer)
             .take(get_config!().youtube_search_count().into())
-            .map(|video| {
+            .map(|mut video| {
                 (
-                    video.title.runs[0].text.clone(),
+                    std::mem::take(&mut video.title.runs[0].text),
                     video.video_id,
                     video.length_text.simple_text,
                 )
@@ -271,16 +271,16 @@ impl Song {
     async fn youtube(
         reqwest_client: &Client,
         song: String,
-        user_name: String,
+        user_name: &str,
     ) -> Result<VecDeque<Self>> {
-        let res_new = Self::youtube_new(reqwest_client, &song, &user_name).await;
+        let res_new = Self::youtube_new(reqwest_client, &song, user_name).await;
 
         if let Ok(songs) = res_new {
             return Ok(songs);
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
-        if let Ok(res_old) = Self::youtube_old(&song, &user_name).await {
+        if let Ok(res_old) = Self::youtube_old(&song, user_name).await {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp";
@@ -383,10 +383,11 @@ impl Song {
                 .collect::<Vec<_>>();
 
             song_list.reserve(playlist_content.len());
-            playlist_content.into_iter().for_each(|video| {
+            playlist_content.into_iter().for_each(|mut video| {
                 song_list.push_back(Song {
-                    // FIXME: unnecessary clone
-                    title:     video.playlist_video_renderer.title.runs[0].text.clone(),
+                    title:     std::mem::take(
+                        &mut video.playlist_video_renderer.title.runs[0].text,
+                    ),
                     id:        video.playlist_video_renderer.video_id,
                     duration:  video.playlist_video_renderer.length_text.simple_text,
                     user_name: user_name.to_owned(),
@@ -448,7 +449,7 @@ impl Song {
     pub async fn spotify(
         reqwest_client: &Client,
         song: String,
-        user_name: String,
+        user_name: &str,
     ) -> Result<VecDeque<Self>> {
         let Some(token) = get_config!().spotify_token().await else {
             return Err(anyhow!("Spotify token is not initialized"));
@@ -532,7 +533,7 @@ impl Song {
                 title:     sliced.next().expect("Has 3 elements").to_owned(),
                 id:        sliced.next().expect("Has 3 elements").to_owned(),
                 duration:  sliced.next().expect("Has 3 elements").to_owned(),
-                user_name: user_name.clone(),
+                user_name: user_name.to_owned(),
             }
         })
         .collect())
@@ -655,16 +656,16 @@ impl Song {
     }
 
     /// Get title of the song.
-    pub fn title(&self) -> String { self.title.clone() }
+    pub fn title(&self) -> &str { &self.title }
 
     /// Get `YouTube` URL of the song.
-    pub fn id(&self) -> String { self.id.clone() }
+    pub fn id(&self) -> &str { &self.id }
 
     /// Get duration of the song.
-    pub fn duration(&self) -> String { self.duration.clone() }
+    pub fn duration(&self) -> &str { &self.duration }
 
     /// Get `Discord` user name of the person who requested the song.
-    pub fn user_name(&self) -> String { self.user_name.clone() }
+    pub fn user_name(&self) -> &str { &self.user_name }
 }
 
 impl Display for Song {
