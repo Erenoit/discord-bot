@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 
 #[cfg(not(feature = "config_file"))]
 use crate::config::Node;
-use crate::request::sp_structs::SpotifyTokenResponse;
+use crate::request::sp_structs::SpotifyToken;
 
 /// `Spotify` configuration.
 #[non_exhaustive]
@@ -95,8 +95,7 @@ impl SpotifyConfig {
 
         match res {
             Ok(r) =>
-                if let Ok(j) = sonic_rs::from_str::<SpotifyTokenResponse>(&r.text().await.unwrap())
-                {
+                if let Ok(j) = sonic_rs::from_str::<SpotifyToken>(&r.text().await.unwrap()) {
                     *write_lock_last_refresh = Some(Instant::now());
                     *write_lock_token = Some(j.access_token);
                     *write_lock_expire_time = j.expires_in;

@@ -8,110 +8,72 @@
 
 use serde::{Deserialize, Serialize};
 
-/// General error response from Spotify.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyError {
-    /// Error message.
     pub message: String,
 }
 
-/// API key response from Spotify.
 #[derive(Deserialize, Serialize)]
-pub struct SpotifyTokenResponse {
-    /// Access token.
+pub struct SpotifyToken {
     pub access_token: String,
-    /// Time to expire.
     pub expires_in:   u64,
 }
 
-/// General track response from Spotify.
 #[derive(Deserialize, Serialize)]
-pub struct SpotifyTrackResponse {
-    /// Is the track explicit?
+pub struct SpotifyTrack {
     pub explicit: bool,
-    /// Track name.
     pub name:     String,
 }
 
-/// General playlist response from Spotify.
 #[derive(Deserialize, Serialize)]
-pub struct SpotifyPlaylistResponse {
-    /// Playlist name.
+pub struct SpotifyPlaylist {
     pub name:   String,
-    /// Playlist owner.
     pub owner:  SpotifyOwner,
-    /// Playlist tracks.
     pub tracks: SpotifyTracks1,
 }
 
-/// General album response from Spotify.
 #[derive(Deserialize, Serialize)]
-pub struct SpotifyAlbumResponse {
-    /// Album name.
+pub struct SpotifyAlbum {
     pub name:   String,
-    /// Album tracks.
     pub tracks: SpotifyTracks2,
 }
 
-/// General artist response from Spotify.
 #[derive(Deserialize, Serialize)]
-pub struct SpotifyArtistTopTracksResponse {
-    /// Artist top tracks.
+pub struct SpotifyArtistTopTracks {
     pub tracks: Vec<SpotifyTrack2>,
 }
 
-/// Owner of the track/playlist/album.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyOwner {
-    /// Owner display name.
     pub display_name: Option<String>,
 }
 
-/// Track list are returned like this when requested from a playlist URL.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTracks1 {
-    /// List of tracks.
     pub items:    Vec<SpotifyTrack1>,
-    /// Number of tracks.
     pub limit:    usize,
-    /// Next URL.
     pub next:     Option<String>,
-    /// Offset.
     pub offset:   usize,
-    /// Previous URL.
     pub previous: Option<String>,
-    /// Total number of tracks.
     pub total:    usize,
 }
 
-/// Track list are returned like this when requested from a album URL.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTracks2 {
-    /// List of tracks.
     pub items:    Vec<SpotifyTrack2>,
-    /// Number of tracks.
     pub limit:    usize,
-    /// Next URL.
     pub next:     Option<String>,
-    /// Offset.
     pub offset:   usize,
-    /// Previous URL.
     pub previous: Option<String>,
-    /// Total number of tracks.
     pub total:    usize,
 }
 
-/// Single track are returned like this when requested from a playlist URL.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTrack1 {
-    /// Track information.
-    pub track: SpotifyTrackResponse,
+    pub track: SpotifyTrack,
 }
 
-/// Single track are returned like this when requested from a album or artist
-/// URL.
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTrack2 {
-    /// Track name.
     pub name: String,
 }

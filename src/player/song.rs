@@ -10,11 +10,11 @@ use tokio::process::Command;
 
 #[cfg(feature = "spotify")]
 use crate::request::sp_structs::{
-    SpotifyAlbumResponse,
-    SpotifyArtistTopTracksResponse,
+    SpotifyAlbum,
+    SpotifyArtistTopTracks,
     SpotifyError,
-    SpotifyPlaylistResponse,
-    SpotifyTrackResponse,
+    SpotifyPlaylist,
+    SpotifyTrack,
 };
 use crate::{
     bot::Context,
@@ -481,11 +481,11 @@ impl Song {
 
         let list = match url_type {
             "tracks" =>
-                iter::once(res.json::<SpotifyTrackResponse>().await?)
+                iter::once(res.json::<SpotifyTrack>().await?)
                     .map(|track| track.name)
                     .collect::<Vec<_>>(),
             "playlists" =>
-                res.json::<SpotifyPlaylistResponse>()
+                res.json::<SpotifyPlaylist>()
                     .await?
                     .tracks
                     .items
@@ -493,7 +493,7 @@ impl Song {
                     .map(|track| track.track.name)
                     .collect::<Vec<_>>(),
             "albums" =>
-                res.json::<SpotifyAlbumResponse>()
+                res.json::<SpotifyAlbum>()
                     .await?
                     .tracks
                     .items
@@ -501,7 +501,7 @@ impl Song {
                     .map(|track| track.name)
                     .collect::<Vec<_>>(),
             "artists" =>
-                res.json::<SpotifyArtistTopTracksResponse>()
+                res.json::<SpotifyArtistTopTracks>()
                     .await?
                     .tracks
                     .into_iter()
