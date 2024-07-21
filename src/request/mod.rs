@@ -1,4 +1,5 @@
 pub mod cookie_jar;
+pub mod reddit_structs;
 #[cfg(feature = "spotify")]
 pub mod sp_structs;
 pub mod yt_structs;
