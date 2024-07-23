@@ -25,5 +25,5 @@ impl Server {
     }
 
     #[cfg(not(feature = "music"))]
-    pub const fn new(_guild_id: GuildId, _reqwest_client: Client) -> Self { Self {} }
+    pub fn new(_guild_id: GuildId, _reqwest_client: Client) -> Self { Self {} }
 }

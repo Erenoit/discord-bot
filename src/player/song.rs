@@ -1,11 +1,15 @@
 //! Song struct and its methods.
 
-use std::{collections::VecDeque, fmt::Display, iter};
+#[cfg(feature = "spotify")]
+use std::iter;
+use std::{collections::VecDeque, fmt::Display};
 
 use anyhow::{anyhow, Result};
+#[cfg(feature = "spotify")]
 use poise::futures_util::future::join_all;
 use reqwest::{Client, Url};
 use songbird::input::{HttpRequest, Input};
+#[cfg(any(feature = "yt-dlp-fallback", feature = "spotify"))]
 use tokio::process::Command;
 
 #[cfg(feature = "spotify")]
@@ -37,6 +41,7 @@ const SP_MARKET: &str = "US";
 
 /// Internal macro for getting id of the `YouTube` video URL. The main purpose
 /// is reducing amount of copy paste code.
+#[allow(unused_macros)]
 macro_rules! get_id {
     ($last_part:expr) => {
         $last_part
@@ -83,12 +88,18 @@ impl Song {
             // TODO: short youtube links
             if song.contains("youtube") {
                 Self::youtube(reqwest_client, song, &user_name).await
-            } else if cfg!(feature = "spotify") && song.contains("spotify") {
+            } else if song.contains("spotify") {
+                #[cfg(feature = "spotify")]
                 if get_config!().is_spotify_initialized() {
                     Self::spotify(reqwest_client, song, &user_name).await
                 } else {
                     message!(error, ctx, ("Spotify is not initialized"); true);
                     Err(anyhow!("Spotify is not initialized"))
+                }
+                #[cfg(not(feature = "spotify"))]
+                {
+                    message!(error, ctx, ("Spotify support is not enabled"); true);
+                    Err(anyhow!("Spotify support is not enabled"))
                 }
             } else {
                 message!(error, ctx, ("Unsupported music source"); true);
@@ -511,6 +522,7 @@ impl Song {
             _ => unreachable!("url_type cannot be anything else"),
         };
 
+        // TODO: use youtube scrapper instead of yt-dlp
         Ok(join_all(list.into_iter().map(|song| {
             Command::new("yt-dlp")
                 .args([
@@ -547,16 +559,18 @@ impl Song {
             return Ok(input);
         }
 
-        if cfg!(feature = "yt-dlp-fallback") {
+        #[cfg(feature = "yt-dlp-fallback")]
+        {
             log!(
                 warn,
                 "new scrapper failed as input generation, falling back to yt-dlp";
                 "{}", (res_new.err().expect("Its already an error"))
             );
             return Ok(self.get_input_old(reqwest_client).await);
-        } else {
-            res_new
         }
+
+        #[cfg(not(feature = "yt-dlp-fallback"))]
+        res_new
     }
 
     /// Sends GET request to `YouTube` as if it was searched in browser and

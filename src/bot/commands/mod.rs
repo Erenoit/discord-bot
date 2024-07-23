@@ -10,6 +10,7 @@
 //! - Others
 
 #[macro_use]
+#[allow(unused_macros)]
 mod macros;
 
 pub mod entertainment;

@@ -6,6 +6,9 @@
 //!
 //! [`CookieStorage`]: reqwest::cookie::CookieStore
 
+#[cfg(not(feature = "database"))]
+use std::sync::Mutex;
+
 use reqwest::{cookie::CookieStore, header::HeaderValue, Url};
 
 #[cfg(feature = "database")]
@@ -17,12 +20,16 @@ use crate::database_tables::KeyValue;
 pub struct CookieJar {
     /// In memory storage for cookies when database is not used.
     #[cfg(not(feature = "database"))]
-    storage: Vec<(String, String, String)>,
+    storage: Mutex<Vec<(String, String, String)>>,
 }
 
 impl CookieJar {
     #[cfg(not(feature = "database"))]
-    pub fn new() -> Self { Self { storage: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            storage: Mutex::new(Vec::new()),
+        }
+    }
 
     #[cfg(feature = "database")]
     pub fn new() -> Self { Self {} }
@@ -140,7 +147,7 @@ impl CookieStore for CookieJar {
             })
             .filter_map(|header| header.split_once('='))
             .for_each(|(key, value)| {
-                self.storage.push((
+                self.storage.lock().unwrap().push((
                     url.to_string(),
                     key.to_string(),
                     value.to_string(),
@@ -151,24 +158,30 @@ impl CookieStore for CookieJar {
     fn cookies(&self, url: &Url) -> Option<HeaderValue> {
         let url = url.host_str().unwrap();
 
-        Ok(
-            self.storage.iter().filter(|(site, ..)| site == url).fold(
-                String::new(),
-                |mut acc, (_, key, value)| {
-                    let adding_length = key.len() + value.len() + 3;
+        Some(
+            HeaderValue::from_str(
+                &self
+                    .storage
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|(site, ..)| site == url)
+                    .fold(String::new(), |mut acc, (_, key, value)| {
+                        let adding_length = key.len() + value.len() + 3;
 
-                    acc.reserve(adding_length);
-                    if !acc.is_empty() {
-                        acc.push_str("; ");
-                    }
+                        acc.reserve(adding_length);
+                        if !acc.is_empty() {
+                            acc.push_str("; ");
+                        }
 
-                    acc.push_str(key);
-                    acc.push('=');
-                    acc.push_str(value);
+                        acc.push_str(key);
+                        acc.push('=');
+                        acc.push_str(value);
 
-                    acc
-                },
-            ),
+                        acc
+                    }),
+            )
+            .unwrap(),
         )
     }
 }

@@ -36,9 +36,7 @@ mod spotify;
 #[cfg(feature = "music")]
 mod youtube;
 
-use std::collections::HashMap;
-#[cfg(feature = "music")]
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 #[cfg(feature = "config_file")]
 use std::{fs, io::Write};
 
@@ -102,6 +100,7 @@ impl Config {
     /// Generate [`Config`] from config sources
     pub fn generate() -> Result<Self> {
         #[cfg(feature = "cmd")]
+        #[allow(unused_variables)]
         let cmd_arguments = CMDArguments::parse();
 
         #[cfg(any(feature = "config_file", feature = "database"))]
