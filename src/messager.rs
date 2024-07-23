@@ -226,7 +226,7 @@ macro_rules! selection_inner {
                 {
                     handle.edit($ctx, poise::reply::CreateReply {
                         content: Some("Interaction timed out.".to_owned()),
-                        components: None,
+                        components: Some(Vec::with_capacity(0)),
                         ..Default::default()
                     }).await.ok();
                     break $n $def_return;
