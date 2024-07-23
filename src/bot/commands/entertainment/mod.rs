@@ -5,4 +5,4 @@ pub mod meme;
 /// sus command.
 pub mod sus;
 /// wtf command.
-pub mod wtf;
+pub mod judge;

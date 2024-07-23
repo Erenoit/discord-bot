@@ -7,7 +7,7 @@ const CROW_OF_JUDGEMENT_BYTES: &'static [u8] = include_bytes!(concat!(
 
 /// Sends crow of judgement
 #[poise::command(slash_command, prefix_command, category = "Entertainment")]
-pub async fn wtf(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn judge(ctx: Context<'_>) -> Result<(), Error> {
     message!(
         file,
         bytes,
