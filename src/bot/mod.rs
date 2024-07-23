@@ -52,6 +52,7 @@ impl Bot {
                 commands::others::register::register(),
                 commands::others::ping::ping(),
                 commands::entertainment::sus::sus(),
+                commands::entertainment::wtf::wtf(),
                 commands::entertainment::meme::meme(),
                 #[cfg(feature = "music")]
                 commands::music::join::join(),
