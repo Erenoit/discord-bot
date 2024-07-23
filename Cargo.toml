@@ -29,7 +29,7 @@ serenity = { version = "0.12", default-features = false, features = [
 ] }
 songbird = { version = "0.4", optional = true }
 sonic-rs = "0.3"
-sqlx = { version = "0.7", features = [
+sqlx = { version = "0.8", features = [
     "macros",
     "migrate",
     "runtime-tokio-rustls",
@@ -37,7 +37,7 @@ sqlx = { version = "0.7", features = [
 ], optional = true }
 symphonia = { version = "0.5", features = ["all-codecs", "all-formats"] }
 taplo = { version = "0.13", optional = true }
-tokio = { version = "1.38", features = [
+tokio = { version = "1.39", features = [
     "macros",
     "rt-multi-thread",
     "parking_lot",
