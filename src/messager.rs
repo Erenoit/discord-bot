@@ -25,10 +25,21 @@
 /// `always_embed` is `true` in `Config`.
 #[macro_export]
 macro_rules! message {
-    (file, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
+    (file, path, $ctx:expr, $message:expr, $($file:expr);+, $ephemeral:expr) => {
         let res = $ctx.send(poise::reply::CreateReply {
             content: Some($message.to_owned()),
             attachments: vec![$(serenity::builder::CreateAttachment::path($file).await.unwrap()),+],
+            ..Default::default()
+        }).await;
+
+        if let Err(why) = res {
+            log!(error, "Couldn't send message with file(s)."; "{why}");
+        }
+    };
+    (file, bytes, $ctx:expr, $message:expr, $($data:expr ; $file_name: expr);+, $ephemeral:expr) => {
+        let res = $ctx.send(poise::reply::CreateReply {
+            content: Some($message.to_owned()),
+            attachments: vec![$(serenity::builder::CreateAttachment::bytes($data, $file_name)),+],
             ..Default::default()
         }).await;
 
