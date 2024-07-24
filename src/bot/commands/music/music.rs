@@ -13,9 +13,13 @@ use crate::{
     aliases("m"),
     category = "Music",
     guild_only,
-    subcommands("add", "remove", "list")
+    subcommands("play", "add", "remove", "list"),
+    subcommand_required
 )]
-pub async fn music(
+pub async fn music(_ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
+
+#[poise::command(slash_command, prefix_command)]
+pub async fn play(
     ctx: Context<'_>,
     #[description = "Keyword for wanted video/playlist"] keyword: String,
 ) -> Result<(), Error> {
