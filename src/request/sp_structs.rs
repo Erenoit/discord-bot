@@ -23,6 +23,7 @@ pub struct SpotifyToken {
 pub struct SpotifyTrack {
     pub explicit: bool,
     pub name:     String,
+    pub artists:  Vec<SpotifyArtist>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -75,5 +76,11 @@ pub struct SpotifyTrack1 {
 
 #[derive(Deserialize, Serialize)]
 pub struct SpotifyTrack2 {
+    pub name:    String,
+    pub artists: Vec<SpotifyArtist>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct SpotifyArtist {
     pub name: String,
 }

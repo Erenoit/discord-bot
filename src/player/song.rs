@@ -492,39 +492,60 @@ impl Song {
         let res = res.text().await?;
 
         let list = match url_type {
-            "tracks" => vec![sonic_rs::from_str::<SpotifyTrack>(&res)?.name],
+            "tracks" =>
+                vec![sonic_rs::from_str::<SpotifyTrack>(&res).map(|mut track| {
+                    (
+                        std::mem::take(&mut track.artists[0].name),
+                        track.name,
+                    )
+                })?],
             "playlists" =>
                 sonic_rs::from_str::<SpotifyPlaylist>(&res)?
                     .tracks
                     .items
                     .into_iter()
-                    .map(|track| track.track.name)
+                    .map(|mut track| {
+                        (
+                            std::mem::take(&mut track.track.artists[0].name),
+                            track.track.name,
+                        )
+                    })
                     .collect::<Vec<_>>(),
             "albums" =>
                 sonic_rs::from_str::<SpotifyAlbum>(&res)?
                     .tracks
                     .items
                     .into_iter()
-                    .map(|track| track.name)
+                    .map(|mut track| {
+                        (
+                            std::mem::take(&mut track.artists[0].name),
+                            track.name,
+                        )
+                    })
                     .collect::<Vec<_>>(),
             "artists" =>
                 sonic_rs::from_str::<SpotifyArtistTopTracks>(&res)?
                     .tracks
                     .into_iter()
-                    .map(|track| track.name)
+                    .map(|mut track| {
+                        (
+                            std::mem::take(&mut track.artists[0].name),
+                            track.name,
+                        )
+                    })
                     .collect::<Vec<_>>(),
             _ => unreachable!("url_type cannot be anything else"),
         };
 
         // TODO: use youtube scrapper instead of yt-dlp
-        Ok(join_all(list.into_iter().map(|song| {
+        Ok(join_all(list.into_iter().map(|(artist, song)| {
             Command::new("yt-dlp")
                 .args([
                     "--no-playlist",
                     "--get-title",
                     "--get-id",
                     "--get-duration",
-                    &format!("ytsearch1:{song} lyrics"),
+                    &format!("ytsearch1:{artist} - {song} lyrics"),
                 ])
                 .output()
         }))
