@@ -5,7 +5,7 @@ const IMPOSTER_DOG: &'static [u8] = include_bytes!(concat!(
     "/images/imposter_dog.jpg"
 ));
 
-/// Sends sus dog.
+/// Sends sus dog
 #[poise::command(slash_command, prefix_command, category = "Entertainment")]
 pub async fn sus(ctx: Context<'_>) -> Result<(), Error> {
     message!(

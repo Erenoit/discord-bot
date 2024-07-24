@@ -3,7 +3,7 @@ use crate::{
     request::reddit_structs::{RedditPost, RedditPostData2},
 };
 
-/// Sends random meme from r/memes.
+/// Sends random meme from r/memes
 #[poise::command(slash_command, prefix_command, category = "Entertainment")]
 pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let link = "https://www.reddit.com/r/memes/random/.json";

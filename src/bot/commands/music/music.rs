@@ -6,7 +6,7 @@ use crate::{
     player::Song,
 };
 
-/// Adds song from database to queue
+/// Music bookmark commands
 #[poise::command(
     slash_command,
     prefix_command,
@@ -18,6 +18,7 @@ use crate::{
 )]
 pub async fn music(_ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
+/// Adds song from bookmarks to queue
 #[poise::command(slash_command, prefix_command)]
 pub async fn play(
     ctx: Context<'_>,
@@ -61,7 +62,7 @@ pub async fn play(
     Ok(())
 }
 
-/// Adds new keyword to music
+/// Adds new music bookmark
 #[poise::command(slash_command, prefix_command)]
 pub async fn add(
     ctx: Context<'_>,
@@ -136,7 +137,7 @@ pub async fn add(
     Ok(())
 }
 
-/// Removes a keyword from music
+/// Removes a music bookmark
 #[poise::command(slash_command, prefix_command)]
 pub async fn remove(
     ctx: Context<'_>,
@@ -171,7 +172,7 @@ pub async fn remove(
     Ok(())
 }
 
-/// Lists all available keyword-URL pairs
+/// Lists all available music bookmarks
 #[poise::command(slash_command, prefix_command)]
 pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
