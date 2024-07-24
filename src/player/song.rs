@@ -1,7 +1,5 @@
 //! Song struct and its methods.
 
-#[cfg(feature = "spotify")]
-use std::iter;
 use std::{collections::VecDeque, fmt::Display};
 
 use anyhow::{anyhow, Result};
@@ -487,34 +485,30 @@ impl Song {
         };
 
         if !res.status().is_success() {
-            log!(error, "Spotify data fetch failed:"; "{}", (res.json::<SpotifyError>().await?.message));
+            log!(error, "Spotify data fetch failed:"; "{}", (sonic_rs::from_str::<SpotifyError>(&res.text().await?)?.message));
             return Err(anyhow!("Couldn't connect to Spotify"));
         }
 
+        let res = res.text().await?;
+
         let list = match url_type {
-            "tracks" =>
-                iter::once(res.json::<SpotifyTrack>().await?)
-                    .map(|track| track.name)
-                    .collect::<Vec<_>>(),
+            "tracks" => vec![sonic_rs::from_str::<SpotifyTrack>(&res)?.name],
             "playlists" =>
-                res.json::<SpotifyPlaylist>()
-                    .await?
+                sonic_rs::from_str::<SpotifyPlaylist>(&res)?
                     .tracks
                     .items
                     .into_iter()
                     .map(|track| track.track.name)
                     .collect::<Vec<_>>(),
             "albums" =>
-                res.json::<SpotifyAlbum>()
-                    .await?
+                sonic_rs::from_str::<SpotifyAlbum>(&res)?
                     .tracks
                     .items
                     .into_iter()
                     .map(|track| track.name)
                     .collect::<Vec<_>>(),
             "artists" =>
-                res.json::<SpotifyArtistTopTracks>()
-                    .await?
+                sonic_rs::from_str::<SpotifyArtistTopTracks>(&res)?
                     .tracks
                     .into_iter()
                     .map(|track| track.name)
