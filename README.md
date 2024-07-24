@@ -1,7 +1,10 @@
 # The Bot
-**The Bot** is a basic music bot for [Discord](https://discord.com/) written in [Rust](https://www.rust-lang.org/). If you want to use old, [TypeScript](https://www.typescriptlang.org/) implementation use [old-typescript](https://gitlab.com/Erenoit/discord-bot/-/tree/old-typescript) branch.
+
+**The Bot** is a basic music bot for [Discord] written in [Rust]. If you want to use old,
+[TypeScript] implementation use [old-typescript] branch.
 
 ## Quick Start
+
 1. Clone this repository:
 ```shell
 $ git clone https://gitlab.com/Erenoit/discord-bot.git
@@ -21,6 +24,13 @@ $ ./target/release/discord-bot
 ```
 
 ## Dependencies
+
 - [Rust](https://www.rust-lang.org/)
 - [Opus](https://opus-codec.org/)
+- [OpenSSL](https://www.openssl.org/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+
+[Discord]: https://discord.com/
+[Rust]: https://www.rust-lang.org/
+[TypeScript]: https://www.typescriptlang.org/
+[old-typescript]: https://gitlab.com/Erenoit/discord-bot/-/tree/old-typescript
