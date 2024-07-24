@@ -17,7 +17,7 @@ pub(super) struct YouTubeConfig {
     search_count:   u8,
     /// Whether to allow age restricted videos.
     age_restricted: bool,
-    /// Cookies for a YouTube account.
+    /// Cookies for a `YouTube` account.
     cookies:        String,
 }
 
@@ -42,6 +42,6 @@ impl YouTubeConfig {
     /// Returns whether to allow age restricted videos.
     pub const fn age_restricted(&self) -> bool { self.age_restricted }
 
-    /// Returns the cookies for a YouTube account.
+    /// Returns the cookies for a `YouTube` account.
     pub fn cookies(&self) -> &str { self.cookies.as_ref() }
 }

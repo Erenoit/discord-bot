@@ -20,11 +20,10 @@
 //! `new()` is to make it clear that it is not a normal constructor.
 
 /// Command line arguments for the bot
-#[cfg(feature = "cmd")]
+#[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
 mod cmd_arguments;
 mod defaults;
 #[macro_use]
-#[allow(unused_macros)]
 mod macros;
 
 #[cfg(feature = "database")]
@@ -43,7 +42,7 @@ use std::{fs, io::Write};
 #[cfg(any(feature = "config_file", feature = "database"))]
 use anyhow::anyhow;
 use anyhow::Result;
-#[cfg(feature = "cmd")]
+#[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
 use clap::Parser;
 #[cfg(any(feature = "config_file", feature = "database"))]
 use directories::ProjectDirs;
@@ -54,7 +53,7 @@ use songbird::Songbird;
 use sqlx::SqlitePool;
 use tokio::sync::RwLock;
 
-#[cfg(feature = "cmd")]
+#[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
 use crate::config::cmd_arguments::CMDArguments;
 #[cfg(feature = "music")]
 use crate::config::youtube::YouTubeConfig;
@@ -99,8 +98,7 @@ pub struct Config {
 impl Config {
     /// Generate [`Config`] from config sources
     pub fn generate() -> Result<Self> {
-        #[cfg(feature = "cmd")]
-        #[allow(unused_variables)]
+        #[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
         let cmd_arguments = CMDArguments::parse();
 
         #[cfg(any(feature = "config_file", feature = "database"))]
@@ -300,7 +298,7 @@ impl Config {
     /// [bot_command]: crate::bot::commands
     #[cfg(feature = "database")]
     pub const fn database_pool(&self) -> Option<&SqlitePool> {
-        if let Some(db) = &self.database {
+        if let Some(ref db) = self.database {
             Some(db.pool())
         } else {
             None
@@ -310,7 +308,7 @@ impl Config {
     /// Get database URL
     #[cfg(feature = "database")]
     pub const fn database_url(&self) -> Option<&String> {
-        if let Some(db) = &self.database {
+        if let Some(ref db) = self.database {
             Some(db.url())
         } else {
             None
@@ -320,7 +318,7 @@ impl Config {
     /// Run database migrations to setup database
     #[cfg(feature = "database")]
     pub async fn run_database_migrations(&self) -> Result<()> {
-        if let Some(db) = &self.database {
+        if let Some(ref db) = self.database {
             db.run_migrations().await?;
         }
 

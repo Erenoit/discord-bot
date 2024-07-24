@@ -1,6 +1,6 @@
 use crate::bot::commands::{Context, Error};
 
-const CROW_OF_JUDGEMENT_BYTES: &'static [u8] = include_bytes!(concat!(
+const CROW_OF_JUDGEMENT_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/images/crow_of_judgement.jpg",
 ));

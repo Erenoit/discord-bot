@@ -175,8 +175,12 @@ impl Player {
         call_mutex
             .lock()
             .await
-            // TODO: remoce this unwrap
-            .play_input(next_song.get_input(&self.reqwest_client).await.unwrap())
+            .play_input(
+                next_song
+                    .get_input(&self.reqwest_client)
+                    .await
+                    .expect("TODO: handle error"),
+            )
             .add_event(Event::Track(TrackEvent::End), SongEnd {
                 guild_id: self.guild_id,
             })
@@ -209,13 +213,11 @@ impl Player {
     }
 
     /// Sends song in [`Player::now_playing`] to [`Player::repeat_queue`].
+    #[expect(clippy::significant_drop_in_scrutinee, reason = "False positive")]
     pub async fn move_to_repeat_queue(&self) {
         // TODO: make now_playing None
-        if self.now_playing.lock().await.is_some() {
-            self.repeat_queue
-                .lock()
-                .await
-                .push_back(self.now_playing.lock().await.as_ref().unwrap().clone());
+        if let Some(ref playing) = *self.now_playing.lock().await {
+            self.repeat_queue.lock().await.push_back(playing.clone());
         }
     }
 
@@ -231,7 +233,6 @@ impl Player {
     /// For more information: <https://www.wikiwand.com/en/Fisher%E2%80%93Yates_shuffle>
     pub async fn shuffle_song_queue(&self) {
         let mut queue = self.song_queue.lock().await;
-        #[allow(clippy::significant_drop_in_scrutinee)]
         for i in 0 ..= queue.len() - 2 {
             let j = rand::random::<usize>() % (queue.len() - i) + i;
             queue.swap(i, j);
@@ -240,12 +241,12 @@ impl Player {
 
     // TODO: send queue with pages and let user to change pages with buttons
     /// Sends message contains queue information.
-    #[allow(clippy::significant_drop_tightening)]
+    #[expect(clippy::significant_drop_tightening, reason = "False positive")]
     pub async fn print_queue(&self, ctx: &Context<'_>) {
-        if self.now_playing.lock().await.is_none() {
+        let Some(ref playing) = *self.now_playing.lock().await else {
             message!(error, ctx, ("Nothings playing :unamused:"); true);
             return;
-        }
+        };
 
         let mut s = String::with_capacity(1024);
         let s_queue = self.song_queue.lock().await;
@@ -274,12 +275,7 @@ impl Player {
             num += 1;
         }
 
-        Self::add_to_queue_string(
-            &mut s,
-            self.now_playing.lock().await.as_ref().unwrap(),
-            num,
-            true,
-        );
+        Self::add_to_queue_string(&mut s, playing, num, true);
         num += 1;
 
         for i in 0 .. after {
@@ -358,20 +354,20 @@ impl FromStr for Repeat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "off" => Ok(Repeat::Off),
-            "one" => Ok(Repeat::One),
-            "all" => Ok(Repeat::All),
-            _ => return Err(std::io::ErrorKind::InvalidInput),
+            "off" => Ok(Self::Off),
+            "one" => Ok(Self::One),
+            "all" => Ok(Self::All),
+            _ => Err(std::io::ErrorKind::InvalidInput),
         }
     }
 }
 
 impl Display for Repeat {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let s = match self {
-            Repeat::Off => "Off",
-            Repeat::One => "One",
-            Repeat::All => "All",
+        let s = match *self {
+            Self::Off => "Off",
+            Self::One => "One",
+            Self::All => "All",
         };
 
         write!(f, "{}", s)?;

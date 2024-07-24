@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use poise::futures_util::future::join_all;
 use reqwest::{Client, Url};
 use songbird::input::{HttpRequest, Input};
-#[cfg(any(feature = "yt-dlp-fallback", feature = "spotify"))]
+#[cfg(feature = "yt-dlp-fallback")]
 use tokio::process::Command;
 
 #[cfg(feature = "spotify")]
@@ -39,7 +39,7 @@ const SP_MARKET: &str = "US";
 
 /// Internal macro for getting id of the `YouTube` video URL. The main purpose
 /// is reducing amount of copy paste code.
-#[allow(unused_macros)]
+#[cfg(feature = "spotify")]
 macro_rules! get_id {
     ($last_part:expr) => {
         $last_part
@@ -60,7 +60,7 @@ macro_rules! get_id {
 pub struct Song {
     /// Title of the song.
     title:     String,
-    /// YouTube video ID of the song.
+    /// `YouTube` video ID of the song.
     id:        String,
     /// Duration of the song.
     duration:  String,
@@ -85,11 +85,11 @@ impl Song {
         if song.starts_with("https://") || song.starts_with("http://") {
             // TODO: short youtube links
             if song.contains("youtube") {
-                Self::youtube(reqwest_client, song, &user_name).await
+                Self::youtube(reqwest_client, song, user_name).await
             } else if song.contains("spotify") {
                 #[cfg(feature = "spotify")]
                 if get_config!().is_spotify_initialized() {
-                    Self::spotify(ctx, reqwest_client, song, &user_name).await
+                    Self::spotify(ctx, reqwest_client, song, user_name).await
                 } else {
                     message!(error, ctx, ("Spotify is not initialized"); true);
                     Err(anyhow!("Spotify is not initialized"))
@@ -105,14 +105,7 @@ impl Song {
             }
         } else {
             let search_count = get_config!().youtube_search_count();
-            Self::search(
-                ctx,
-                reqwest_client,
-                song,
-                &user_name,
-                search_count,
-            )
-            .await
+            Self::search(ctx, reqwest_client, song, user_name, search_count).await
         }
     }
 
@@ -180,10 +173,14 @@ impl Song {
 
         let res = reqwest_client.get(url).send().await?.text().await?;
 
-        let mut search_res = &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
+        let mut search_res = &res[res
+            .find("ytInitialData")
+            .ok_or_else(|| anyhow!("Parse error"))?
             + "ytInitialData = ".len() ..];
-        search_res =
-            &search_res[.. search_res.find("</script>").ok_or(anyhow!("Parse error"))? - ";".len()];
+        search_res = &search_res[.. search_res
+            .find("</script>")
+            .ok_or_else(|| anyhow!("Parse error"))?
+            - ";".len()];
 
         let list = sonic_rs::from_str::<YoutubeSearch>(search_res)?
             .contents
@@ -193,8 +190,7 @@ impl Song {
             .contents
             .into_iter()
             .filter_map(|contents| contents.item_section_renderer)
-            .map(|item_renderer| item_renderer.contents)
-            .flatten()
+            .flat_map(|item_renderer| item_renderer.contents)
             .filter_map(|item| item.video_renderer)
             .take(search_count as usize)
             .map(|mut video| {
@@ -218,7 +214,9 @@ impl Song {
                     }
                 })
                 .next()
-                .ok_or(anyhow!("No result found on the YouTube"))?]));
+                .ok_or_else(|| {
+                    anyhow!("No result found on the YouTube")
+                })?]));
         }
 
         let answer = selection!(list, *ctx, "Search", list, true);
@@ -235,6 +233,7 @@ impl Song {
                 })
                 .collect())
         } else if answer != "danger" {
+            #[expect(clippy::pattern_type_mismatch, reason = "Couldn't solve")]
             Ok(VecDeque::from([list
                 .into_iter()
                 .find(|(_, id, _)| id == &answer)
@@ -301,7 +300,9 @@ impl Song {
                     }
                 })
                 .next()
-                .ok_or(anyhow!("No result found on the YouTube"))?]));
+                .ok_or_else(|| {
+                    anyhow!("No result found on the YouTube")
+                })?]));
         }
 
         let answer = selection!(list, *ctx, "Search", list, true);
@@ -375,48 +376,53 @@ impl Song {
 
         if song.contains("/watch?") {
             if song.contains("&list=") {
-                let yt_initial_data =
-                    &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
-                        + "ytInitialData = ".len() ..];
+                let yt_initial_data = &res[res
+                    .find("ytInitialData")
+                    .ok_or_else(|| anyhow!("Parse error"))?
+                    + "ytInitialData = ".len() ..];
                 let yt_initial_data = &yt_initial_data[.. yt_initial_data
                     .find("</script>")
-                    .ok_or(anyhow!("Parse error"))?
+                    .ok_or_else(|| anyhow!("Parse error"))?
                     - ";".len()];
 
-                let playlist_content = sonic_rs::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
-                    .contents
-                    .two_column_watch_next_results
-                    .playlist
-                    .playlist
-                    .contents;
-
-                song_list.reserve(playlist_content.len());
-                playlist_content.into_iter().for_each(|video| {
-                    song_list.push_back(Song {
-                        title:     video.playlist_panel_video_renderer.title.simple_text,
-                        id:        video
-                            .playlist_panel_video_renderer
-                            .navigation_endpoint
-                            .watch_endpoint
-                            .video_id,
-                        duration:  video.playlist_panel_video_renderer.length_text.simple_text,
-                        user_name: user_name.to_owned(),
-                    });
-                });
+                song_list.extend(
+                    sonic_rs::from_str::<YoutubeVideoPlaylist>(yt_initial_data)?
+                        .contents
+                        .two_column_watch_next_results
+                        .playlist
+                        .playlist
+                        .contents
+                        .into_iter()
+                        .map(|video| {
+                            Self {
+                                title:     video.playlist_panel_video_renderer.title.simple_text,
+                                id:        video
+                                    .playlist_panel_video_renderer
+                                    .navigation_endpoint
+                                    .watch_endpoint
+                                    .video_id,
+                                duration:  video
+                                    .playlist_panel_video_renderer
+                                    .length_text
+                                    .simple_text,
+                                user_name: user_name.to_owned(),
+                            }
+                        }),
+                );
             } else {
                 let yt_initial_player_response = &res[res
                     .find("ytInitialPlayerResponse")
-                    .ok_or(anyhow!("Parse error"))?
+                    .ok_or_else(|| anyhow!("Parse error"))?
                     + "ytInitialPlayerResponse = ".len() ..];
                 let yt_initial_player_response = &yt_initial_player_response
                     [.. yt_initial_player_response
                         .find(";var")
-                        .ok_or(anyhow!("Parse error"))?];
+                        .ok_or_else(|| anyhow!("Parse error"))?];
 
                 let video_details =
                     sonic_rs::from_str::<YoutubeVideo>(yt_initial_player_response)?.video_details;
 
-                song_list.push_back(Song {
+                song_list.push_back(Self {
                     title:     video_details.title,
                     id:        video_details.video_id,
                     duration:  video_details.length_seconds,
@@ -426,47 +432,43 @@ impl Song {
 
             return Ok(song_list);
         } else if song.contains("/playlist?") {
-            let yt_initial_data =
-                &res[res.find("ytInitialData").ok_or(anyhow!("Parse error"))?
-                    + "ytInitialData = ".len() ..];
+            let yt_initial_data = &res[res
+                .find("ytInitialData")
+                .ok_or_else(|| anyhow!("Parse error"))?
+                + "ytInitialData = ".len() ..];
             let yt_initial_data = &yt_initial_data[.. yt_initial_data
                 .find("</script>")
-                .ok_or(anyhow!("Parse error"))?
+                .ok_or_else(|| anyhow!("Parse error"))?
                 - ";".len()];
 
-            let playlist_content = sonic_rs::from_str::<YoutubePlaylist>(yt_initial_data)?
-                .contents
-                .two_column_browse_results_renderer
-                .tabs
-                .into_iter()
-                .filter_map(|tab| tab.tab_renderer)
-                .map(|tab_renderer| tab_renderer.content.section_list_renderer.contents)
-                .flatten()
-                .filter_map(|contents| contents.item_section_renderer)
-                .map(|renderer| renderer.contents)
-                .flatten()
-                .filter_map(|content| content.playlist_video_list_renderer)
-                .map(|renderer| renderer.contents)
-                .flatten()
-                // FIXME: probably unnecessary allocation
-                .collect::<Vec<_>>();
-
-            song_list.reserve(playlist_content.len());
-            playlist_content.into_iter().for_each(|mut video| {
-                song_list.push_back(Song {
-                    title:     std::mem::take(
-                        &mut video.playlist_video_renderer.title.runs[0].text,
-                    ),
-                    id:        video.playlist_video_renderer.video_id,
-                    duration:  video.playlist_video_renderer.length_text.simple_text,
-                    user_name: user_name.to_owned(),
-                });
-            });
+            song_list.extend(
+                sonic_rs::from_str::<YoutubePlaylist>(yt_initial_data)?
+                    .contents
+                    .two_column_browse_results_renderer
+                    .tabs
+                    .into_iter()
+                    .filter_map(|tab| tab.tab_renderer)
+                    .flat_map(|tab_renderer| tab_renderer.content.section_list_renderer.contents)
+                    .filter_map(|contents| contents.item_section_renderer)
+                    .flat_map(|renderer| renderer.contents)
+                    .filter_map(|content| content.playlist_video_list_renderer)
+                    .flat_map(|renderer| renderer.contents)
+                    .map(|mut video| {
+                        Self {
+                            title:     std::mem::take(
+                                &mut video.playlist_video_renderer.title.runs[0].text,
+                            ),
+                            id:        video.playlist_video_renderer.video_id,
+                            duration:  video.playlist_video_renderer.length_text.simple_text,
+                            user_name: user_name.to_owned(),
+                        }
+                    }),
+            );
 
             return Ok(song_list);
-        } else {
-            return Err(anyhow!("Unsupported YouTube link type"));
         }
+
+        Err(anyhow!("Unsupported YouTube link type"))
     }
 
     /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
@@ -525,7 +527,7 @@ impl Song {
             return Err(anyhow!("Spotify token is not initialized"));
         };
 
-        let (url_type, id, extra) = match song.split('/').take(5).collect::<Vec<_>>().as_slice() {
+        let (url_type, id, extra) = match *song.split('/').take(5).collect::<Vec<_>>().as_slice() {
             ["https:", "", "open.spotify.com", "track", last] => ("tracks", get_id!(last), ""),
             ["https:", "", "open.spotify.com", "playlist", last] =>
                 ("playlists", get_id!(last), ""),
@@ -649,7 +651,8 @@ impl Song {
                 "new scrapper failed as input generation, falling back to yt-dlp";
                 "{}", (res_new.err().expect("Its already an error"))
             );
-            return Ok(self.get_input_old(reqwest_client).await);
+
+            Ok(self.get_input_old(reqwest_client))
         }
 
         #[cfg(not(feature = "yt-dlp-fallback"))]
@@ -671,11 +674,11 @@ impl Song {
 
         let yt_initial_player_response = &res[res
             .find("ytInitialPlayerResponse")
-            .ok_or(anyhow!("Parse error"))?
+            .ok_or_else(|| anyhow!("Parse error"))?
             + "ytInitialPlayerResponse = ".len() ..];
         let yt_initial_player_response = &yt_initial_player_response[.. yt_initial_player_response
             .find(";var")
-            .ok_or(anyhow!("Parse error"))?];
+            .ok_or_else(|| anyhow!("Parse error"))?];
 
         let streaming_data =
             sonic_rs::from_str::<YoutubePlayer>(yt_initial_player_response)?.streaming_data;
@@ -721,6 +724,11 @@ impl Song {
     ///
     /// `YouTube` changes `signature_cipher` logic very frequently; so, this has
     /// very high possibility to fail in the future.
+    #[expect(
+        clippy::unused_self,
+        clippy::needless_pass_by_value,
+        reason = "Unfinnished function"
+    )]
     fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
         let (_s, _sp, _url) = format
             .signature_cipher
@@ -745,7 +753,7 @@ impl Song {
 
     /// Uses old `yt-dlp` to get the song stream.
     #[cfg(feature = "yt-dlp-fallback")]
-    async fn get_input_old(&self, reqwest_client: &Client) -> Input {
+    fn get_input_old(&self, reqwest_client: &Client) -> Input {
         use songbird::input::YoutubeDl;
 
         // TODO: Use proper reqwest::Client once you handled reqwest system

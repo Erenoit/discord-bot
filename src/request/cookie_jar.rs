@@ -32,7 +32,7 @@ impl CookieJar {
     }
 
     #[cfg(feature = "database")]
-    pub fn new() -> Self { Self {} }
+    pub const fn new() -> Self { Self {} }
 }
 
 #[cfg(feature = "database")]
@@ -53,7 +53,9 @@ impl CookieStore for CookieJar {
                         .database_pool()
                         .expect("Always Some if database feature is enabled");
 
-                    let url = url.host_str().unwrap();
+                    let Some(url) = url.host_str() else {
+                        return;
+                    };
 
                     for (key, value) in cookie_headers
                         .iter()
@@ -77,7 +79,7 @@ impl CookieStore for CookieJar {
                         .await
                         .ok();
                     }
-                })
+                });
         }).join().ok();
     }
 
@@ -94,7 +96,7 @@ impl CookieStore for CookieJar {
                         .database_pool()
                         .expect("Always Some if database feature is enabled");
 
-                    let url = url.host_str().unwrap();
+                    let url = url.host_str()?;
 
                     sqlx::query_as!(
                         KeyValue,

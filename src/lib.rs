@@ -3,10 +3,9 @@
 #![feature(iter_array_chunks)]
 
 #[macro_use]
-#[allow(unused_macros)]
 mod logger;
 #[macro_use]
-#[allow(unused_macros)]
+#[cfg_attr(not(feature = "music"), expect(unused_macros))]
 mod messager;
 
 use anyhow::{anyhow, Result};
@@ -34,7 +33,7 @@ static CONFIG: OnceCell<Config> = OnceCell::const_new();
 pub fn init_config() -> Result<()> {
     CONFIG.set(Config::generate()?).map_or_else(
         |_| Err(anyhow!("Couldn't set the config in OnceCell")),
-        |_| Ok(()),
+        |()| Ok(()),
     )
 }
 

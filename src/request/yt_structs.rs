@@ -1,4 +1,4 @@
-//! YouTube struct to scrape search result
+//! `YouTube` struct to scrape search result
 //!
 //! It may have other struct to scrape other things in the future.
 //!

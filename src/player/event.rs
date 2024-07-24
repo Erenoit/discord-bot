@@ -14,13 +14,12 @@ pub struct SongEnd {
 impl EventHandler for SongEnd {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         match ctx {
-            EventContext::Track(..) => {
+            &EventContext::Track(..) => {
                 get_config!()
                     .servers()
                     .read()
                     .await
-                    .get(&self.guild_id)
-                    .unwrap()
+                    .get(&self.guild_id)?
                     .player
                     .start_stream()
                     .await;

@@ -10,7 +10,7 @@
 //! - Others
 
 #[macro_use]
-#[allow(unused_macros)]
+#[cfg(feature = "music")]
 mod macros;
 
 pub mod entertainment;

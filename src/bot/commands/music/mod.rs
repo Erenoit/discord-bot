@@ -7,7 +7,10 @@ pub mod join;
 /// leave command
 pub mod leave;
 /// music command
-#[allow(clippy::module_inception)]
+#[expect(
+    clippy::module_inception,
+    reason = "Module names are always the same as the command"
+)]
 #[cfg(feature = "database")]
 pub mod music;
 /// play command

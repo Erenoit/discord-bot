@@ -78,7 +78,10 @@ impl SpotifyConfig {
     }
 
     /// Request a new token from Spotify API.
-    #[allow(clippy::significant_drop_tightening)]
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Locks are purposefully holded"
+    )]
     async fn refresh_token(&self) {
         let mut write_lock_token = self.token.write().await;
         let mut write_lock_expire_time = self.expire_time.write().await;
@@ -94,12 +97,18 @@ impl SpotifyConfig {
             .await;
 
         match res {
-            Ok(r) =>
-                if let Ok(j) = sonic_rs::from_str::<SpotifyToken>(&r.text().await.unwrap()) {
+            Ok(r) => {
+                let Ok(r_text) = r.text().await else {
+                    log!(error, "Couldn't get spotify token");
+                    return;
+                };
+
+                if let Ok(j) = sonic_rs::from_str::<SpotifyToken>(&r_text) {
                     *write_lock_last_refresh = Some(Instant::now());
                     *write_lock_token = Some(j.access_token);
                     *write_lock_expire_time = j.expires_in;
-                },
+                }
+            },
             Err(why) => {
                 log!(error, "Couldn't get spotify token"; "{why}");
             },

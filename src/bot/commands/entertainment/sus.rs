@@ -1,6 +1,6 @@
 use crate::bot::commands::{Context, Error};
 
-const IMPOSTER_DOG: &'static [u8] = include_bytes!(concat!(
+const IMPOSTER_DOG: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/images/imposter_dog.jpg"
 ));

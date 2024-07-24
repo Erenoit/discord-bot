@@ -16,6 +16,7 @@ use crate::{
     subcommands("play", "add", "remove", "list"),
     subcommand_required
 )]
+#[expect(clippy::unused_async, reason = "Just a dummy command for subcommands")]
 pub async fn music(_ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Adds song from bookmarks to queue
@@ -33,8 +34,8 @@ pub async fn play(
     handle_vc_connection(&ctx, &server).await?;
 
     let keywords = [
-        get_guild_id!(ctx).to_string() + "-" + &keyword,
-        "general-".to_string() + &keyword,
+        format!("{}-{}", get_guild_id!(ctx), keyword),
+        format!("general-{}", keyword),
     ];
 
     for key in keywords {
@@ -78,7 +79,7 @@ pub async fn add(
         return Ok(());
     }
 
-    let key = get_guild_id!(ctx).to_string() + "-" + &keyword;
+    let key = format!("{}-{}", get_guild_id!(ctx), keyword);
 
     if !url.starts_with("https://www.youtube.com")
         && !url.starts_with("https://open.spotify.com")
@@ -147,7 +148,7 @@ pub async fn remove(
 
     let mut connection = db_connection!(ctx);
 
-    let key = get_guild_id!(ctx).to_string() + "-" + &keyword;
+    let key = format!("{}-{}", get_guild_id!(ctx), keyword);
 
     if !selection!(
         confirm,
@@ -189,9 +190,9 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         };
 
         let prefix = if group == 0 {
-            "general-%".to_string()
+            "general-%".to_owned()
         } else {
-            get_guild_id!(ctx).to_string() + "-%"
+            format!("{}-%", get_guild_id!(ctx))
         };
 
         sqlx::query_as!(

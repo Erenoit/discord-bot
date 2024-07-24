@@ -19,11 +19,8 @@ pub async fn repeat(
 ) -> Result<(), Error> {
     let server = get_server!(ctx);
 
-    if repeat_mode.is_some() {
-        server
-            .player
-            .change_repeat_mode(&ctx, &repeat_mode.unwrap())
-            .await;
+    if let Some(repeat) = repeat_mode {
+        server.player.change_repeat_mode(&ctx, &repeat).await;
     } else {
         let current_mode = server.player.get_repeat_mode().await;
         let msg = format!("Current repeat option is `{current_mode}`. Select one to change:");

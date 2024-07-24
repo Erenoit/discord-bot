@@ -57,6 +57,7 @@ macro_rules! get_value_common {
 }
 
 /// This is an inner function for [`get_value!()`] macro. Do not use!
+#[cfg(feature = "config_file")]
 macro_rules! get_as {
     (String, $node:expr) => {
         $node.as_str()
@@ -79,6 +80,7 @@ macro_rules! get_as {
 }
 
 /// This is an inner function for [`get_value!()`] macro. Do not use!
+#[cfg(feature = "config_file")]
 macro_rules! convert_value {
     (String, $value:expr) => {
         Ok($value.to_owned())
