@@ -85,7 +85,7 @@ cargo_common_metadata = "allow"
 multiple_crate_versions = "allow"
 
 correctness = { level = "warn", priority = -1 }
-perf = { level = "forbid", priority = -1 }
+perf = { level = "deny", priority = -1 }        # forbid
 style = { level = "warn", priority = -1 }
 suspicious = { level = "warn", priority = -1 }
 complexity = { level = "warn", priority = -1 }
@@ -109,15 +109,15 @@ unreadable_literal = "allow"
 
 restriction = { level = "allow", priority = -1 }
 allow_attributes = "warn"
-allow_attributes_without_reason = "forbid"
-as_underscore = "forbid"
-clone_on_ref_ptr = "forbid"
+allow_attributes_without_reason = "deny"         # forbid
+as_underscore = "deny"                           # forbid
+clone_on_ref_ptr = "deny"                        # forbid
 create_dir = "warn"
-dbg_macro = "forbid"
-dissallowed_script_idents = "forbid"
-empty_drop = "forbid"
-empty_enum_variants_with_brackets = "forbid"
-error_impl_error = "forbid"
+dbg_macro = "deny"                               # forbid
+disallowed_script_idents = "deny"                # forbid
+empty_drop = "deny"                              # forbid
+empty_enum_variants_with_brackets = "deny"       # forbid
+error_impl_error = "deny"                        # forbid
 exit = "deny"
 filetype_is_file = "warn"
 fn_to_numeric_cast_any = "deny"
@@ -132,33 +132,33 @@ lossy_float_literal = "warn"
 mem_forget = "warn"
 missing_assert_message = "warn"
 #missing_asserts_fpr_indexing = "warn"
-multiple_unsafe_ops_per_block = "forbid"
-mutex_atomic = "forbid"
+multiple_unsafe_ops_per_block = "deny"   # forbid
+mutex_atomic = "deny"                    # forbid
 needless_raw_strings = "warn"
 panic = "deny"
-panic_in_result_fn = "forbid"
+panic_in_result_fn = "deny"              # forbid
 pattern_type_mismatch = "warn"
-pub_without_shorthand = "forbid"
+pub_without_shorthand = "deny"           # forbid
 rc_buffer = "warn"
-rc_mutex = "forbid"
+rc_mutex = "deny"                        # forbid
 redundant_type_annotations = "warn"
-renamed_function_parans = "warn"
+renamed_function_params = "warn"
 rest_pat_in_fully_bound_structs = "warn"
 same_name_method = "warn"
-self_named_module_files = "forbid"
+self_named_module_files = "deny"         # forbid
 #single_call_fn = "warn"
-str_to_string = "forbid"
-string_add = "forbid"
+str_to_string = "deny"              # forbid
+string_add = "deny"                 # forbid
 string_lit_chars_any = "warn"
-string_to_string = "forbid"
+string_to_string = "deny"           # forbid
 suspicious_xor_used_as_pow = "warn"
-tests_outside_test_module = "forbid"
-todo = "forbid"
-try_err = "forbid"
+tests_outside_test_module = "deny"  # forbid
+todo = "deny"                       # forbid
+try_err = "deny"                    # forbid
 unnecessary_self_imports = "warn"
 unneeded_field_pattern = "warn"
 unseparated_literal_suffix = "warn"
-unwrap_used = "forbid"
+unwrap_used = "deny"                # forbid
 verbose_file_reads = "warn"
 
 [lints.rustdoc]
