@@ -89,7 +89,7 @@ impl Song {
             } else if song.contains("spotify") {
                 #[cfg(feature = "spotify")]
                 if get_config!().is_spotify_initialized() {
-                    Self::spotify(reqwest_client, song, &user_name).await
+                    Self::spotify(ctx, reqwest_client, song, &user_name).await
                 } else {
                     message!(error, ctx, ("Spotify is not initialized"); true);
                     Err(anyhow!("Spotify is not initialized"))
@@ -104,12 +104,23 @@ impl Song {
                 Err(anyhow!("Unsupported music source"))
             }
         } else {
-            Self::search(ctx, reqwest_client, song, &user_name).await
+            let search_count = get_config!().youtube_search_count();
+            Self::search(
+                ctx,
+                reqwest_client,
+                song,
+                &user_name,
+                search_count,
+            )
+            .await
         }
     }
 
     /// Takes search resoults for given string from `YouTube` and sends user to
     /// select one/all/none of them. Then returns the selected song(s).
+    ///
+    /// If `search_count` is 1, returns the first reault without asking to
+    /// Discord user
     ///
     /// Uses new `YouTube` scrapper, but falls back to `yt-dlp` if new one
     /// fails.
@@ -118,15 +129,27 @@ impl Song {
         reqwest_client: &Client,
         song: String,
         user_name: &str,
+        search_count: u8,
     ) -> Result<VecDeque<Self>> {
-        let res_new = Self::search_new(ctx, reqwest_client, &song, user_name).await;
+        if search_count == 0 {
+            return Ok(VecDeque::new());
+        }
+
+        let res_new = Self::search_new(
+            ctx,
+            reqwest_client,
+            &song,
+            user_name,
+            search_count,
+        )
+        .await;
 
         if let Ok(songs) = res_new {
             return Ok(songs);
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
-        if let Ok(res) = Self::search_old(ctx, &song, user_name).await {
+        if let Ok(res) = Self::search_old(ctx, &song, user_name, search_count).await {
             log!(
                 warn,
                 "new scrapper failed, falling back to yt-dlp";
@@ -140,11 +163,15 @@ impl Song {
 
     /// Sends GET request to `YouTube` as if it was searched in browser and
     /// scrapes the results.
+    ///
+    /// If `search_count` is 1, returns the first reault without asking to
+    /// Discord user
     async fn search_new(
         ctx: &Context<'_>,
         reqwest_client: &Client,
         song: &str,
         user_name: &str,
+        search_count: u8,
     ) -> Result<VecDeque<Self>> {
         let url = Url::parse_with_params("https://www.youtube.com/results", &[(
             "search_query",
@@ -169,7 +196,7 @@ impl Song {
             .map(|item_renderer| item_renderer.contents)
             .flatten()
             .filter_map(|item| item.video_renderer)
-            .take(get_config!().youtube_search_count().into())
+            .take(search_count as usize)
             .map(|mut video| {
                 (
                     std::mem::take(&mut video.title.runs[0].text),
@@ -178,6 +205,21 @@ impl Song {
                 )
             })
             .collect::<Vec<_>>();
+
+        if search_count == 1 {
+            return Ok(VecDeque::from([list
+                .into_iter()
+                .map(|(title, id, duration)| {
+                    Self {
+                        title,
+                        id,
+                        duration,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .next()
+                .ok_or(anyhow!("No result found on the YouTube"))?]));
+        }
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
@@ -193,10 +235,9 @@ impl Song {
                 })
                 .collect())
         } else if answer != "danger" {
-            Ok(list
+            Ok(VecDeque::from([list
                 .into_iter()
-                .filter(|(_, id, _)| id == &answer)
-                .take(1)
+                .find(|(_, id, _)| id == &answer)
                 .map(|(title, id, duration)| {
                     Self {
                         title,
@@ -205,26 +246,30 @@ impl Song {
                         user_name: user_name.to_owned(),
                     }
                 })
-                .collect())
+                .expect("Cannot fail")]))
         } else {
             Ok(VecDeque::new())
         }
     }
 
     /// Uses old `yt-dlp` to search for given string in `YouTube`.
+    ///
+    /// If `search_count` is 1, returns the first reault without asking to
+    /// Discord user
     #[cfg(feature = "yt-dlp-fallback")]
-    async fn search_old(ctx: &Context<'_>, song: &str, user_name: &str) -> Result<VecDeque<Self>> {
+    async fn search_old(
+        ctx: &Context<'_>,
+        song: &str,
+        user_name: &str,
+        search_count: u8,
+    ) -> Result<VecDeque<Self>> {
         let Ok(res) = Command::new("yt-dlp")
             .args([
                 "--flat-playlist",
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &format!(
-                    "ytsearch{}:{}",
-                    get_config!().youtube_search_count(),
-                    song,
-                ),
+                &format!("ytsearch{}:{}", search_count, song,),
             ])
             .output()
             .await
@@ -243,6 +288,21 @@ impl Song {
             .array_chunks::<3>()
             .map(|e| (e[0].to_owned(), e[1].to_owned(), e[2].to_owned()))
             .collect::<Vec<_>>();
+
+        if search_count == 1 {
+            return Ok(VecDeque::from([list
+                .into_iter()
+                .map(|(title, id, duration)| {
+                    Self {
+                        title,
+                        id,
+                        duration,
+                        user_name: user_name.to_owned(),
+                    }
+                })
+                .next()
+                .ok_or(anyhow!("No result found on the YouTube"))?]));
+        }
 
         let answer = selection!(list, *ctx, "Search", list, true);
         if answer == "success" {
@@ -456,6 +516,7 @@ impl Song {
     /// Artist, album and playlist, and track URLs are also supported.
     #[cfg(feature = "spotify")]
     pub async fn spotify(
+        ctx: &Context<'_>,
         reqwest_client: &Client,
         song: String,
         user_name: &str,
@@ -537,33 +598,40 @@ impl Song {
             _ => unreachable!("url_type cannot be anything else"),
         };
 
-        // TODO: use youtube scrapper instead of yt-dlp
-        Ok(join_all(list.into_iter().map(|(artist, song)| {
-            Command::new("yt-dlp")
-                .args([
-                    "--no-playlist",
-                    "--get-title",
-                    "--get-id",
-                    "--get-duration",
-                    &format!("ytsearch1:{artist} - {song} lyrics"),
-                ])
-                .output()
+        let mut skipped_count = 0;
+        let songs = join_all(list.into_iter().map(|(artist, song)| {
+            Self::search(
+                ctx,
+                reqwest_client,
+                format!("{} - {} lyrics", artist, song),
+                user_name,
+                1,
+            )
         }))
         .await
         .into_iter()
-        .filter(Result::is_ok)
-        .map(|song| String::from_utf8_lossy(&song.expect("all is Ok").stdout).into_owned())
-        .map(|song| {
-            let mut sliced = song.split('\n').take(3);
-
-            Self {
-                title:     sliced.next().expect("Has 3 elements").to_owned(),
-                id:        sliced.next().expect("Has 3 elements").to_owned(),
-                duration:  sliced.next().expect("Has 3 elements").to_owned(),
-                user_name: user_name.to_owned(),
+        .filter_map(|res| {
+            if res.is_err() {
+                skipped_count += 1;
+                return None;
             }
+
+            let songs = res.expect("Cannot be error");
+            if songs.is_empty() {
+                skipped_count += 1;
+                return None;
+            }
+
+            Some(songs)
         })
-        .collect())
+        .flatten()
+        .collect::<VecDeque<_>>();
+
+        if skipped_count > 0 {
+            message!(error, ctx, ("{} songs skipped", skipped_count); true);
+        }
+
+        Ok(songs)
     }
 
     /// gets [`songbird::input::Input`] for music stream
