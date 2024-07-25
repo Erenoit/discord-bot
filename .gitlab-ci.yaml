@@ -1,0 +1,45 @@
+image: rust:latest
+
+stages:
+  - check
+  #- build
+  #- deploy
+
+format:
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    #- if: $CI_COMMIT_TAG
+  variables:
+    RUSTFLAGS: "-Dwarnings"
+  script:
+    - cargo fmt --check
+
+clippy:
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    #- if: $CI_COMMIT_TAG
+  variables:
+    RUSTFLAGS: "-Dwarnings"
+  script:
+    - rustup component add clippy
+    - cargo clippy --all-targets --all-features
+
+features:
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    #- if: $CI_COMMIT_TAG
+  variables:
+    RUSTFLAGS: "-Dwarnings"
+  script:
+    cargo install cargo-all-features
+    cargo check-all-features
+
+#build:
+#  stage: build
+#  rules:
+#    - if: $CI_COMMIT_TAG
+#  scripts:
+#    - cargo build --release
