@@ -13,7 +13,8 @@ use reqwest::{cookie::CookieStore, Url};
 use crate::request::cookie_jar::CookieJar;
 
 /// User agent to use in requests
-const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
+pub const USER_AGENT: &str =
+    "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
 
 /// Creates a new instance of [`reqwest::Client`] and configure.
 pub fn create_reqwest_client() -> Client {

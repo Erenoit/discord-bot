@@ -301,5 +301,6 @@ pub struct Format {
     pub itag:             u32,
     pub mime_type:        String,
     pub bitrate:          u32,
-    pub signature_cipher: String,
+    pub signature_cipher: Option<String>,
+    pub url:              Option<String>,
 }

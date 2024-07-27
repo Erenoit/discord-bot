@@ -5,7 +5,13 @@ use std::{collections::VecDeque, fmt::Display};
 use anyhow::{anyhow, Result};
 #[cfg(feature = "spotify")]
 use poise::futures_util::future::join_all;
-use reqwest::{Client, Url};
+use reqwest::{
+    header::{HeaderMap, HeaderName},
+    Client,
+    Url,
+};
+#[cfg(feature = "yt-dlp-fallback")]
+use songbird::input::YoutubeDl;
 use songbird::input::{HttpRequest, Input};
 #[cfg(feature = "yt-dlp-fallback")]
 use tokio::process::Command;
@@ -20,13 +26,16 @@ use crate::request::sp_structs::{
 };
 use crate::{
     bot::Context,
-    request::yt_structs::{
-        Format,
-        YoutubePlayer,
-        YoutubePlaylist,
-        YoutubeSearch,
-        YoutubeVideo,
-        YoutubeVideoPlaylist,
+    request::{
+        yt_structs::{
+            Format,
+            YoutubePlayer,
+            YoutubePlaylist,
+            YoutubeSearch,
+            YoutubeVideo,
+            YoutubeVideoPlaylist,
+        },
+        USER_AGENT,
     },
 };
 
@@ -715,48 +724,74 @@ impl Song {
                 .expect("Always has at least one element")
         };
 
-        let (client, url) = self.url_extractor(selected_format)?;
+        // let (client, url) = self.url_extractor(selected_format)?;
+        let (url, headers) = Self::url_extractor(selected_format)?;
 
-        Ok(HttpRequest::new(client, url).into())
+        Ok(HttpRequest::new_with_headers(reqwest_client.clone(), url, headers).into())
     }
 
     /// Solves the `signature_cipher` for getting the URL
     ///
     /// `YouTube` changes `signature_cipher` logic very frequently; so, this has
     /// very high possibility to fail in the future.
-    #[expect(
-        clippy::unused_self,
-        clippy::needless_pass_by_value,
-        reason = "Unfinnished function"
-    )]
-    fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
-        let (_s, _sp, _url) = format
-            .signature_cipher
-            .split('\u{0026}')
-            .map(|part| part.split_once('=').expect("Always has '='"))
-            .fold(
-                (String::new(), String::new(), String::new()),
-                |(mut s, mut sp, mut url), (key, value)| {
-                    match key {
-                        "s" => s.push_str(value),
-                        "sp" => sp.push_str(value),
-                        "url" => url.push_str(value),
-                        _ => (),
-                    }
+    fn url_extractor(format: Format) -> Result<(String, HeaderMap)> {
+        let mut headers = HeaderMap::with_capacity(6);
+        headers.insert(
+            HeaderName::from_static("user-agent"),
+            USER_AGENT.parse()?,
+        );
+        headers.insert(
+            HeaderName::from_static("accept"),
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8".parse()?,
+        );
+        headers.insert(
+            HeaderName::from_static("accept-language"),
+            "en-us,en;q=0.5".parse()?,
+        );
+        headers.insert(
+            HeaderName::from_static("sec-fetch-mode"),
+            "navigate".parse()?,
+        );
+        headers.insert(
+            HeaderName::from_static("origin"),
+            "https://www.youtube.com".parse()?,
+        );
+        headers.insert(
+            HeaderName::from_static("referer"),
+            "https://www.youtube.com/".parse()?,
+        );
 
-                    (s, sp, url)
-                },
-            );
+        if let Some(signature_cipher) = format.signature_cipher {
+            let (_s, _sp, _url) = signature_cipher
+                .split('\u{0026}')
+                .map(|part| part.split_once('=').expect("Always has '='"))
+                .fold(
+                    (String::new(), String::new(), String::new()),
+                    |(mut s, mut sp, mut url), (key, value)| {
+                        match key {
+                            "s" => s.push_str(value),
+                            "sp" => sp.push_str(value),
+                            "url" => url.push_str(value),
+                            _ => (),
+                        }
 
-        Err(anyhow!("URL extractor is incomplete"))
+                        (s, sp, url)
+                    },
+                );
+
+            Err(anyhow!("URL extractor is incomplete"))
+        } else if let Some(url) = format.url {
+            println!("URL: {}", url);
+            // FIXME: somehow does not work
+            Ok((url, headers))
+        } else {
+            Err(anyhow!("No source found"))
+        }
     }
 
     /// Uses old `yt-dlp` to get the song stream.
     #[cfg(feature = "yt-dlp-fallback")]
     fn get_input_old(&self, reqwest_client: &Client) -> Input {
-        use songbird::input::YoutubeDl;
-
-        // TODO: Use proper reqwest::Client once you handled reqwest system
         YoutubeDl::new(reqwest_client.clone(), self.id.clone()).into()
     }
 
