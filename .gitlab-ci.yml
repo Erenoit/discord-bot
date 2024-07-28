@@ -18,7 +18,9 @@ stages:
 before_script:
   - apt update -qy
   - apt install cmake -qy
-  - cargo install cargo-binstall
+  - mkdir -p ~/.cargo/bin
+  - aria2c -d ~/.cargo/bin "https://github.com/cargo-bins/cargo-binstall/releases/latest/download//cargo-binstall-x86_64-unknown-linux-gnu.full.tgz"
+  - tar -xf ~/.cargo/bin/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz -C ~/.cargo/bin
   - cargo binstall -y sqlx-cli
   - cargo sqlx database setup
 
