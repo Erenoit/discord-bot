@@ -29,6 +29,7 @@ $ ./target/release/discord-bot
 - [Opus](https://opus-codec.org/)
 - [OpenSSL](https://www.openssl.org/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [CMake](https://cmake.org/) *make dependency"
 
 [Discord]: https://discord.com/
 [Rust]: https://www.rust-lang.org/
