@@ -12,7 +12,7 @@ before_script:
   - apt update -qy
   - apt install cmake -qy
   - cargo install cargo-binstall
-  - cargo binstall cargo-sqlx
+  - cargo binstall sqlx-cli
   - cargo sqlx prepare
 
 format:
