@@ -1,5 +1,8 @@
 image: rust:latest
 
+variables:
+  DATABASE_URL: "sqlite:discord_bot.db"
+
 stages:
   - check
   #- build
@@ -8,6 +11,9 @@ stages:
 before_script:
   - apt update -qy
   - apt install cmake -qy
+  - cargo install cargo-binstall
+  - cargo binstall cargo-sqlx
+  - cargo sqlx prepare
 
 format:
   stage: check
@@ -38,7 +44,7 @@ features:
   variables:
     RUSTFLAGS: "-Dwarnings"
   script:
-    - cargo install cargo-all-features
+    - cargo binstall cargo-all-features
     - cargo check-all-features
 
 #build:
