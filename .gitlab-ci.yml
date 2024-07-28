@@ -34,8 +34,8 @@ features:
   variables:
     RUSTFLAGS: "-Dwarnings"
   script:
-    cargo install cargo-all-features
-    cargo check-all-features
+    - cargo install cargo-all-features
+    - cargo check-all-features
 
 #build:
 #  stage: build
