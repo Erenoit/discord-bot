@@ -1,7 +1,7 @@
 image: rust:latest
 
 variables:
-  DATABASE_URL: "sqlite:discord_bot.db"
+  DATABASE_URL: "sqlite://discord_bot.db"
 
 default:
   cache:
