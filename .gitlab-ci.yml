@@ -20,6 +20,8 @@ before_script:
   - apt install cmake sqlite3 aria2 -qy
   - mkdir -p ~/.cargo/bin
   - aria2c -d ~/.cargo/bin "https://github.com/cargo-bins/cargo-binstall/releases/latest/download//cargo-binstall-x86_64-unknown-linux-gnu.full.tgz"
+  - ls -Al --color
+  - ls -Al --color ~/.cargo/bin
   - tar -xf ~/.cargo/bin/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz -C ~/.cargo/bin
   - cargo binstall -y sqlx-cli
   - cargo sqlx database setup
