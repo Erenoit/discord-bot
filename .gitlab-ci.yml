@@ -2,13 +2,21 @@ image: rust:latest
 
 variables:
   DATABASE_URL: "sqlite://discord_bot.db"
+  CARGO_HOME: "./cargo_home"
 
 default:
   cache:
     - key: $CI_COMMIT_REF_SLUG
       paths:
-        - .cargo/bin/
         - target
+        # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+        - cargo_home/.crates.toml
+        - cargo_home/.crates2.json
+        - cargo_home/bin/
+        - cargo_home/registry/index/
+        - cargo_home/registry/cache/
+        - cargo_home/git/db/
+
 
 stages:
   - check
@@ -17,12 +25,23 @@ stages:
 
 before_script:
   - apt update -qy
-  - apt install cmake sqlite3 aria2 -qy
-  - mkdir -p ~/.cargo/bin
+  #- apt install cmake sqlite3 aria2 -qy
+  - apt install cmake aria2 -qy
   - aria2c -d binstall "https://github.com/cargo-bins/cargo-binstall/releases/latest/download//cargo-binstall-x86_64-unknown-linux-gnu.full.tgz"
   - tar -xf binstall/cargo-binstall-x86_64-unknown-linux-gnu.full.tgz -C binstall
-  - ./binstall/cargo-binstall -y sqlx-cli
-  - cargo sqlx database setup
+  #- ./binstall/cargo-binstall -y sqlx-cli
+  # binstall varsion fails to create database
+  - cargo install sqlx-cli --no-default-features --features "sqlite"
+  - ./cargo_home/bin/sqlx database setup
+
+clean_target:
+  stage: .pre
+  rules:
+    - changes:
+      - Cargo.toml
+      - Cargo.lock
+  script:
+    - cargo clean
 
 format:
   stage: check
@@ -53,7 +72,7 @@ features:
   variables:
     RUSTFLAGS: "-Dwarnings"
   script:
-    - cargo binstall -y cargo-all-features
+    - ./binstall/cargo-binstall -y cargo-all-features
     - cargo check-all-features
 
 #build:
