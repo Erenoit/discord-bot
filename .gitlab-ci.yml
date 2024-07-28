@@ -20,7 +20,7 @@ before_script:
   - apt install cmake -qy
   - cargo install cargo-binstall
   - cargo binstall -y sqlx-cli
-  - cargo sqlx prepare
+  - cargo sqlx database setup
 
 format:
   stage: check
