@@ -19,7 +19,7 @@ before_script:
   - apt update -qy
   - apt install cmake -qy
   - cargo install cargo-binstall
-  - cargo binstall sqlx-cli
+  - cargo binstall -y sqlx-cli
   - cargo sqlx prepare
 
 format:
@@ -51,7 +51,7 @@ features:
   variables:
     RUSTFLAGS: "-Dwarnings"
   script:
-    - cargo binstall cargo-all-features
+    - cargo binstall -y cargo-all-features
     - cargo check-all-features
 
 #build:
