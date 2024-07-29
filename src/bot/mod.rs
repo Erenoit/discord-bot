@@ -9,6 +9,9 @@
 mod commands;
 mod event;
 
+#[cfg(feature = "shuttle")]
+use std::net::SocketAddr;
+
 use event::Handler;
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
@@ -146,4 +149,14 @@ impl Bot {
 
 impl Default for Bot {
     fn default() -> Self { Self::new() }
+}
+
+#[cfg(feature = "shuttle")]
+#[shuttle_runtime::async_trait]
+impl shuttle_runtime::Service for Bot {
+    async fn bind(mut self, _addr: SocketAddr) -> Result<(), shuttle_runtime::Error> {
+        self.run().await;
+
+        Ok(())
+    }
 }

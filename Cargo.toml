@@ -28,9 +28,11 @@ serenity = { version = "0.12", default-features = false, features = [
     "parking_lot",
     "simd_json",
 ] }
+shuttle-runtime = { version = "0.47", optional = true }
+shuttle-shared-db = { version = "0.47", features = ["sqlx"], optional = true }
 songbird = { version = "0.4", features = ["simd-json"], optional = true }
 sonic-rs = "0.3"
-sqlx = { version = "0.8", features = [
+sqlx = { version = "0.7", features = [
     "macros",
     "migrate",
     "runtime-tokio-rustls",
@@ -74,6 +76,14 @@ config_file = ["dep:directories", "dep:taplo"]
 database = ["dep:directories", "dep:sqlx", "music"]
 dotenv = ["dep:dotenvy"]
 music = ["dep:songbird", "serenity/voice", "dep:symphonia"]
+shuttle = [
+    "database",
+    "music",
+    "spotify",
+    "yt-dlp-fallback",
+    "dep:shuttle-runtime",
+    "dep:shuttle-shared-db",
+]
 spotify = ["music"]
 yt-dlp-fallback = ["music"]
 
