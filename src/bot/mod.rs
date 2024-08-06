@@ -13,6 +13,7 @@ use event::Handler;
 use serenity::model::{application::Command, gateway::GatewayIntents};
 #[cfg(feature = "music")]
 use songbird::serenity::SerenityInit;
+use tracing::{trace, warn};
 
 #[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
@@ -93,20 +94,21 @@ impl Bot {
             .setup(|ctx, _data_about_bot, framework| {
                 Box::pin(async move {
                     if !get_config!().auto_register_commands() {
-                        log!(warn, "Slash Command Autogeneration Is Disabled");
+                        warn!("Slash Command Autogeneration Is Disabled");
                         return Ok(commands::Data { reqwest_client });
                     }
 
-                    log!(info, "Registering Slash Commands:");
                     Command::set_global_commands(ctx, {
                         let commands = &framework.options().commands;
                         let b = poise::builtins::create_application_commands(commands);
                         for command in commands {
-                            log!(info, ; "{}: {}", (command.name),
-                                (command
+                            trace!(
+                                "Slash command registered: {} - {}",
+                                command.name,
+                                command
                                     .description
                                     .as_ref()
-                                    .expect("Every command should have description"))
+                                    .expect("Every command should have description")
                             );
                         }
 

@@ -9,6 +9,10 @@ use reqwest::{Client, Url};
 use songbird::input::{HttpRequest, Input};
 #[cfg(feature = "yt-dlp-fallback")]
 use tokio::process::Command;
+#[cfg(any(feature = "spotify", feature = "yt-dlp-fallback"))]
+use tracing::error;
+#[cfg(feature = "yt-dlp-fallback")]
+use tracing::warn;
 
 #[cfg(feature = "spotify")]
 use crate::request::sp_structs::{
@@ -142,12 +146,13 @@ impl Song {
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
+        warn!(
+            "new scrapper failed, falling back to yt-dlp: {}",
+            res_new.err().expect("Its already an error")
+        );
+
+        #[cfg(feature = "yt-dlp-fallback")]
         if let Ok(res) = Self::search_old(ctx, &song, user_name, search_count).await {
-            log!(
-                warn,
-                "new scrapper failed, falling back to yt-dlp";
-                "{}", (res_new.err().expect("Its already an error"))
-            );
             return Ok(res);
         }
 
@@ -273,12 +278,15 @@ impl Song {
             .output()
             .await
         else {
-            log!(error, "Command creation for yt-dlp failed");
+            error!("Command creation for yt-dlp failed");
             return Err(anyhow!("yt-dlp failed"));
         };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
+            error!(
+                "YouTube data fetch with yt-dlp failed: {}",
+                String::from_utf8_lossy(&res.stderr)
+            );
             return Err(anyhow!("yt-dlp failed"));
         }
 
@@ -336,7 +344,6 @@ impl Song {
         }
     }
 
-    // TODO: cannot open age restricted videos
     /// Takes `YouTube` URL and gets the song(s)
     async fn youtube(
         reqwest_client: &Client,
@@ -350,17 +357,17 @@ impl Song {
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
+        warn!(
+            "new scrapper failed, falling back to yt-dlp: {}",
+            res_new.err().expect("Its already an error")
+        );
+
+        #[cfg(feature = "yt-dlp-fallback")]
         if let Ok(res_old) = Self::youtube_old(&song, user_name).await {
-            log!(
-                warn,
-                "new scrapper failed, falling back to yt-dlp";
-                "{}", (res_new.err().expect("Its already an error"))
-            );
             return Ok(res_old);
         }
 
-        // TODO: better error menagement
-        res_new
+        Err(anyhow!("An error happened"))
     }
 
     /// Sends GET request to `YouTube` as if it was requested from a browser and
@@ -485,12 +492,15 @@ impl Song {
             .output()
             .await
         else {
-            log!(error, "Command creation for yt-dlp failed");
+            error!("Command creation for yt-dlp failed");
             return Err(anyhow!("yt-dlp failed"));
         };
 
         if !res.status.success() {
-            log!(error, "YouTube data fetch with yt-dlp failed:"; "{}", (String::from_utf8_lossy(&res.stderr)));
+            error!(
+                "YouTube data fetch with yt-dlp failed: {}",
+                String::from_utf8_lossy(&res.stderr)
+            );
             return Err(anyhow!("yt-dlp failed"));
         }
 
@@ -548,7 +558,10 @@ impl Song {
         };
 
         if !res.status().is_success() {
-            log!(error, "Spotify data fetch failed:"; "{}", (sonic_rs::from_str::<SpotifyError>(&res.text().await?)?.message));
+            error!(
+                "Spotify data fetch failed: {}",
+                sonic_rs::from_str::<SpotifyError>(&res.text().await?)?.message
+            );
             return Err(anyhow!("Couldn't connect to Spotify"));
         }
 
@@ -645,13 +658,13 @@ impl Song {
         }
 
         #[cfg(feature = "yt-dlp-fallback")]
-        {
-            log!(
-                warn,
-                "new scrapper failed as input generation, falling back to yt-dlp";
-                "{}", (res_new.err().expect("Its already an error"))
-            );
+        warn!(
+            "new scrapper failed as input generation, falling back to yt-dlp: {}",
+            res_new.err().expect("Its already an error")
+        );
 
+        #[cfg(feature = "yt-dlp-fallback")]
+        {
             Ok(self.get_input_old(reqwest_client))
         }
 

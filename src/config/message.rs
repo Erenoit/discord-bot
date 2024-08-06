@@ -34,6 +34,10 @@ pub(super) struct MessageConfig {
 
 impl MessageConfig {
     /// Generate a new `MessageConfig` from the config file.
+    #[expect(
+        clippy::cognitive_complexity,
+        reason = "False posittive after migrasting to tracing"
+    )]
     pub fn generate(config_file: &Node) -> Result<Self> {
         let always_embed = get_value!(config_file, bool, "BOT_MSG_ALWAYS_EMBED", "message"=>"always_embed", ALWAYS_EMBED)?;
         let random_embed_colors = get_value!(config_file, bool, "BOT_MSG_RANDOM_EMBED_COLORS", "message"=>"random_embed_colors", RANDOM_EMBED_COLORS)?;

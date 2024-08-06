@@ -24,7 +24,7 @@ macro_rules! get_value {
     };
     ($config_file: ident, $ttype: tt, $env_name: literal, $($p: expr)=>+, $err_message: literal) => {
         get_value_common!($config_file, $ttype, $env_name, $($p)=>+, {
-            log!(error, $err_message);
+            tracing::error!($err_message);
             Err(anyhow::anyhow!("No value is given"))
         })
     }
@@ -89,10 +89,9 @@ macro_rules! convert_value {
         if let Some(v) = $value.as_positive() {
             Ok(v as u8)
         } else {
-            log!(
-                error,
+            tracing::error!(
                 "{} should be positive integer",
-                ($value.as_negative().unwrap())
+                $value.as_negative().unwrap()
             );
             Err(anyhow::anyhow!("u8 cannot be negative"))
         }
@@ -101,10 +100,9 @@ macro_rules! convert_value {
         if let Some(v) = $value.as_positive() {
             Ok(v as u32)
         } else {
-            log!(
-                error,
+            tracing::error!(
                 "{} should be positive integer",
-                ($value.as_negative().unwrap())
+                $value.as_negative().unwrap()
             );
             Err(anyhow::anyhow!("u32 cannot be negative"))
         }
@@ -113,10 +111,9 @@ macro_rules! convert_value {
         if let Some(v) = $value.as_positive() {
             Ok(v as u64)
         } else {
-            log!(
-                error,
+            tracing::error!(
                 "{} should be positive integer",
-                ($value.as_negative().unwrap())
+                $value.as_negative().unwrap()
             );
             Err(anyhow::anyhow!("u64 cannot be negative"))
         }

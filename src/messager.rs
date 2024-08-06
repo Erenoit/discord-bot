@@ -33,7 +33,7 @@ macro_rules! message {
         }).await;
 
         if let Err(why) = res {
-            log!(error, "Couldn't send message with file(s)."; "{why}");
+            error!("Couldn't send message with file(s)."; "{why}");
         }
     };
     (file, bytes, $ctx:expr, $message:expr, $($data:expr ; $file_name: expr);+, $ephemeral:expr) => {
@@ -44,7 +44,7 @@ macro_rules! message {
         }).await;
 
         if let Err(why) = res {
-            log!(error, "Couldn't send message with file(s)."; "{why}");
+            tracing::error!("Couldn't send message with file(s): {}", why);
         }
     };
     (normal, $ctx:expr, ($($title:tt)+); ($($message:tt)+); $ephemeral:expr) => {
@@ -103,7 +103,7 @@ macro_rules! message {
             }).await;
 
             if let Err(why) = res {
-                log!(error, "Couldn't send message."; "{why}");
+                tracing::error!("Couldn't send message: {}", why);
             }
         }
     };
@@ -118,7 +118,7 @@ macro_rules! message {
                 .await;
 
             if let Err(why) = res {
-                log!(error, "Couldn't send embed."; "{why}");
+                tracing::error!("Couldn't send embed: {}", why);
             }
         }
     };
@@ -161,10 +161,10 @@ macro_rules! selection {
         'normal_selection: {
             if $list.len() > 10 {
                 message!(error, $ctx, ("An error happened"); false);
-                log!(error, "List cannot contain more than 10 elements");
+                tracing::error!("List cannot contain more than 10 elements");
             } else if $list.is_empty() {
                 message!(error, $ctx, ("An error happened"); false);
-                log!(error, "List cannot be empty");
+                tracing::error!("List cannot be empty");
             }
 
             let res = selection_inner!(send_buttons, $ctx, format!($($msg)+), $list, false).await;
@@ -182,10 +182,10 @@ macro_rules! selection {
 
             if $list.len() > 10 {
                 message!(error, $ctx, ("An error happened"); false);
-                log!(error, "List cannot contain more than 10 elements");
+                tracing::error!("List cannot contain more than 10 elements");
             } else if $list.is_empty() {
                 message!(error, $ctx, ("An error happened"); false);
-                log!(error, "List cannot be empty");
+                tracing::error!("List cannot be empty");
             }
 
             let mut msg = String::with_capacity(1024);
@@ -223,7 +223,7 @@ macro_rules! selection_inner {
     (get_interaction, $ctx:expr, $res:ident, $n:lifetime, $def_return:expr) => {
         {
             if let Err(why) = $res {
-                log!(error, "Couldn't send confirm message."; "{why}");
+                tracing::error!("Couldn't send confirm message: {}", why);
                 break $n $def_return;
             }
 
