@@ -811,6 +811,7 @@ dependencies = [
  "taplo",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
