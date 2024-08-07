@@ -23,6 +23,7 @@ use reqwest::Client;
 use serenity::model::id::{ChannelId, GuildId};
 use songbird::{Event, TrackEvent};
 use tokio::sync::Mutex;
+use tracing::error;
 
 pub use crate::player::song::Song;
 use crate::{bot::Context, player::event::SongEnd};
@@ -86,13 +87,13 @@ impl Player {
             .join(self.guild_id, *channel_id)
             .await
         else {
-            log!(error, "Couldn't join the voice channel.");
+            error!("Couldn't join the voice channel.");
             return;
         };
 
         let mut call = call_mutex.lock().await;
         if let Err(why) = call.deafen(true).await {
-            log!(error, "Couldn't deafen the bot."; "{why}");
+            error!("Couldn't deafen the bot: {}", why);
         }
     }
 

@@ -3,8 +3,6 @@
 #![feature(iter_array_chunks)]
 
 #[macro_use]
-mod logger;
-#[macro_use]
 #[cfg_attr(not(feature = "music"), expect(unused_macros))]
 mod messager;
 

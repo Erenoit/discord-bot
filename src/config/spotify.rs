@@ -6,6 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "config_file")]
 use taplo::dom::Node;
 use tokio::sync::RwLock;
+use tracing::error;
 
 #[cfg(not(feature = "config_file"))]
 use crate::config::Node;
@@ -99,7 +100,7 @@ impl SpotifyConfig {
         match res {
             Ok(r) => {
                 let Ok(r_text) = r.text().await else {
-                    log!(error, "Couldn't get spotify token");
+                    error!("Couldn't get spotify token");
                     return;
                 };
 
@@ -110,7 +111,7 @@ impl SpotifyConfig {
                 }
             },
             Err(why) => {
-                log!(error, "Couldn't get spotify token"; "{why}");
+                error!("Couldn't get spotify token: {}", why);
             },
         }
     }

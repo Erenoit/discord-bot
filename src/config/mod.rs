@@ -52,6 +52,9 @@ use songbird::Songbird;
 #[cfg(feature = "database")]
 use sqlx::SqlitePool;
 use tokio::sync::RwLock;
+use tracing::trace;
+#[cfg(any(feature = "spotify", feature = "database"))]
+use tracing::warn;
 
 #[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
 use crate::config::cmd_arguments::CMDArguments;
@@ -97,12 +100,16 @@ pub struct Config {
 
 impl Config {
     /// Generate [`Config`] from config sources
+    #[expect(
+        clippy::cognitive_complexity,
+        reason = "False positive after migrating to tracing"
+    )]
     pub fn generate() -> Result<Self> {
         #[cfg(all(feature = "cmd", any(feature = "config_file", feature = "database")))]
         let cmd_arguments = CMDArguments::parse();
 
         #[cfg(any(feature = "config_file", feature = "database"))]
-        log!(info, "Generating Project Directories");
+        trace!("Creating Project Directories");
         #[cfg(any(feature = "config_file", feature = "database"))]
         let Some(project_dirs) = ProjectDirs::from("com", "Erenoit", "The Bot") else {
             return Err(anyhow!("Couldn't find config location"));
@@ -131,7 +138,6 @@ impl Config {
                 .write_all(include_bytes!("../../examples/config.toml"))?;
         }
 
-        log!(info, "Registering Configs");
         #[cfg(feature = "dotenv")]
         dotenvy::dotenv().ok();
         #[cfg(feature = "config_file")]
@@ -140,26 +146,26 @@ impl Config {
         #[cfg(not(feature = "config_file"))]
         let config_file = Node;
 
-        log!(info, ; "General");
+        trace!("Generating config: General");
         let general = GeneralConfig::generate(&config_file)?;
 
-        log!(info, ; "Message");
+        trace!("Generating config: Message");
         let message = MessageConfig::generate(&config_file)?;
 
         #[cfg(feature = "music")]
-        log!(info, ; "YouTube");
+        trace!("Generating config: YouTube");
         #[cfg(feature = "music")]
         let youtube = YouTubeConfig::generate(&config_file)?;
 
         #[cfg(feature = "spotify")]
-        log!(info, ; "Spotify");
+        trace!("Generating config: Spotify");
         #[cfg(feature = "spotify")]
         let spotify = get_value!(config_file, bool, "BOT_ENABLE_SPOTIFY", "spotify"=>"enable", ENABLE_SPOTIFY)?.then_some(
             SpotifyConfig::generate(&config_file)?
         );
 
         #[cfg(feature = "database")]
-        log!(info, ; "Database");
+        trace!("Generating config: Database");
         #[cfg(feature = "database")]
         let database = get_value!(config_file, bool, "BOT_ENABLE_DATABASE", "database"=>"enable", ENABLE_DATABASE)?.then_some({
             #[cfg(feature = "cmd")]
@@ -170,22 +176,22 @@ impl Config {
             DatabaseConfig::generate(&config_file, path)?
         });
 
-        log!(info, ; "Servers HashMap");
+        trace!("Creating Servers HashMap");
         let servers = RwLock::new(HashMap::new());
 
         #[cfg(feature = "music")]
-        log!(info, ; "Songbird");
+        trace!("Creating Songbird");
         #[cfg(feature = "music")]
         let songbird = Songbird::serenity();
 
         #[cfg(feature = "spotify")]
         if spotify.is_none() {
-            log!(warn, "No Spotify config found");
+            warn!("No Spotify config found");
         }
 
         #[cfg(feature = "database")]
         if database.is_none() {
-            log!(warn, "Database is unavailable");
+            warn!("Database is unavailable");
         }
 
         Ok(Self {

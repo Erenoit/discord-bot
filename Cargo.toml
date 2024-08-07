@@ -41,6 +41,8 @@ symphonia = { version = "0.5", features = [
     "all-formats",
 ], optional = true }
 taplo = { version = "0.13", optional = true }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.39", features = [
     "macros",
     "rt-multi-thread",

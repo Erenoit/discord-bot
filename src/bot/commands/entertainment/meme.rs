@@ -1,3 +1,5 @@
+use tracing::error;
+
 use crate::{
     bot::commands::{Context, Error},
     request::reddit_structs::{RedditPost, RedditPostData2},
@@ -8,26 +10,26 @@ use crate::{
 pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     let link = "https://www.reddit.com/r/memes/random/.json";
     let Ok(url) = reqwest::Url::parse(link) else {
-        log!(error, "Couldn't parse the URL.");
+        error!("Couldn't parse the URL.");
         message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };
 
     let Ok(res) = ctx.data().reqwest_client.get(url).send().await else {
-        log!(error, "Couldn't fetch from."; "Link: {link} 1");
+        error!("Couldn't fetch from: {}", link);
         message!(error, ctx, ("An error occured, please try again later."); false);
 
         return Ok(());
     };
 
     let Ok(res_str) = res.text().await else {
-        log!(error, "Couldn't get respoense.");
+        error!("Couldn't get respoense.");
         message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };
 
     let Ok(res_last) = sonic_rs::from_str::<Vec<RedditPost>>(&res_str) else {
-        log!(error, "Couldn't serialize the data."; "Link: {link} 2");
+        error!("Couldn't serialize the data. Link: {}", link);
         message!(error, ctx, ("An error occured, please try again later."); false);
 
         return Ok(());
@@ -37,7 +39,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         .into_iter()
         .find(|e| e.data.children[0].data.title.is_some())
     else {
-        log!(error, "Couldn't serialize the data."; "Link: {link}");
+        error!("Couldn't serialize the data. Link: {}", link);
         message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };
@@ -50,7 +52,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         num_comments: Some(num_comments),
     } = post.data.children.remove(0).data
     else {
-        log!(error, "Couldn't get the data.");
+        error!("Couldn't get the data.");
         message!(error, ctx, ("An error occured, please try again later."); false);
         return Ok(());
     };

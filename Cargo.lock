@@ -810,6 +810,8 @@ dependencies = [
  "symphonia",
  "taplo",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
