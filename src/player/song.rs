@@ -24,6 +24,7 @@ use crate::request::sp_structs::{
 };
 use crate::{
     bot::Context,
+    messager::{DANGER_BUTTON_ID, SUCCESS_BUTTON_ID},
     request::yt_structs::{
         Format,
         YoutubePlayer,
@@ -225,7 +226,7 @@ impl Song {
         }
 
         let answer = selection!(list, *ctx, "Search", list, true);
-        if answer == "success" {
+        if answer == SUCCESS_BUTTON_ID {
             Ok(list
                 .into_iter()
                 .map(|(title, id, duration)| {
@@ -237,7 +238,7 @@ impl Song {
                     }
                 })
                 .collect())
-        } else if answer != "danger" {
+        } else if answer != DANGER_BUTTON_ID {
             #[expect(clippy::pattern_type_mismatch, reason = "Couldn't solve")]
             Ok(VecDeque::from([list
                 .into_iter()
@@ -314,7 +315,7 @@ impl Song {
         }
 
         let answer = selection!(list, *ctx, "Search", list, true);
-        if answer == "success" {
+        if answer == SUCCESS_BUTTON_ID {
             Ok(list
                 .into_iter()
                 .map(|e| {
@@ -326,7 +327,7 @@ impl Song {
                     }
                 })
                 .collect())
-        } else if answer != "danger" {
+        } else if answer != DANGER_BUTTON_ID {
             Ok(list
                 .into_iter()
                 .filter(|e| e.1 == answer)

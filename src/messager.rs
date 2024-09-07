@@ -1,5 +1,8 @@
 //! Contains macros for sending messages and selections.
 
+pub const SUCCESS_BUTTON_ID: &str = "SUCCESS";
+pub const DANGER_BUTTON_ID: &str = "DANGER";
+
 /// Sends cheat message or interaction reply based on `$ctx`.
 ///
 /// Types:
@@ -141,6 +144,8 @@ macro_rules! message {
 macro_rules! selection {
     (confirm, $ctx:expr, $($msg:tt)*) => {
         'confirm_selection: {
+            use $crate::messager::SUCCESS_BUTTON_ID;
+
             let res = $ctx.send(poise::reply::CreateReply {
                 content: Some(format!($($msg)*)),
                 components: Some(vec![serenity::builder::CreateActionRow::Buttons(vec![
@@ -154,11 +159,13 @@ macro_rules! selection {
 
             selection_inner!(clear, $ctx, interaction);
 
-            break 'confirm_selection interaction.data.custom_id == "SUCCESS"
+            break 'confirm_selection interaction.data.custom_id == SUCCESS_BUTTON_ID
         }
     };
     (normal, $ctx:expr, ($($msg:tt)*), $list:expr) => {
         'normal_selection: {
+            use $crate::messager::DANGER_BUTTON_ID;
+
             if $list.len() > 10 {
                 message!(error, $ctx, ("An error happened"); false);
                 tracing::error!("List cannot contain more than 10 elements");
@@ -169,7 +176,7 @@ macro_rules! selection {
 
             let res = selection_inner!(send_buttons, $ctx, format!($($msg)+), $list, false).await;
 
-            let interaction = selection_inner!(get_interaction, $ctx, res, 'normal_selection, "DANGER".to_owned());
+            let interaction = selection_inner!(get_interaction, $ctx, res, 'normal_selection, DANGER_BUTTON_ID.to_owned());
 
             selection_inner!(clear, $ctx, interaction);
 
@@ -179,6 +186,7 @@ macro_rules! selection {
     (list, $ctx:expr, $title:expr, $list:expr, $all_none: expr) => {
         'list_selection: {
             use std::fmt::Write;
+            use $crate::messager::DANGER_BUTTON_ID;
 
             if $list.len() > 10 {
                 message!(error, $ctx, ("An error happened"); false);
@@ -202,7 +210,7 @@ macro_rules! selection {
 
             let res = selection_inner!(send_buttons, $ctx, msg,  new_list, $all_none).await;
 
-            let interaction = selection_inner!(get_interaction, $ctx, res, 'list_selection, "DANGER".to_owned());
+            let interaction = selection_inner!(get_interaction, $ctx, res, 'list_selection, DANGER_BUTTON_ID.to_owned());
 
             selection_inner!(clear, $ctx, interaction);
 
@@ -299,15 +307,17 @@ macro_rules! button {
     (secondary, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::ButtonStyle::Secondary, $($name),+; $($id),+; $disabled)
     };
-    (success, $($name:tt),+) => {
-        btn_generic!(serenity::model::application::ButtonStyle::Success, $($name),+;  "SUCCESS"; false)
-    };
+    (success, $($name:tt),+) => {{
+        use $crate::messager::SUCCESS_BUTTON_ID;
+        btn_generic!(serenity::model::application::ButtonStyle::Success, $($name),+;  "{}", SUCCESS_BUTTON_ID; false)
+    }};
     (success, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::ButtonStyle::Success, $($name),+; $($id),+; $disabled)
     };
-    (danger, $($name:tt),+) => {
-        btn_generic!(serenity::model::application::ButtonStyle::Danger, $($name),+;  "DANGER"; false)
-    };
+    (danger, $($name:tt),+) => {{
+        use $crate::messager::DANGER_BUTTON_ID;
+        btn_generic!(serenity::model::application::ButtonStyle::Danger, $($name),+;  "{}", DANGER_BUTTON_ID; false)
+    }};
     (danger, $($name:tt),+; $($id:tt),+; $disabled:expr) => {
         btn_generic!(serenity::model::application::ButtonStyle::Danger, $($name),+; $($id),+; $disabled)
     };
