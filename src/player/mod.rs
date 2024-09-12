@@ -143,13 +143,18 @@ impl Player {
                     return;
                 },
             Repeat::One => {},
-            Repeat::All =>
+            Repeat::All => {
+                if let Some(song) = self.now_playing.lock().await.take() {
+                    self.repeat_queue.lock().await.push_back(song);
+                }
+
                 if self.song_queue.lock().await.is_empty() {
                     mem::swap(
                         &mut *self.song_queue.lock().await,
                         &mut *self.repeat_queue.lock().await,
                     );
-                },
+                }
+            },
         }
 
         let next_song = match repeat_mode {
