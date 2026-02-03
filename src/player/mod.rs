@@ -240,7 +240,7 @@ impl Player {
     pub async fn shuffle_song_queue(&self) {
         let mut queue = self.song_queue.lock().await;
         for i in 0 ..= queue.len() - 2 {
-            let j = rand::random::<usize>() % (queue.len() - i) + i;
+            let j = rand::random::<u64>() as usize % (queue.len() - i) + i;
             queue.swap(i, j);
         }
     }

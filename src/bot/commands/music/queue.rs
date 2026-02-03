@@ -11,11 +11,7 @@ use crate::bot::commands::{Context, Error};
 pub async fn queue(ctx: Context<'_>) -> Result<(), Error> {
     let server = get_server!(ctx);
 
-    if server.player.is_queues_empty().await {
-        message!(error, ctx, ("Queue is empty"); true);
-    } else {
-        server.player.print_queue(&ctx).await;
-    }
+    server.player.print_queue(&ctx).await;
 
     Ok(())
 }

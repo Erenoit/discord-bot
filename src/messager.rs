@@ -265,11 +265,9 @@ macro_rules! selection_inner {
                 let mut v = iter.clone().map(|group| serenity::builder::CreateActionRow::Buttons(Vec::from(group)))
                     .collect::<Vec<_>>();
 
-                if let Some(rem) = iter.into_remainder() {
-                    let r = rem.collect::<Vec<_>>();
-                    if !r.is_empty() {
-                        v.push(serenity::builder::CreateActionRow::Buttons(r));
-                    }
+                let rem = iter.into_remainder().collect::<Vec<_>>();
+                if !rem.is_empty() {
+                    v.push(serenity::builder::CreateActionRow::Buttons(rem));
                 }
 
                 v.push(serenity::builder::CreateActionRow::Buttons(vec![
