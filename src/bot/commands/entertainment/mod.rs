@@ -1,5 +1,7 @@
 //! Contains all the entertainment commands.
 
+/// cum comand
+pub mod cum;
 /// wtf command.
 pub mod judge;
 /// meme command.
