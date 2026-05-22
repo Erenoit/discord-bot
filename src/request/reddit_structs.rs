@@ -5,25 +5,10 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RedditPost {
-    pub data: RedditPostData,
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct RedditPostData {
-    pub children: Vec<RedditPostDataHolder>,
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct RedditPostDataHolder {
-    pub data: RedditPostData2,
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct RedditPostData2 {
-    pub title:                  Option<String>,
-    pub permalink:              String,
-    pub url_overridden_by_dest: Option<String>,
-    pub ups:                    i64,
-    pub num_comments:           Option<i64>,
+    pub post_link: String,
+    pub title:     String,
+    pub url:       String,
+    pub ups:       i64,
 }
