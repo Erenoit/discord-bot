@@ -79,7 +79,7 @@ impl Bot {
             ],
 
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(get_config!().prefix().to_string()),
+                prefix: Some(get_config!().prefix().to_owned()),
                 mention_as_prefix: false,
                 execute_self_messages: false,
                 ignore_bots: true,

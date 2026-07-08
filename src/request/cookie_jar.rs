@@ -24,6 +24,8 @@ use tokio::{
     fs::File,
     io::{AsyncWriteExt, BufWriter},
 };
+#[cfg(not(feature = "database"))]
+use tracing::error;
 
 #[cfg(feature = "database")]
 use crate::database_tables::KeyValue;
@@ -73,7 +75,7 @@ pub struct CookieJar {
 
 impl CookieJar {
     #[cfg(not(feature = "database"))]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             storage: Mutex::new(Vec::new()),
         }
@@ -186,7 +188,10 @@ impl CookieStore for CookieJar {
 #[cfg(not(feature = "database"))]
 impl CookieStore for CookieJar {
     fn set_cookies(&self, cookie_headers: &mut dyn Iterator<Item = &HeaderValue>, url: &Url) {
-        let url = url.host_str().unwrap();
+        let Some(url) = url.host_str() else {
+            error!("Given URL `{}` is invalid", url);
+            return;
+        };
 
         cookie_headers
             .flat_map(|header| {
@@ -197,47 +202,53 @@ impl CookieStore for CookieJar {
             })
             .filter_map(|header| header.split_once('='))
             .for_each(|(key, value)| {
-                self.storage.lock().unwrap().push((
-                    url.to_string(),
-                    key.to_string(),
-                    value.to_string(),
+                self.storage.lock().expect("Not poisoned").push((
+                    url.to_owned(),
+                    key.to_owned(),
+                    value.to_owned(),
                 ));
             });
     }
 
     fn cookies(&self, url: &Url) -> Option<HeaderValue> {
-        let url = url.host_str().unwrap();
+        let Some(url) = url.host_str() else {
+            error!("Given URL `{}` is invalid", url);
+            return None;
+        };
 
-        Some(
-            HeaderValue::from_str(
-                &self
-                    .storage
-                    .lock()
-                    .unwrap()
-                    .iter()
-                    .filter(|(site, ..)| site == url)
-                    .fold(String::new(), |mut acc, (_, key, value)| {
-                        let adding_length = key.len() + value.len() + 3;
+        HeaderValue::from_str(
+            #[expect(clippy::pattern_type_mismatch, reason = "unnecessary")]
+            &self
+                .storage
+                .lock()
+                .expect("Not poisoned")
+                .iter()
+                .filter(|(site, ..)| site == url)
+                .fold(String::new(), |mut acc, (_, key, value)| {
+                    let adding_length = key.len() + value.len() + 3;
 
-                        acc.reserve(adding_length);
-                        if !acc.is_empty() {
-                            acc.push_str("; ");
-                        }
+                    acc.reserve(adding_length);
+                    if !acc.is_empty() {
+                        acc.push_str("; ");
+                    }
 
-                        acc.push_str(key);
-                        acc.push('=');
-                        acc.push_str(value);
+                    acc.push_str(key);
+                    acc.push('=');
+                    acc.push_str(value);
 
-                        acc
-                    }),
-            )
-            .unwrap(),
+                    acc
+                }),
         )
+        .ok()
     }
 }
 
 impl CookieJar {
     #[cfg(feature = "database")]
+    #[expect(
+        clippy::unused_self,
+        reason = "to make sure that cookie jar is created beforehand"
+    )]
     fn generate_netscape_file(&self) {
         std::thread::spawn(move || -> anyhow::Result<()> {
             tokio::runtime::Builder::new_current_thread()
@@ -248,7 +259,7 @@ impl CookieJar {
                     let f = File::create(NETSCAPE_COOKIE_FILE_PATH.as_str()).await?;
                     let mut w = BufWriter::new(f);
 
-                    w.write_all(b"# Netscape HTTP Cookie File\n\n");
+                    _ = w.write_all(b"# Netscape HTTP Cookie File\n\n");
 
                     let database = get_config!()
                         .database_pool()
@@ -258,19 +269,19 @@ impl CookieJar {
                         .fetch_all(database)
                         .await?;
 
-                    cookies.iter().for_each(|cookie| {
+                    for cookie in cookies {
                         let (url, key) = cookie.key.split_once(',').expect("Cannot fail");
 
-                        w.write_all(
+                        _ = w.write_all(
                             format!(
                                 "{}\tTRUE\t/\tTRUE\t0\t{}\t{}\n",
                                 url, key, cookie.value,
                             )
                             .as_bytes(),
                         );
-                    });
+                    }
 
-                    w.flush();
+                    _ = w.flush();
 
                     Ok(())
                 })
@@ -286,17 +297,19 @@ impl CookieJar {
         };
         let mut w = BufWriter::new(f);
 
-        w.write_all(b"# Netscape HTTP Cookie File\n\n");
+        _ = w.write_all(b"# Netscape HTTP Cookie File\n\n");
 
-        &self
-            .storage
+        #[expect(clippy::pattern_type_mismatch, reason = "unnecessary")]
+        self.storage
             .lock()
-            .unwrap()
+            .expect("Not poisoned")
             .iter()
             .for_each(|(url, key, value)| {
-                w.write_all(format!("{}\tTRUE\t/\tTRUE\t0\t{}\t{}\n", url, key, value,).as_bytes());
+                _ = w.write_all(
+                    format!("{}\tTRUE\t/\tTRUE\t0\t{}\t{}\n", url, key, value).as_bytes(),
+                );
             });
 
-        w.flush();
+        _ = w.flush();
     }
 }

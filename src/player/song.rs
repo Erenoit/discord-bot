@@ -276,7 +276,7 @@ impl Song {
                 "--get-title",
                 "--get-id",
                 "--get-duration",
-                &format!("ytsearch{}:{}", search_count, song,),
+                &format!("ytsearch{}:{}", search_count, song),
                 "--cookies",
                 &NETSCAPE_COOKIE_FILE_PATH,
             ])
@@ -720,14 +720,14 @@ impl Song {
                 );
 
         let selected_format = if !audio_formats.is_empty() {
-            audio_formats.sort_by(|a, b| a.bitrate.cmp(&b.bitrate));
+            audio_formats.sort_by_key(|a| a.bitrate);
 
             // get best bitrate
             audio_formats
                 .pop()
                 .expect("Allready check for at least one element")
         } else {
-            video_formats.sort_by(|a, b| b.bitrate.cmp(&a.bitrate));
+            video_formats.sort_by_key(|b| std::cmp::Reverse(b.bitrate));
 
             // get worst bitrate
             video_formats
@@ -735,7 +735,7 @@ impl Song {
                 .expect("Always has at least one element")
         };
 
-        let (client, url) = self.url_extractor(selected_format)?;
+        let (client, url) = self.url_decoder(selected_format)?;
 
         Ok(HttpRequest::new(client, url).into())
     }
@@ -749,7 +749,7 @@ impl Song {
         clippy::needless_pass_by_value,
         reason = "Unfinnished function"
     )]
-    fn url_extractor(&self, format: Format) -> Result<(reqwest::Client, String)> {
+    fn url_decoder(&self, format: Format) -> Result<(reqwest::Client, String)> {
         let (_s, _sp, _url) = format
             .signature_cipher
             .split('\u{0026}')
@@ -768,7 +768,8 @@ impl Song {
                 },
             );
 
-        Err(anyhow!("URL extractor is incomplete"))
+        // TODO: Youtube stream URL decoder
+        Err(anyhow!("URL decoder is incomplete"))
     }
 
     /// Uses old `yt-dlp` to get the song stream.

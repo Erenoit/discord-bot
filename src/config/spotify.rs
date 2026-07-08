@@ -75,7 +75,7 @@ impl SpotifyConfig {
             .await
             .as_ref()
             .expect("This can't be None at this point")
-            .to_string()
+            .to_owned()
     }
 
     /// Request a new token from Spotify API.

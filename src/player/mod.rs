@@ -219,7 +219,6 @@ impl Player {
     }
 
     /// Sends song in [`Player::now_playing`] to [`Player::repeat_queue`].
-    #[expect(clippy::significant_drop_in_scrutinee, reason = "False positive")]
     pub async fn move_to_repeat_queue(&self) {
         // TODO: make now_playing None
         if let Some(ref playing) = *self.now_playing.lock().await {

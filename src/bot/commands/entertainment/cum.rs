@@ -1,5 +1,6 @@
 use crate::bot::commands::{Context, Error};
 
+#[expect(clippy::large_include_file, reason = "necessary")]
 const CUM_THE_CUM_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/images/cum_the_cum.gif",

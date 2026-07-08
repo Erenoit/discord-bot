@@ -33,7 +33,10 @@ fn main() -> Result<(), Error> {
         for shell in shells::Shell::value_variants() {
             let path = generate_to(*shell, &mut cmd, pkg_name, outdir)?;
 
-            println!("cargo:warning=Completion file is generated: {path:?}");
+            println!(
+                "cargo:warning=Completion file is generated: {}",
+                path.display()
+            );
         }
     }
 

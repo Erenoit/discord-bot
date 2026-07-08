@@ -26,6 +26,8 @@ pub mod skip;
 /// stop command
 pub mod stop;
 
+use songbird::id::ChannelId;
+
 use crate::{bot::commands::Context, server::Server};
 
 /// Gets the voice channel id from the context.
@@ -40,22 +42,13 @@ fn context_to_voice_channel_id(ctx: &Context<'_>) -> Option<serenity::model::id:
 /// Handles the voice channel connection.
 async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Result<()> {
     let bot_vc = server.player.connected_vc().await;
-    if bot_vc.is_none() {
-        if let Some(channel_id) = context_to_voice_channel_id(ctx) {
-            server.player.connect_to_voice_channel(&channel_id).await;
-
-            Ok(())
-        } else {
-            message!(error, ctx, ("You are not in the voice channel"); true);
-            Err(anyhow::anyhow!("You are not in a voice channel"))
-        }
-    } else {
+    if let Some(bot_vc) = bot_vc {
         let Some(user_vc) = context_to_voice_channel_id(ctx) else {
             return Ok(());
         };
 
         // TODO: fix this mess
-        if songbird::id::ChannelId::from(user_vc) != bot_vc.expect("checked in outer if")
+        if ChannelId::from(user_vc) != bot_vc
         && (get_config!().vc_auto_change()
         || selection!(confirm, *ctx, "You are in a different voice channel than bot. Do you want bot to switch channels?"))
         {
@@ -63,5 +56,12 @@ async fn handle_vc_connection(ctx: &Context<'_>, server: &Server) -> anyhow::Res
         }
 
         Ok(())
+    } else if let Some(channel_id) = context_to_voice_channel_id(ctx) {
+        server.player.connect_to_voice_channel(&channel_id).await;
+
+        Ok(())
+    } else {
+        message!(error, ctx, ("You are not in the voice channel"); true);
+        Err(anyhow::anyhow!("You are not in a voice channel"))
     }
 }
