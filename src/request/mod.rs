@@ -7,10 +7,8 @@ pub mod yt_structs;
 use std::sync::Arc;
 
 use reqwest::Client;
-#[cfg(feature = "music")]
-use reqwest::{cookie::CookieStore, Url};
 
-use crate::request::cookie_jar::CookieJar;
+use crate::request::cookie_jar::COOKIE_JAR;
 
 /// User agent to use in requests
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0";
@@ -22,28 +20,7 @@ pub fn create_reqwest_client() -> Client {
         .use_rustls_tls()
         .https_only(true);
 
-    let cookie_jar = CookieJar::new();
-
-    #[cfg(feature = "music")]
-    {
-        let url = "https://www.youtube.com"
-            .parse::<Url>()
-            .expect("Always works");
-
-        let yt_cookies = get_config!().youtube_cookies();
-        let saved_cookies = cookie_jar.cookies(&url);
-        if !yt_cookies.is_empty()
-            && (saved_cookies.is_none() || saved_cookies.expect("Already checked") == "")
-        {
-            let c = yt_cookies
-                .split("; ")
-                .map(|cookie| reqwest::header::HeaderValue::from_str(cookie).expect("Cannot fail"))
-                .collect::<Vec<_>>();
-            cookie_jar.set_cookies(&mut c.iter(), &url);
-        }
-    }
-
-    let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::new(cookie_jar));
+    let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::clone(&COOKIE_JAR));
 
     reqwest_client_builder
         .build()

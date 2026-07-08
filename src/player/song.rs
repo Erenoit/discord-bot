@@ -14,6 +14,8 @@ use tracing::error;
 #[cfg(feature = "yt-dlp-fallback")]
 use tracing::warn;
 
+#[cfg(feature = "yt-dlp-fallback")]
+use crate::request::cookie_jar::NETSCAPE_COOKIE_FILE_PATH;
 #[cfg(feature = "spotify")]
 use crate::request::sp_structs::{
     SpotifyAlbum,
@@ -275,6 +277,8 @@ impl Song {
                 "--get-id",
                 "--get-duration",
                 &format!("ytsearch{}:{}", search_count, song,),
+                "--cookies",
+                &NETSCAPE_COOKIE_FILE_PATH,
             ])
             .output()
             .await
@@ -489,6 +493,8 @@ impl Song {
                 "--get-id",
                 "--get-duration",
                 song,
+                "--cookies",
+                &NETSCAPE_COOKIE_FILE_PATH,
             ])
             .output()
             .await
@@ -771,7 +777,12 @@ impl Song {
         use songbird::input::YoutubeDl;
 
         // TODO: Use proper reqwest::Client once you handled reqwest system
-        YoutubeDl::new(reqwest_client.clone(), self.id.clone()).into()
+        YoutubeDl::new(reqwest_client.clone(), self.id.clone())
+            .user_args(vec![
+                "--cookies".to_owned(),
+                NETSCAPE_COOKIE_FILE_PATH.clone(),
+            ])
+            .into()
     }
 
     /// Get title of the song.
