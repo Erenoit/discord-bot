@@ -8,12 +8,13 @@
 
 use std::{
     env,
+    path::Path,
     process,
     sync::{Arc, LazyLock},
 };
 #[cfg(not(feature = "database"))]
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{BufWriter, Write as _},
     sync::Mutex,
 };
@@ -21,7 +22,7 @@ use std::{
 use reqwest::{cookie::CookieStore, header::HeaderValue, Url};
 #[cfg(feature = "database")]
 use tokio::{
-    fs::File,
+    fs::{self, File},
     io::{AsyncWriteExt, BufWriter},
 };
 #[cfg(not(feature = "database"))]
@@ -256,6 +257,14 @@ impl CookieJar {
                 .build()
                 .expect("Cannot fail")
                 .block_on(async {
+                    fs::create_dir_all(unsafe {
+                        // # SAFETY: always have parent by initialization code
+                        Path::new(NETSCAPE_COOKIE_FILE_PATH.as_str())
+                            .parent()
+                            .unwrap_unchecked()
+                    })
+                    .await?;
+
                     let f = File::create(NETSCAPE_COOKIE_FILE_PATH.as_str()).await?;
                     let mut w = BufWriter::new(f);
 
@@ -292,6 +301,17 @@ impl CookieJar {
 
     #[cfg(not(feature = "database"))]
     fn generate_netscape_file(&self) {
+        if fs::create_dir_all(unsafe {
+            // # SAFETY: always have parent by initialization code
+            Path::new(NETSCAPE_COOKIE_FILE_PATH.as_str())
+                .parent()
+                .unwrap_unchecked()
+        })
+        .is_ok()
+        {
+            return;
+        };
+
         let Ok(f) = File::create(NETSCAPE_COOKIE_FILE_PATH.as_str()) else {
             return;
         };
