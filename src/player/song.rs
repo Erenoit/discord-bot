@@ -778,12 +778,15 @@ impl Song {
         use songbird::input::YoutubeDl;
 
         // TODO: Use proper reqwest::Client once you handled reqwest system
-        YoutubeDl::new(reqwest_client.clone(), self.id.clone())
-            .user_args(vec![
-                "--cookies".to_owned(),
-                NETSCAPE_COOKIE_FILE_PATH.clone(),
-            ])
-            .into()
+        YoutubeDl::new(
+            reqwest_client.clone(),
+            format!("https://www.youtube.com/watch?v={}", self.id),
+        )
+        .user_args(vec![
+            "--cookies".to_owned(),
+            NETSCAPE_COOKIE_FILE_PATH.clone(),
+        ])
+        .into()
     }
 
     /// Get title of the song.
