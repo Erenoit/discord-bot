@@ -2,7 +2,7 @@
 name = "discord-bot"
 description = "Discord bot for playing music in VC but can make other things as well"
 version = "2.4.0"
-edition = "2021"
+edition = "2024"
 license-file = "LICENSE"
 repository = "https://gitlab.com/Erenoit/discord-bot"
 

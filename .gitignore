@@ -1,4 +1,5 @@
 .env
 *.db
-/target
-/completions
+target/
+completions/
+.sqlx/

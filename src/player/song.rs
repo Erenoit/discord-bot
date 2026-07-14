@@ -2,7 +2,7 @@
 
 use std::{collections::VecDeque, fmt::Display};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 #[cfg(feature = "spotify")]
 use poise::futures_util::future::join_all;
 use reqwest::{Client, Url};
@@ -14,7 +14,7 @@ use tracing::error;
 #[cfg(feature = "yt-dlp-fallback")]
 use tracing::warn;
 
-#[cfg(feature = "yt-dlp-fallback")]
+#[cfg(all(feature = "yt-dlp-fallback", feature = "database"))]
 use crate::request::cookie_jar::NETSCAPE_COOKIE_FILE_PATH;
 #[cfg(feature = "spotify")]
 use crate::request::sp_structs::{
@@ -270,19 +270,26 @@ impl Song {
         user_name: &str,
         search_count: u8,
     ) -> Result<VecDeque<Self>> {
-        let Ok(res) = Command::new("yt-dlp")
-            .args([
-                "--flat-playlist",
-                "--get-title",
-                "--get-id",
-                "--get-duration",
-                &format!("ytsearch{}:{}", search_count, song),
-                "--cookies",
-                &NETSCAPE_COOKIE_FILE_PATH,
-            ])
-            .output()
-            .await
-        else {
+        #[cfg(not(feature = "database"))]
+        let args = [
+            "--flat-playlist",
+            "--get-title",
+            "--get-id",
+            "--get-duration",
+            &format!("ytsearch{}:{}", search_count, song),
+        ];
+        #[cfg(feature = "database")]
+        let args = [
+            "--flat-playlist",
+            "--get-title",
+            "--get-id",
+            "--get-duration",
+            &format!("ytsearch{}:{}", search_count, song),
+            "--cookies",
+            &NETSCAPE_COOKIE_FILE_PATH,
+        ];
+
+        let Ok(res) = Command::new("yt-dlp").args(args).output().await else {
             error!("Command creation for yt-dlp failed");
             return Err(anyhow!("yt-dlp failed"));
         };
@@ -486,19 +493,26 @@ impl Song {
     /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
     #[cfg(feature = "yt-dlp-fallback")]
     async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
-        let Ok(res) = Command::new("yt-dlp")
-            .args([
-                "--flat-playlist",
-                "--get-title",
-                "--get-id",
-                "--get-duration",
-                song,
-                "--cookies",
-                &NETSCAPE_COOKIE_FILE_PATH,
-            ])
-            .output()
-            .await
-        else {
+        #[cfg(not(feature = "database"))]
+        let args = [
+            "--flat-playlist",
+            "--get-title",
+            "--get-id",
+            "--get-duration",
+            song,
+        ];
+        #[cfg(feature = "database")]
+        let args = [
+            "--flat-playlist",
+            "--get-title",
+            "--get-id",
+            "--get-duration",
+            song,
+            "--cookies",
+            &NETSCAPE_COOKIE_FILE_PATH,
+        ];
+
+        let Ok(res) = Command::new("yt-dlp").args(args).output().await else {
             error!("Command creation for yt-dlp failed");
             return Err(anyhow!("yt-dlp failed"));
         };
@@ -778,15 +792,18 @@ impl Song {
         use songbird::input::YoutubeDl;
 
         // TODO: Use proper reqwest::Client once you handled reqwest system
-        YoutubeDl::new(
+        let ytdlp = YoutubeDl::new(
             reqwest_client.clone(),
             format!("https://www.youtube.com/watch?v={}", self.id),
-        )
-        .user_args(vec![
+        );
+
+        #[cfg(feature = "database")]
+        let ytdlp = ytdlp.user_args(vec![
             "--cookies".to_owned(),
             NETSCAPE_COOKIE_FILE_PATH.clone(),
-        ])
-        .into()
+        ]);
+
+        ytdlp.into()
     }
 
     /// Get title of the song.

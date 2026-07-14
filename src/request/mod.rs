@@ -1,3 +1,4 @@
+#[cfg(feature = "database")]
 pub mod cookie_jar;
 pub mod reddit_structs;
 #[cfg(feature = "spotify")]
@@ -8,6 +9,7 @@ use std::sync::Arc;
 
 use reqwest::Client;
 
+#[cfg(feature = "database")]
 use crate::request::cookie_jar::COOKIE_JAR;
 
 /// User agent to use in requests
@@ -20,6 +22,7 @@ pub fn create_reqwest_client() -> Client {
         .use_rustls_tls()
         .https_only(true);
 
+    #[cfg(feature = "database")]
     let reqwest_client_builder = reqwest_client_builder.cookie_provider(Arc::clone(&COOKIE_JAR));
 
     reqwest_client_builder
