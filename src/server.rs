@@ -1,6 +1,5 @@
 //! The module that contains the `Server` struct.
 
-use reqwest::Client;
 use serenity::model::id::GuildId;
 
 #[cfg(feature = "music")]
@@ -18,12 +17,8 @@ pub struct Server {
 impl Server {
     /// Creats new `Server` struct.
     #[cfg(feature = "music")]
-    pub fn new(guild_id: GuildId, reqwest_client: Client) -> Self {
-        Self {
-            player: Player::new(guild_id, reqwest_client),
-        }
-    }
+    pub fn new(guild_id: GuildId) -> Self { Self { player: Player::new(guild_id) } }
 
     #[cfg(not(feature = "music"))]
-    pub fn new(_guild_id: GuildId, _reqwest_client: Client) -> Self { Self {} }
+    pub fn new(_guild_id: GuildId) -> Self { Self {} }
 }

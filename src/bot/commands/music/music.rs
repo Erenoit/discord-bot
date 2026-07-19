@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::{
-    bot::commands::{music::handle_vc_connection, Context, Error},
+    bot::commands::{Context, Error, music::handle_vc_connection},
     database_tables::KeyValue,
     player::Song,
 };
@@ -52,7 +52,7 @@ pub async fn play(
         {
             server
                 .player
-                .play(&mut Song::new(&ctx, &ctx.data().reqwest_client, res.value).await?)
+                .play(&mut Song::new(&ctx, res.value).await?)
                 .await;
             return Ok(());
         }

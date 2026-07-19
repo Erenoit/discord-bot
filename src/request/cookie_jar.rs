@@ -265,18 +265,11 @@ impl CookieStore for CookieJar {
         match tokio::runtime::Handle::try_current() {
             Ok(handle) => tokio::task::block_in_place(|| handle.block_on(database_fetch)),
             Err(_) =>
-                std::thread::scope(|s| {
-                    s.spawn(move || {
-                        tokio::runtime::Builder::new_current_thread()
-                            .enable_all()
-                            .build()
-                            .expect("Failed to create fallback runtime for cookies")
-                            .block_on(database_fetch)
-                    })
-                    .join()
-                    .ok()
-                    .flatten()
-                }),
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .expect("Failed to create fallback runtime for cookies")
+                    .block_on(database_fetch),
         }
     }
 }

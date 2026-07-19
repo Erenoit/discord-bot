@@ -2,7 +2,7 @@ use tracing::error;
 
 use crate::{
     bot::commands::{Context, Error},
-    request::reddit_structs::RedditPost,
+    request::{get_reqwest_client, reddit_structs::RedditPost},
 };
 
 /// Sends random meme from r/memes
@@ -15,7 +15,7 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
         return Ok(());
     };
 
-    let Ok(res) = ctx.data().reqwest_client.get(url).send().await else {
+    let Ok(res) = get_reqwest_client().get(url).send().await else {
         error!("Couldn't fetch from: {}", link);
         message!(error, ctx, ("An error occured, please try again later."); false);
 
@@ -38,14 +38,16 @@ pub async fn meme(ctx: Context<'_>) -> Result<(), Error> {
     message!(
         embed,
         ctx,
-        vec![serenity::builder::CreateEmbed::new()
-            .color(0xE0AF68)
-            .title(res_last.title)
-            .url(res_last.post_link)
-            .image(res_last.url)
-            .footer(serenity::builder::CreateEmbedFooter::new(
-                format!("👍 {}", res_last.ups)
-            ))],
+        vec![
+            serenity::builder::CreateEmbed::new()
+                .color(0xE0AF68)
+                .title(res_last.title)
+                .url(res_last.post_link)
+                .image(res_last.url)
+                .footer(serenity::builder::CreateEmbedFooter::new(
+                    format!("👍 {}", res_last.ups)
+                ))
+        ],
         false
     );
 

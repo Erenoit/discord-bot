@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use colored::Colorize;
-use reqwest::Client;
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
@@ -19,14 +18,7 @@ use crate::server::Server;
 /// Struct for handling `Discord` events.
 ///
 /// It currently handles `Ready`, `GuildCreate` and `GuildDelete` events.
-pub struct Handler {
-    reqwest_client: Client,
-}
-
-impl Handler {
-    /// Creates new [`Handler`] struct.
-    pub const fn new(reqwest_client: Client) -> Self { Self { reqwest_client } }
-}
+pub struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -36,10 +28,7 @@ impl EventHandler for Handler {
 
         for g in data_about_bot.guilds {
             trace!("Guild added: {}", g.id);
-            servers.insert(
-                g.id,
-                Arc::new(Server::new(g.id, self.reqwest_client.clone())),
-            );
+            servers.insert(g.id, Arc::new(Server::new(g.id)));
         }
 
         info!(
@@ -53,10 +42,11 @@ impl EventHandler for Handler {
         let is_new = is_new.unwrap_or(false);
         if is_new {
             trace!("Joined to a new server: {}", guild.id);
-            get_config!().servers().write().await.insert(
-                guild.id,
-                Arc::new(Server::new(guild.id, self.reqwest_client.clone())),
-            );
+            get_config!()
+                .servers()
+                .write()
+                .await
+                .insert(guild.id, Arc::new(Server::new(guild.id)));
         }
     }
 

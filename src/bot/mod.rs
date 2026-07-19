@@ -17,7 +17,6 @@ use tracing::{trace, warn};
 
 #[cfg(feature = "music")]
 pub use crate::bot::commands::Context;
-use crate::request::create_reqwest_client;
 
 /// The main struct for the bot.
 ///
@@ -42,10 +41,6 @@ impl Bot {
             .run_database_migrations()
             .await
             .expect("Couldn't setup the database");
-
-        let reqwest_client = create_reqwest_client();
-        // Somehow it is moved inside the closure so, we need to clone it beforehand.
-        let req_cli_clone = reqwest_client.clone();
 
         let options = poise::FrameworkOptions {
             commands: vec![
@@ -96,7 +91,7 @@ impl Bot {
                 Box::pin(async move {
                     if !get_config!().auto_register_commands() {
                         warn!("Slash Command Autogeneration Is Disabled");
-                        return Ok(commands::Data { reqwest_client });
+                        return Ok(commands::Data);
                     }
 
                     Command::set_global_commands(ctx, {
@@ -116,7 +111,7 @@ impl Bot {
                         b
                     })
                     .await?;
-                    Ok(commands::Data { reqwest_client })
+                    Ok(commands::Data)
                 })
             })
             .build();
@@ -125,7 +120,7 @@ impl Bot {
         {
             serenity::Client::builder(get_config!().token(), GatewayIntents::all())
                 .framework(framework)
-                .event_handler(Handler::new(req_cli_clone))
+                .event_handler(Handler)
                 .register_songbird_with(get_config!().songbird())
                 .await
                 .expect("Couldn't create a Client")
@@ -137,7 +132,7 @@ impl Bot {
         {
             serenity::Client::builder(get_config!().token(), GatewayIntents::all())
                 .framework(framework)
-                .event_handler(Handler::new(req_cli_clone))
+                .event_handler(Handler)
                 .await
                 .expect("Couldn't create a Client")
                 .start_autosharded()

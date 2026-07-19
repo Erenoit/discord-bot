@@ -5,7 +5,7 @@ use std::{collections::VecDeque, fmt::Display};
 use anyhow::{Result, anyhow};
 #[cfg(feature = "spotify")]
 use poise::futures_util::future::join_all;
-use reqwest::{Client, Url};
+use reqwest::Url;
 use songbird::input::{HttpRequest, Input};
 #[cfg(feature = "yt-dlp-fallback")]
 use tokio::process::Command;
@@ -27,13 +27,17 @@ use crate::request::sp_structs::{
 use crate::{
     bot::Context,
     messager::{DANGER_BUTTON_ID, SUCCESS_BUTTON_ID},
-    request::yt_structs::{
-        Format,
-        YoutubePlayer,
-        YoutubePlaylist,
-        YoutubeSearch,
-        YoutubeVideo,
-        YoutubeVideoPlaylist,
+    request::{
+        get_reqwest_client,
+        get_user_agent,
+        yt_structs::{
+            Format,
+            YoutubePlayer,
+            YoutubePlaylist,
+            YoutubeSearch,
+            YoutubeVideo,
+            YoutubeVideoPlaylist,
+        },
     },
 };
 
@@ -81,22 +85,18 @@ impl Song {
     /// Only `YouTube` and `Spotify` URLs are supported.
     ///
     /// If you want to search in in `YouTube` use [`Song::yt_search()`] instead.
-    pub async fn new(
-        ctx: &Context<'_>,
-        reqwest_client: &Client,
-        song: String,
-    ) -> Result<VecDeque<Self>> {
+    pub async fn new(ctx: &Context<'_>, song: String) -> Result<VecDeque<Self>> {
         let song = song.trim().to_owned();
         let user_name = &ctx.author().name;
 
         if song.starts_with("https://") || song.starts_with("http://") {
             // TODO: short youtube links
             if song.contains("youtube") {
-                Self::youtube(reqwest_client, song, user_name).await
+                Self::youtube(song, user_name).await
             } else if song.contains("spotify") {
                 #[cfg(feature = "spotify")]
                 if get_config!().is_spotify_initialized() {
-                    Self::spotify(ctx, reqwest_client, song, user_name).await
+                    Self::spotify(ctx, song, user_name).await
                 } else {
                     message!(error, ctx, ("Spotify is not initialized"); true);
                     Err(anyhow!("Spotify is not initialized"))
@@ -112,7 +112,7 @@ impl Song {
             }
         } else {
             let search_count = get_config!().youtube_search_count();
-            Self::search(ctx, reqwest_client, song, user_name, search_count).await
+            Self::search(ctx, song, user_name, search_count).await
         }
     }
 
@@ -126,7 +126,6 @@ impl Song {
     /// fails.
     async fn search(
         ctx: &Context<'_>,
-        reqwest_client: &Client,
         song: String,
         user_name: &str,
         search_count: u8,
@@ -135,14 +134,7 @@ impl Song {
             return Ok(VecDeque::new());
         }
 
-        let res_new = Self::search_new(
-            ctx,
-            reqwest_client,
-            &song,
-            user_name,
-            search_count,
-        )
-        .await;
+        let res_new = Self::search_new(ctx, &song, user_name, search_count).await;
 
         if let Ok(songs) = res_new {
             return Ok(songs);
@@ -169,7 +161,6 @@ impl Song {
     /// Discord user
     async fn search_new(
         ctx: &Context<'_>,
-        reqwest_client: &Client,
         song: &str,
         user_name: &str,
         search_count: u8,
@@ -179,7 +170,7 @@ impl Song {
             song,
         )])?;
 
-        let res = reqwest_client.get(url).send().await?.text().await?;
+        let res = get_reqwest_client().get(url).send().await?.text().await?;
 
         let mut search_res = &res[res
             .find("ytInitialData")
@@ -272,6 +263,8 @@ impl Song {
     ) -> Result<VecDeque<Self>> {
         #[cfg(not(feature = "database"))]
         let args = [
+            "--user-agent",
+            get_user_agent(),
             "--flat-playlist",
             "--get-title",
             "--get-id",
@@ -280,13 +273,15 @@ impl Song {
         ];
         #[cfg(feature = "database")]
         let args = [
+            "--cookies",
+            &NETSCAPE_COOKIE_FILE_PATH,
+            "--user-agent",
+            get_user_agent(),
             "--flat-playlist",
             "--get-title",
             "--get-id",
             "--get-duration",
             &format!("ytsearch{}:{}", search_count, song),
-            "--cookies",
-            &NETSCAPE_COOKIE_FILE_PATH,
         ];
 
         let Ok(res) = Command::new("yt-dlp").args(args).output().await else {
@@ -357,12 +352,8 @@ impl Song {
     }
 
     /// Takes `YouTube` URL and gets the song(s)
-    async fn youtube(
-        reqwest_client: &Client,
-        song: String,
-        user_name: &str,
-    ) -> Result<VecDeque<Self>> {
-        let res_new = Self::youtube_new(reqwest_client, &song, user_name).await;
+    async fn youtube(song: String, user_name: &str) -> Result<VecDeque<Self>> {
+        let res_new = Self::youtube_new(&song, user_name).await;
 
         if let Ok(songs) = res_new {
             return Ok(songs);
@@ -384,12 +375,8 @@ impl Song {
 
     /// Sends GET request to `YouTube` as if it was requested from a browser and
     /// scrapes the result.
-    async fn youtube_new(
-        reqwest_client: &Client,
-        song: &str,
-        user_name: &str,
-    ) -> Result<VecDeque<Self>> {
-        let res = reqwest_client.get(song).send().await?.text().await?;
+    async fn youtube_new(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
+        let res = get_reqwest_client().get(song).send().await?.text().await?;
 
         let mut song_list = VecDeque::new();
 
@@ -495,6 +482,8 @@ impl Song {
     async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
         #[cfg(not(feature = "database"))]
         let args = [
+            "--user-agent",
+            get_user_agent(),
             "--flat-playlist",
             "--get-title",
             "--get-id",
@@ -503,13 +492,15 @@ impl Song {
         ];
         #[cfg(feature = "database")]
         let args = [
+            "--cookies",
+            &NETSCAPE_COOKIE_FILE_PATH,
+            "--user-agent",
+            get_user_agent(),
             "--flat-playlist",
             "--get-title",
             "--get-id",
             "--get-duration",
             song,
-            "--cookies",
-            &NETSCAPE_COOKIE_FILE_PATH,
         ];
 
         let Ok(res) = Command::new("yt-dlp").args(args).output().await else {
@@ -550,13 +541,14 @@ impl Song {
     #[cfg(feature = "spotify")]
     pub async fn spotify(
         ctx: &Context<'_>,
-        reqwest_client: &Client,
         song: String,
         user_name: &str,
     ) -> Result<VecDeque<Self>> {
         let Some(token) = get_config!().spotify_token().await else {
             return Err(anyhow!("Spotify token is not initialized"));
         };
+
+        let reqwest_client = get_reqwest_client();
 
         let (url_type, id, extra) = match *song.split('/').take(5).collect::<Vec<_>>().as_slice() {
             ["https:", "", "open.spotify.com", "track", last] => ("tracks", get_id!(last), ""),
@@ -638,7 +630,6 @@ impl Song {
         let songs = join_all(list.into_iter().map(|(artist, song)| {
             Self::search(
                 ctx,
-                reqwest_client,
                 format!("{} - {} lyrics", artist, song),
                 user_name,
                 1,
@@ -671,8 +662,8 @@ impl Song {
     }
 
     /// gets [`songbird::input::Input`] for music stream
-    pub async fn get_input(&self, reqwest_client: &Client) -> Result<Input> {
-        let res_new = self.get_input_new(reqwest_client).await;
+    pub async fn get_input(&self) -> Result<Input> {
+        let res_new = self.get_input_new().await;
 
         if let Ok(input) = res_new {
             return Ok(input);
@@ -686,7 +677,7 @@ impl Song {
 
         #[cfg(feature = "yt-dlp-fallback")]
         {
-            Ok(self.get_input_old(reqwest_client))
+            Ok(self.get_input_old())
         }
 
         #[cfg(not(feature = "yt-dlp-fallback"))]
@@ -695,8 +686,8 @@ impl Song {
 
     /// Sends GET request to `YouTube` as if it was searched in browser and
     /// scrapes the results.
-    async fn get_input_new(&self, reqwest_client: &Client) -> Result<Input> {
-        let res = reqwest_client
+    async fn get_input_new(&self) -> Result<Input> {
+        let res = get_reqwest_client()
             .get(format!(
                 "https://www.youtube.com/watch?v={}",
                 self.id
@@ -788,12 +779,12 @@ impl Song {
 
     /// Uses old `yt-dlp` to get the song stream.
     #[cfg(feature = "yt-dlp-fallback")]
-    fn get_input_old(&self, reqwest_client: &Client) -> Input {
+    fn get_input_old(&self) -> Input {
         use songbird::input::YoutubeDl;
 
         // TODO: Use proper reqwest::Client once you handled reqwest system
         let ytdlp = YoutubeDl::new(
-            reqwest_client.clone(),
+            get_reqwest_client(),
             format!("https://www.youtube.com/watch?v={}", self.id),
         );
 
@@ -801,6 +792,14 @@ impl Song {
         let ytdlp = ytdlp.user_args(vec![
             "--cookies".to_owned(),
             NETSCAPE_COOKIE_FILE_PATH.clone(),
+            "--user-agent".to_owned(),
+            get_user_agent().to_owned(),
+        ]);
+
+        #[cfg(not(feature = "database"))]
+        let ytdlp = ytdlp.user_args(vec![
+            "--user-agent".to_owned(),
+            get_user_agent().to_owned(),
         ]);
 
         ytdlp.into()

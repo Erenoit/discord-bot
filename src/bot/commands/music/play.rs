@@ -1,5 +1,5 @@
 use crate::{
-    bot::commands::{music::handle_vc_connection, Context, Error},
+    bot::commands::{Context, Error, music::handle_vc_connection},
     player::Song,
 };
 
@@ -23,7 +23,7 @@ pub async fn play(
 
     ctx.defer().await?;
 
-    let mut songs = Song::new(&ctx, &ctx.data().reqwest_client, song).await?;
+    let mut songs = Song::new(&ctx, song).await?;
     match songs.len() {
         0 => {
             message!(error, ctx, ("Nothing has added to the queue."); false);
