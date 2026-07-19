@@ -9,7 +9,7 @@ use std::{
     mem::MaybeUninit,
     sync::{
         Arc,
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::{Duration, SystemTime},
 };
@@ -24,6 +24,7 @@ const UPDATE_DURATION: Duration = Duration::from_hours(24 * 7);
 const FALLBACK_USER_AGENT: &str =
     "Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0";
 
+static IS_UPDATING: AtomicBool = AtomicBool::new(false);
 static IDX: AtomicUsize = AtomicUsize::new(0);
 static mut LAST_UPDATES: [SystemTime; BUFFER_SIZE] = [SystemTime::UNIX_EPOCH; BUFFER_SIZE];
 static mut USER_AGENTS: [String; BUFFER_SIZE] = [const { String::new() }; BUFFER_SIZE];
@@ -47,6 +48,13 @@ pub fn get_reqwest_client() -> Client {
 fn check_and_update() {
     if let Ok(d) = unsafe { LAST_UPDATES[IDX.load(Ordering::Acquire)].elapsed() }
         && d < UPDATE_DURATION
+    {
+        return;
+    }
+
+    if IS_UPDATING
+        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        .is_err()
     {
         return;
     }
@@ -107,4 +115,5 @@ fn check_and_update() {
     }
 
     IDX.store(next_idx, Ordering::Release);
+    IS_UPDATING.store(false, Ordering::Release);
 }
