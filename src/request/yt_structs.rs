@@ -134,8 +134,20 @@ pub struct VideoPlaylist1 {
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
 pub struct VideoPlaylist2 {
-    pub contents: Vec<VideoPlaylistContent>,
+    pub contents: Vec<UnwantedExtrasFix>,
 }
+
+/// Catch unwanted extra information that are not video
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum UnwantedExtrasFix {
+    Wanted(VideoPlaylistContent),
+    Unwanted(Unwanted),
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]
+pub struct Unwanted {}
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "camelCase", serialize = "snake_case"))]

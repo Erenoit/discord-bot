@@ -32,6 +32,7 @@ use crate::{
         get_user_agent,
         yt_structs::{
             Format,
+            UnwantedExtrasFix,
             YoutubePlayer,
             YoutubePlaylist,
             YoutubeSearch,
@@ -390,6 +391,12 @@ impl Song {
                         .playlist
                         .contents
                         .into_iter()
+                        .filter_map(|element| {
+                            match element {
+                                UnwantedExtrasFix::Wanted(video) => Some(video),
+                                UnwantedExtrasFix::Unwanted(_) => None,
+                            }
+                        })
                         .map(|video| {
                             Self {
                                 title:     video.playlist_panel_video_renderer.title.simple_text,
