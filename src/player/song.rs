@@ -261,19 +261,10 @@ impl Song {
         user_name: &str,
         search_count: u8,
     ) -> Result<VecDeque<Self>> {
-        #[cfg(not(feature = "database"))]
         let args = [
-            "--user-agent",
-            get_user_agent(),
-            "--flat-playlist",
-            "--get-title",
-            "--get-id",
-            "--get-duration",
-            &format!("ytsearch{}:{}", search_count, song),
-        ];
-        #[cfg(feature = "database")]
-        let args = [
+            #[cfg(feature = "database")]
             "--cookies",
+            #[cfg(feature = "database")]
             &NETSCAPE_COOKIE_FILE_PATH,
             "--user-agent",
             get_user_agent(),
@@ -480,19 +471,10 @@ impl Song {
     /// Uses old `yt-dlp` to get the song(s) from `YouTube` URL.
     #[cfg(feature = "yt-dlp-fallback")]
     async fn youtube_old(song: &str, user_name: &str) -> Result<VecDeque<Self>> {
-        #[cfg(not(feature = "database"))]
         let args = [
-            "--user-agent",
-            get_user_agent(),
-            "--flat-playlist",
-            "--get-title",
-            "--get-id",
-            "--get-duration",
-            song,
-        ];
-        #[cfg(feature = "database")]
-        let args = [
+            #[cfg(feature = "database")]
             "--cookies",
+            #[cfg(feature = "database")]
             &NETSCAPE_COOKIE_FILE_PATH,
             "--user-agent",
             get_user_agent(),
@@ -675,7 +657,7 @@ impl Song {
 
         #[cfg(feature = "yt-dlp-fallback")]
         warn!(
-            "new scrapper failed as input generation, falling back to yt-dlp: {}",
+            "new scrapper failed for input generation, falling back to yt-dlp: {}",
             res_new.err().expect("Its already an error")
         );
 
