@@ -541,8 +541,6 @@ impl Song {
             return Err(anyhow!("Spotify token is not initialized"));
         };
 
-        let reqwest_client = get_reqwest_client();
-
         let (url_type, id, extra) = match *song.split('/').take(5).collect::<Vec<_>>().as_slice() {
             ["https:", "", "open.spotify.com", "track", last] => ("tracks", get_id!(last), ""),
             ["https:", "", "open.spotify.com", "playlist", last] =>
@@ -553,7 +551,7 @@ impl Song {
             _ => return Err(anyhow!("Unsupported Spotify URL type")),
         };
 
-        let Ok(res) = reqwest_client
+        let Ok(res) = get_reqwest_client()
             .get(format!("{SP_BASE_URL}/{url_type}/{id}{extra}"))
             .bearer_auth(token)
             .query(&[("market", SP_MARKET)])
