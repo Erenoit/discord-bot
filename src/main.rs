@@ -1,5 +1,6 @@
 use anyhow::Result;
-use discord_bot::{init_config, Bot};
+use discord_bot::{Bot, init_config};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -7,7 +8,11 @@ async fn main() -> Result<()> {
         .compact()
         .with_line_number(true)
         .with_thread_ids(true)
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::WARN.into())
+                .from_env_lossy(),
+        )
         .finish();
 
     tracing::subscriber::set_global_default(sub)?;
